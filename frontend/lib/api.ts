@@ -1,0 +1,26 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+export async function searchRestaurants(name?: string) {
+  const url = name ? `${API_URL}/restaurants?name=${name}` : `${API_URL}/restaurants`;
+  const res = await fetch(url);
+  return res.json();
+}
+
+export async function getMenuForRestaurant(restaurantId: string) {
+  const res = await fetch(`${API_URL}/restaurants/${restaurantId}`);
+  return res.json();
+}
+
+export async function createOrder(data: {
+  customer: string;
+  address: string;
+  restaurantId: string;
+  items: { foodId: string; quantity: number }[];
+}) {
+  const res = await fetch(`${API_URL}/orders`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  return res.json();
+}
