@@ -154,4 +154,15 @@ async function handleFunctionCall(name: string, call_id: string, args: any, dc: 
       output: JSON.stringify(result ?? {})
     }
   }));
+
+  // make it speak
+    dc.send(JSON.stringify({
+        type: "response.create",
+        response: {
+            instructions: `
+                Fonksiyon başarıyla çağrıldı: ${name}
+                Açık ve dostane bir şekilde kullanıcıya sonucu bildir ve kısaca özetle. Sohbeti devam ettir.
+            `
+        }
+    }));
 }
