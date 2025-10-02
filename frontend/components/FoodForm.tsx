@@ -11,13 +11,13 @@ export default function FoodForm({ menuId, onSuccess }: { menuId: string; onSucc
   return (
     <div className="flex space-x-2 mt-3">
       <Input
-        placeholder="Yemek adı"
+        placeholder="Food Name"
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
       />
       <Input
         type="number"
-        placeholder="Fiyat"
+        placeholder="Price"
         value={form.price}
         onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) })}
       />
@@ -32,7 +32,7 @@ export default function FoodForm({ menuId, onSuccess }: { menuId: string; onSucc
           onSuccess();
         }}
       >
-        ➕ Ekle
+        ➕ Add
       </Button>
     </div>
   );

@@ -2,84 +2,65 @@
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import MenuForm from "@/components/MenuForm";
-import FoodForm from "@/components/FoodForm";
+import { initRestaurantAssistant, stopRealtime } from "@/lib/realtime";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export default function RestaurantDetail() {
+export default function RestaurantDetailPage() {
   const { id } = useParams();
-  const { data, error, mutate } = useSWR(`${API_URL}/restaurants/${id}`, fetcher);
-  const [openMenu, setOpenMenu] = useState(false);
+  const { data: restaurant, error } = useSWR(`${API_URL}/restaurants/${id}`, fetcher);
+  const [connected, setConnected] = useState(false);
 
-  if (error) return <div>❌ Hata</div>;
-  if (!data) return <div>⏳ Yükleniyor...</div>;
+  if (error) return <div>❌ Error {error.message}</div>;
+  if (!restaurant) return <div>⏳ Loading...</div>;
+
+  const toggleAssistant = async () => {
+    if (connected) {
+      await stopRealtime();
+      setConnected(false);
+    } else {
+      await initRestaurantAssistant(restaurant);
+      setConnected(true);
+    }
+  };
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">{data.name}</h1>
+    <div className="max-w-4xl mx-auto p-10">
+      {/* Restoran Bilgisi */}
+      <div className="mb-6">
+        <img
+          src="https://images.deliveryhero.io/image/fd-tr/LH/kjnj-hero.jpg?width=512&height=384&quality=45"
+          alt={restaurant.name}
+          className="w-full h-60 object-cover rounded-lg"
+        />
+        <h1 className="text-3xl font-bold mt-4">{restaurant.name}</h1>
+        <p className="text-gray-600">{restaurant.address}</p>
+        <p className="text-yellow-500">⭐ {restaurant.rating}</p>
 
-      <Dialog open={openMenu} onOpenChange={setOpenMenu}>
-        <DialogTrigger asChild>
-          <Button>➕ Menü Ekle</Button>
-        </DialogTrigger>
-        <DialogContent>
-          <MenuForm restaurantId={id as string} onSuccess={() => { setOpenMenu(false); mutate(); }} />
-        </DialogContent>
-      </Dialog>
+        {/* ✅ Asistan Başlat Butonu */}
+        <button
+          onClick={toggleAssistant}
+          className={`mt-4 px-6 py-2 rounded font-semibold shadow-lg transition
+            ${connected ? "bg-red-500 text-white hover:bg-red-600" : "bg-green-600 text-white hover:bg-green-700"}
+          `}
+        >
+          {connected ? "⏹ Stop Assistant" : "🎤 Start Assistant"}
+        </button>
+      </div>
 
-      {data.menus.map((menu: any) => (
-        <div key={menu.id} className="my-6 p-4 border rounded shadow">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-2xl font-semibold">{menu.name}</h2>
-            <Button
-              variant="destructive"
-              onClick={async () => {
-                await fetch(`${API_URL}/menus/${menu.id}`, { method: "DELETE" });
-                mutate();
-              }}
-            >
-              Sil
-            </Button>
-          </div>
-
-          <ul className="space-y-2">
+      {/* Menü */}
+      {restaurant.menus.map((menu: any) => (
+        <div key={menu.id} className="mb-8">
+          <h2 className="text-2xl font-semibold">{menu.name}</h2>
+          <ul className="space-y-2 mt-2">
             {menu.foods.map((food: any) => (
-              <li key={food.id} className="flex justify-between p-2 bg-gray-50 rounded">
+              <li key={food.id} className="flex justify-between bg-gray-100 p-3 rounded">
                 <span>{food.name}</span>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    defaultValue={food.price}
-                    className="border p-1 w-20"
-                    onBlur={async (e) => {
-                      await fetch(`${API_URL}/foods/${food.id}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ price: parseFloat(e.target.value) }),
-                      });
-                      mutate();
-                    }}
-                  />
-                  <Button
-                    variant="destructive"
-                    onClick={async () => {
-                      await fetch(`${API_URL}/foods/${food.id}`, { method: "DELETE" });
-                      mutate();
-                    }}
-                  >
-                    Sil
-                  </Button>
-                </div>
+                <span className="font-bold">₺ {food.price}</span>
               </li>
             ))}
           </ul>
-
-          {/* Food Ekleme */}
-          <FoodForm menuId={menu.id} onSuccess={mutate} />
         </div>
       ))}
     </div>

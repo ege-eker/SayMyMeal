@@ -2,7 +2,7 @@ export const tools = [
   {
     type: "function",
     name: "search_restaurants",
-    description: "Restoranı ada göre ara. Eğer name verilmezse tüm restoranları döndür.",
+    description: "Search Restaurant By name, if name not given return all restaurants.",
     parameters: {
       type: "object",
       properties: {
@@ -13,7 +13,7 @@ export const tools = [
   {
     type: "function",
     name: "get_menu",
-    description: "Verilen restoran ID’sine ait menüyü döndür.",
+    description: "Return menu of given restaurant id.",
     parameters: {
       type: "object",
       properties: {
@@ -25,7 +25,7 @@ export const tools = [
   {
     type: "function",
     name: "create_order",
-    description: "Sipariş oluştur. Kullanıcının seçtiği yemeklerden sipariş yarat.",
+    description: "Create order with users requests.",
     parameters: {
       type: "object",
       properties: {

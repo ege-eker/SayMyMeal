@@ -6,8 +6,8 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   const links = [
-    { href: "/restaurants", label: "Restoranlar" },
-    { href: "/", label: "Ana Sayfa" }
+    { href: "/restaurants", label: "Restaurants" },
+    { href: "/", label: "Main Page" }
   ];
 
   return (

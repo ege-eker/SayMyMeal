@@ -22,7 +22,7 @@ export default function MenuForm({ restaurantId, onSuccess }: { restaurantId: st
           onSuccess();
         }}
       >
-        Kaydet
+        Save
       </Button>
     </div>
   );

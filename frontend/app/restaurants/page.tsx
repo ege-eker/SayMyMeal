@@ -1,75 +1,43 @@
 "use client";
 import useSWR from "swr";
-import { useState } from "react";
 import Link from "next/link";
-import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import RestaurantForm from "@/components/RestaurantForm";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function RestaurantsPage() {
-  const { data: restaurants, error, mutate } = useSWR(`${API_URL}/restaurants`, fetcher);
-  const [open, setOpen] = useState(false);
+  const { data, error } = useSWR(`${API_URL}/restaurants`, fetcher);
 
-  if (error) return <div>❌ Hata</div>;
-  if (!restaurants) return <div>⏳ Yükleniyor...</div>;
+  if (error) return <div>❌ Hata: {error.message}</div>;
+  if (!data) return <div>⏳ Yükleniyor...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Restoranlar</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>➕ Restoran Ekle</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <RestaurantForm
-              onSuccess={() => {
-                setOpen(false);
-                mutate();
-              }}
+    <div className="max-w-5xl mx-auto p-10">
+      <h1 className="text-3xl font-bold mb-6">🍴 Restoranlar</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {data.map((rest: any) => (
+          <div key={rest.id} className="bg-white shadow rounded-lg overflow-hidden">
+            <img
+              src="https://www.precisionorthomd.com/wp-content/uploads/2023/10/percision-blog-header-junk-food-102323.jpg" // şimdilik stok görsel
+              alt={rest.name}
+              className="w-full h-40 object-cover"
             />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <table className="table-auto w-full bg-white rounded-lg shadow-md">
-        <thead>
-          <tr className="bg-gray-200 text-left">
-            <th className="p-3">Ad</th>
-            <th className="p-3">Adres</th>
-            <th className="p-3">Rating</th>
-            <th className="p-3">İşlemler</th>
-          </tr>
-        </thead>
-        <tbody>
-          {restaurants.map((r: any) => (
-            <tr key={r.id} className="border-t hover:bg-gray-50">
-              <td className="p-3">{r.name}</td>
-              <td className="p-3">{r.address}</td>
-              <td className="p-3">⭐ {r.rating ?? "-"}</td>
-              <td className="p-3 flex space-x-2">
-                <Link href={`/restaurants/${r.id}`}>
-                  <Button variant="outline">Menüler</Button>
-                </Link>
-                <Button
-                  variant="destructive"
-                  onClick={async () => {
-                    await fetch(`${API_URL}/restaurants/${r.id}`, {
-                      method: "DELETE",
-                    });
-                    mutate();
-                  }}
+            <div className="p-4">
+              <h2 className="text-xl font-semibold">{rest.name}</h2>
+              <p className="text-gray-600">{rest.address}</p>
+              <p className="text-yellow-500">⭐ {rest.rating}</p>
+              <div className="mt-3">
+                <Link
+                  href={`/restaurants/${rest.id}`}
+                  className="inline-block bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
                 >
-                  Sil
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  İncele
+                </Link>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

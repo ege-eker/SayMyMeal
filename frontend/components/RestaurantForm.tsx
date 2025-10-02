@@ -11,12 +11,12 @@ export default function RestaurantForm({ onSuccess }: { onSuccess: () => void })
   return (
     <div className="flex flex-col space-y-3">
       <Input
-        placeholder="Restoran Adı"
+        placeholder="Restaurant Name"
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
       />
       <Input
-        placeholder="Adres"
+        placeholder="Adress"
         value={form.address}
         onChange={(e) => setForm({ ...form, address: e.target.value })}
       />
@@ -37,7 +37,7 @@ export default function RestaurantForm({ onSuccess }: { onSuccess: () => void })
           onSuccess();
         }}
       >
-        Kaydet
+        Save
       </Button>
     </div>
   );
