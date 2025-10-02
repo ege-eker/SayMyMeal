@@ -73,7 +73,7 @@ export async function initRestaurantAssistant(restaurant: any) {
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
 
-  const resp = await fetch("https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-13", {
+  const resp = await fetch("https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17", {
     method: "POST",
     body: offer.sdp,
     headers: {
