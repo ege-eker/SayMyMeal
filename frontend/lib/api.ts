@@ -24,3 +24,13 @@ export async function createOrder(data: {
   });
   return res.json();
 }
+
+export async function getOrderStatus(params: { phone?: string; name?: string }) {
+  const url = new URL(`${API_URL}/orders/status`);
+  if (params.phone) url.searchParams.append("phone", params.phone);
+  if (params.name)  url.searchParams.append("name", params.name);
+
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`Failed to get order status (${res.status})`);
+  return res.json();
+}

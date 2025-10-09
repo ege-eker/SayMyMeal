@@ -15,21 +15,37 @@ export default function RestaurantDetail() {
   const { data, error, mutate } = useSWR(`${API_URL}/restaurants/${id}`, fetcher);
   const [openMenu, setOpenMenu] = useState(false);
 
-  if (error) return <div>❌ Error</div>;
+  if (error) return <div>❌ Error fetching data</div>;
   if (!data) return <div>⏳ Loading...</div>;
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">{data.name}</h1>
-
-      <Dialog open={openMenu} onOpenChange={setOpenMenu}>
-        <DialogTrigger asChild>
-          <Button>➕ Add Menu</Button>
-        </DialogTrigger>
-        <DialogContent>
-          <MenuForm restaurantId={id as string} onSuccess={() => { setOpenMenu(false); mutate(); }} />
-        </DialogContent>
-      </Dialog>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">{data.name}</h1>
+          <p className="text-gray-700">
+            {`${data.houseNumber} ${data.street}, ${data.city}, ${data.postcode}`}
+          </p>
+          <p className="text-yellow-600 mb-2">⭐ {data.rating ?? "-"}</p>
+          <p className="text-sm text-gray-500">
+            Delivery zones: {data.deliveryPostcodes?.join(", ")}
+          </p>
+        </div>
+        <Dialog open={openMenu} onOpenChange={setOpenMenu}>
+          <DialogTrigger asChild>
+            <Button>➕ Add Menu</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <MenuForm
+              restaurantId={id as string}
+              onSuccess={() => {
+                setOpenMenu(false);
+                mutate();
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {data.menus.map((menu: any) => (
         <div key={menu.id} className="my-6 p-4 border rounded shadow">
@@ -42,13 +58,15 @@ export default function RestaurantDetail() {
                 mutate();
               }}
             >
-              Sil
+              Delete Menu
             </Button>
           </div>
-
           <ul className="space-y-2">
             {menu.foods.map((food: any) => (
-              <li key={food.id} className="flex justify-between p-2 bg-gray-50 rounded">
+              <li
+                key={food.id}
+                className="flex justify-between p-2 bg-gray-50 rounded"
+              >
                 <span>{food.name}</span>
                 <div className="flex space-x-2">
                   <input
@@ -59,7 +77,9 @@ export default function RestaurantDetail() {
                       await fetch(`${API_URL}/foods/${food.id}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ price: parseFloat(e.target.value) }),
+                        body: JSON.stringify({
+                          price: parseFloat(e.target.value),
+                        }),
                       });
                       mutate();
                     }}
@@ -67,18 +87,18 @@ export default function RestaurantDetail() {
                   <Button
                     variant="destructive"
                     onClick={async () => {
-                      await fetch(`${API_URL}/foods/${food.id}`, { method: "DELETE" });
+                      await fetch(`${API_URL}/foods/${food.id}`, {
+                        method: "DELETE",
+                      });
                       mutate();
                     }}
                   >
-                    Sil
+                    Delete
                   </Button>
                 </div>
               </li>
             ))}
           </ul>
-
-          {/* Food Ekleme */}
           <FoodForm menuId={menu.id} onSuccess={mutate} />
         </div>
       ))}

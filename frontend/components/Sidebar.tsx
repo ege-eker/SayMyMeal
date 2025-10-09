@@ -7,7 +7,8 @@ export default function Sidebar() {
 
   const links = [
     { href: "/restaurants", label: "Restaurants" },
-    { href: "/", label: "Main Page" }
+      { href: "/admin/orders", label: "Orders" },
+    { href: "/", label: "Main Page" },
   ];
 
   return (

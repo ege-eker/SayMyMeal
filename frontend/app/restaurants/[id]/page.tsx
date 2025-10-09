@@ -30,7 +30,7 @@ export default function RestaurantDetailPage() {
       {/* Restoran Bilgisi */}
       <div className="mb-6">
         <img
-          src="https://images.deliveryhero.io/image/fd-tr/LH/kjnj-hero.jpg?width=512&height=384&quality=45"
+          src="https://assets.tmecosys.com/image/upload/t_web_rdp_recipe_584x480_1_5x/img/recipe/ras/Assets/48a49653c8716457eb0b2f7eb3c7d74c/Derivates/8d83d9ed4567fa15456d8eec7557e60006a15576.jpg"
           alt={restaurant.name}
           className="w-full h-60 object-cover rounded-lg"
         />

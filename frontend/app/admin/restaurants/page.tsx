@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import RestaurantForm from "@/components/RestaurantForm";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function RestaurantsPage() {
   const { data: restaurants, error, mutate } = useSWR(`${API_URL}/restaurants`, fetcher);
@@ -39,17 +39,23 @@ export default function RestaurantsPage() {
         <thead>
           <tr className="bg-gray-200 text-left">
             <th className="p-3">Name</th>
-            <th className="p-3">Adress</th>
+            <th className="p-3">Address</th>
             <th className="p-3">Rating</th>
-            <th className="p-3">İşlemler</th>
+            <th className="p-3">Delivery Zones</th>
+            <th className="p-3">Actions</th>
           </tr>
         </thead>
         <tbody>
           {restaurants.map((r: any) => (
             <tr key={r.id} className="border-t hover:bg-gray-50">
               <td className="p-3">{r.name}</td>
-              <td className="p-3">{r.address}</td>
-              <td className="p-3">⭐ {r.rating ?? "-"}</td>
+              <td className="p-3">
+                {`${r.houseNumber} ${r.street}, ${r.city}, ${r.postcode}`}
+              </td>
+              <td className="p-3 text-yellow-600">⭐ {r.rating ?? "-"}</td>
+              <td className="p-3 text-sm text-gray-600">
+                {r.deliveryPostcodes?.join(", ")}
+              </td>
               <td className="p-3 flex space-x-2">
                 <Link href={`/admin/restaurants/${r.id}`}>
                   <Button variant="outline">Menus</Button>
