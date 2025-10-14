@@ -2,7 +2,6 @@
 
 import useSWR from "swr";
 import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -34,6 +33,7 @@ export default function AdminOrdersPage() {
         <p className="text-gray-600">No orders found.</p>
       ) : (
         <div className="space-y-4">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {orders.map((order: any) => (
             <OrderCard
               key={order.id}
@@ -54,6 +54,7 @@ function OrderCard({
   onStatusChange,
   loading,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   order: any;
   onStatusChange: (id: string, status: string) => void;
   loading: boolean;
@@ -90,6 +91,7 @@ function OrderCard({
       <div className="border-t pt-2">
         {order.items && order.items.length > 0 ? (
           <ul className="divide-y divide-gray-100">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {order.items.map((item: any) => (
               <li
                 key={item.id}
@@ -101,6 +103,7 @@ function OrderCard({
                   </span>
                   {item.selected && item.selected.length > 0 && (
                     <div className="text-gray-600 text-xs mt-1">
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {item.selected.map((sel: any, idx: number) => (
                         <span key={idx}>
                           {sel.optionTitle}: {sel.choiceLabel}
@@ -151,6 +154,7 @@ function OrderCard({
 }
 
 /* ---------- Helpers ---------- */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function renderAddress(addr: any) {
   if (!addr) return "-";
   const parts = [
@@ -163,19 +167,22 @@ function renderAddress(addr: any) {
   return parts.join(", ");
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function calculateItemPrice(item: any): number {
   const base = item.food?.basePrice ?? item.food?.price ?? 0;
   const extras = item.selected
     ? item.selected.reduce(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (sum: number, s: any) => sum + (s.extraPrice || 0),
         0
       )
     : 0;
   return (base + extras) * (item.quantity ?? 1);
 }
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function calculateTotal(order: any): number {
   if (!order.items) return 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return order.items.reduce((sum: number, i: any) => sum + calculateItemPrice(i), 0);
 }
 

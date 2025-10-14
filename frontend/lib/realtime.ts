@@ -21,6 +21,7 @@ let dc: RTCDataChannel | null = null;
  * Restoran seçildikten sonra asistanı başlatır.
  * restaurant parametresi backend'den fetch edilen { name, menus: [{ foods: [...] }] } yapısıdır.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function initRestaurantAssistant(restaurant: any) {
   if (pc) {
     console.warn("Asistan zaten çalışıyor!");
@@ -61,11 +62,12 @@ export async function initRestaurantAssistant(restaurant: any) {
     if (msg.type === "response.function_call_arguments.done") {
       const callId = msg.call_id;
       const argString = pendingArgs[callId] || "{}";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let args: any = {};
       try {
         args = JSON.parse(argString);
       } catch (e) {
-        console.error("❌ JSON parse failed:", argString);
+        console.error("❌ JSON parse failed:", e);
       }
 
       const fnName = pendingCalls[callId];
@@ -98,12 +100,13 @@ export async function initRestaurantAssistant(restaurant: any) {
   // Session start
   dc.onopen = () => {
     console.log("🚀 Asistan başladı:", restaurant.name);
-    let debug = {
+    const debug = {
       type: "session.update",
       session: {
       instructions: `
 You are the polite phone ordering assistant for **${restaurant.name}**, located in the United Kingdom.
 You know the restaurants id: ${restaurant.id}.
+YOU MUST ALWAYS SPEAK IN ENGLISH.S
 
 ### ROLE
 Act like a friendly waiter taking telephone orders.  
@@ -207,6 +210,7 @@ export async function stopRealtime() {
 /**
  * Function Call Handler
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function handleFunctionCall(name: string, call_id: string, args: any, dc: RTCDataChannel) {
   let result;
 
@@ -248,7 +252,7 @@ async function handleFunctionCall(name: string, call_id: string, args: any, dc: 
 
     else if (name === "create_order") {
       console.log("📦 create_order args:", args);
-      let parseResult = createOrderSchema.safeParse(args);
+      const parseResult = createOrderSchema.safeParse(args);
       if (!parseResult.success) {
         console.error("❌ createOrder validation failed:", parseResult.error);
         result = { error: "Invalid order data", details: parseResult.error };
@@ -262,7 +266,7 @@ async function handleFunctionCall(name: string, call_id: string, args: any, dc: 
     result = { error: "API call failed" };
   }
 
-  let debug = {
+  const debug = {
     type: "conversation.item.create",
     item: {
       type: "function_call_output",

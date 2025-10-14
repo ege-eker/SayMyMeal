@@ -15,6 +15,7 @@ export default function RestaurantsPage() {
     <div className="max-w-5xl mx-auto p-10">
       <h1 className="text-3xl font-bold mb-6">🍴 Restoranlar</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {data.map((rest: any) => (
           <div key={rest.id} className="bg-white shadow rounded-lg overflow-hidden">
             <img

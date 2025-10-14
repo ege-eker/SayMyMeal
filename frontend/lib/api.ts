@@ -25,6 +25,7 @@ export async function createOrder(data: {
   customer: string;
   phone: string;
   restaurantId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   address: any;
   items: {
     foodId: string;

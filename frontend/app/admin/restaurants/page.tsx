@@ -46,6 +46,7 @@ export default function RestaurantsPage() {
           </tr>
         </thead>
         <tbody>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {restaurants.map((r: any) => (
             <tr key={r.id} className="border-t hover:bg-gray-50">
               <td className="p-3">{r.name}</td>

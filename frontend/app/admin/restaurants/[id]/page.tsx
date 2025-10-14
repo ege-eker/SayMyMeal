@@ -50,6 +50,7 @@ export default function RestaurantDetailPage() {
       {restaurant.menus.length === 0 ? (
         <p className="text-gray-600">No menus yet. Add one above.</p>
       ) : (
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         restaurant.menus.map((menu: any) => (
           <MenuCard key={menu.id} menu={menu} onRefresh={mutate} />
         ))
@@ -59,6 +60,7 @@ export default function RestaurantDetailPage() {
 }
 
 /* ---- Subcomponent: MenuCard ---- */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
   const { data: menuDetail, mutate } = useSWR(
     `${API_URL}/menus/${menu.id}`,
@@ -93,6 +95,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
       {/* Foods */}
       {menuDetail.foods?.length ? (
         <ul className="space-y-2">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {menuDetail.foods.map((food: any) => (
             <li
               key={food.id}

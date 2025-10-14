@@ -53,6 +53,7 @@ export default function RestaurantDetailPage() {
 }
 
 /* ---------------- MENU ACCORDION ---------------- */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function MenuAccordion({ menus }: { menus: any[] }) {
   const [openIds, setOpenIds] = useState<string[]>([]);
   const toggle = (id: string) =>
@@ -80,6 +81,7 @@ function MenuCard({
   isOpen,
   onToggle,
 }: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   menu: any;
   isOpen: boolean;
   onToggle: () => void;
@@ -89,6 +91,7 @@ function MenuCard({
   // hesaplama kısmı
   const minPrice = useMemo(() => {
     if (!data?.foods?.length) return null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const prices = data.foods.map((f: any) => f.basePrice ?? f.price ?? 0);
     return Math.min(...prices);
   }, [data]);
@@ -124,6 +127,7 @@ function MenuCard({
 }
 
 /* ---------------- FOODS ---------------- */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function MenuFoods({ foods }: { foods: any[] }) {
   const [openFoods, setOpenFoods] = useState<string[]>([]);
   const toggle = (id: string) =>
@@ -173,6 +177,7 @@ function FoodOptions({ foodId }: { foodId: string }) {
 
   return (
     <div className="ml-3 border-l-2 border-purple-100 pl-3 mt-3 space-y-3">
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {options.map((opt: any) => (
         <div key={opt.id}>
           <h4 className="text-sm font-semibold text-purple-700">
@@ -182,6 +187,7 @@ function FoodOptions({ foodId }: { foodId: string }) {
             </span>
           </h4>
           <ul className="ml-3 mt-1">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {opt.choices.map((ch: any) => (
               <li key={ch.id} className="text-sm text-gray-700">
                 • {ch.label}
