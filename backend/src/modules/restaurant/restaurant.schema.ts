@@ -91,67 +91,39 @@ export const getRestaurantsSchema = {
 
 export const getRestaurantByIdSchema = {
   tags: ["restaurants"],
-  description: "get restaurant by id (including menus and foods)",
+  description: "Get restaurant by ID with its menus.",
   params: {
     type: "object",
-    required: ["id"],
     properties: { id: { type: "string" } },
+    required: ["id"]
   },
   response: {
     200: {
       type: "object",
       properties: {
-        id: { type: "string" },
-        name: { type: "string" },
-        houseNumber: { type: "string" },
-        street: { type: "string" },
-        city: { type: "string" },
-        postcode: { type: "string" },
-        deliveryZones: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              postcode: { type: "string" },
-              etaMinutes: { type: "integer" },
-            },
-          },
-        },
-        rating: { type: "number", nullable: true },
-        createdAt: { type: "string", format: "date-time" },
-        updatedAt: { type: "string", format: "date-time" },
-        menus: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              id: { type: "string" },
-              name: { type: "string" },
-              restaurantId: { type: "string" },
-              createdAt: { type: "string", format: "date-time" },
-              updatedAt: { type: "string", format: "date-time" },
-              foods: {
-                type: "array",
-                items: {
+          id: {type: "string"},
+          name: {type: "string"},
+          houseNumber: {type: "string"},
+          street: {type: "string"},
+          city: {type: "string"},
+          postcode: {type: "string"},
+          rating: {type: "number", nullable: true},
+          deliveryZones: {type: "array", items: {type: "object"}},
+          menus: {
+              type: "array",
+              items: {
                   type: "object",
                   properties: {
-                    id: { type: "string" },
-                    name: { type: "string" },
-                    price: { type: "number" },
-                    menuId: { type: "string" },
-                    createdAt: { type: "string", format: "date-time" },
-                    updatedAt: { type: "string", format: "date-time" },
+                      id: {type: "string"},
+                      name: {type: "string"},
                   },
-                },
               },
-            },
           },
-        },
       },
     },
     404: {
-      type: "object",
-      properties: { message: { type: "string" } },
+        type: "object",
+        properties: { error: { type: "string" } },
     },
   },
 };

@@ -3,7 +3,7 @@ export interface UKAddress {
   street: string;
   city: string;
   postcode: string;
-  country?: string; // optional, default "UK"
+  country?: string;
 }
 
 export interface Order {
@@ -28,6 +28,13 @@ export type OrderStatus = | "pending" | "preparing" | "delivering" | "completed"
 export interface CreateOrderItemInput {
   foodId: string;
   quantity: number;
+  selectedOptions?: {
+    optionId: string;
+    optionTitle?: string;
+    choiceId: string;
+    choiceLabel?: string;
+    extraPrice?: number;
+  }[];
 }
 
 export interface CreateOrderInput {

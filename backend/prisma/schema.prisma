@@ -8,17 +8,14 @@ generator client {
 }
 
 model Restaurant {
-  id   String @id @default(uuid())
-  name String
-
-  // 🇬🇧 UK Address fields
+  id            String   @id @default(uuid())
+  name          String
   houseNumber   String
   street        String
   city          String
   postcode      String
   rating        Float?
-  // eg. ["SW1A1AA", "15"] postcode and estimated delivery mins
-  deliveryZones Json
+  deliveryZones Json?
   menus         Menu[]
   orders        Order[]
   createdAt     DateTime @default(now())
@@ -28,7 +25,8 @@ model Restaurant {
 model Menu {
   id           String     @id @default(uuid())
   name         String
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  description  String?
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId String
   foods        Food[]
   createdAt    DateTime   @default(now())
@@ -36,14 +34,33 @@ model Menu {
 }
 
 model Food {
-  id         String      @id @default(uuid())
-  name       String
-  price      Float
-  menu       Menu        @relation(fields: [menuId], references: [id])
-  menuId     String
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  orderItems OrderItem[]
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  basePrice   Float
+  menu        Menu         @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  menuId      String
+  options     FoodOption[]
+  orderItems  OrderItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model FoodOption {
+  id       String         @id @default(uuid())
+  title    String
+  multiple Boolean        @default(false)
+  food     Food           @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  foodId   String
+  choices  OptionChoice[]
+}
+
+model OptionChoice {
+  id         String     @id @default(uuid())
+  label      String
+  extraPrice Float      @default(0)
+  option     FoodOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  optionId   String
 }
 
 model Order {
@@ -54,7 +71,7 @@ model Order {
   status       String      @default("pending")
   etaMinutes   Int?
   items        OrderItem[]
-  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id])
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId String
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -62,9 +79,10 @@ model Order {
 
 model OrderItem {
   id       String @id @default(uuid())
-  order    Order  @relation(fields: [orderId], references: [id])
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId  String
-  food     Food   @relation(fields: [foodId], references: [id])
+  food     Food   @relation(fields: [foodId], references: [id], onDelete: Cascade)
   foodId   String
   quantity Int
+  selected Json?
 }

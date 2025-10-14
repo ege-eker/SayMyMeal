@@ -10,9 +10,7 @@ const buildApp = () => {
     app.register(db);
     app.register(cors);
     app.register(swagger);
-
     app.register(registerRoutes);
-
     return app;
 };
 

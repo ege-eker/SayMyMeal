@@ -16,6 +16,7 @@ export const menuController = (app: any) => {
 
     getAll: async (_req: FastifyRequest, reply: FastifyReply) => {
       const menus = await service.findAll();
+      console.info(menus);
       return reply.send(menus);
     },
 
@@ -27,7 +28,6 @@ export const menuController = (app: any) => {
       if (!menu) return reply.code(404).send({ error: "Not found" });
       return reply.send(menu);
     },
-
     update: async (
       req: FastifyRequest<{ Params: { id: string }; Body: UpdateMenuInput }>,
       reply: FastifyReply
@@ -48,6 +48,7 @@ export const menuController = (app: any) => {
         await service.remove(req.params.id);
         return reply.code(204).send();
       } catch (e) {
+        console.log(e);
         return reply.code(404).send({ error: "Not found" });
       }
     }

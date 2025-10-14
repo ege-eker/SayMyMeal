@@ -1,28 +1,26 @@
 export const createOrderSchema = {
   tags: ["orders"],
-  description: "Create a new order (with phone number and UK address)",
+  description: "Create a new order (with phone number & selected food options)",
   body: {
     type: "object",
     required: ["customer", "phone", "restaurantId", "address", "items"],
     properties: {
       customer: { type: "string", minLength: 1 },
-      phone: {
-        type: "string",
-        pattern: "^[0-9+()\\s-]{5,20}$",
-        description: "Customer phone number",
-      },
+      phone: { type: "string", minLength: 5, description: "Customer phone number" },
       restaurantId: { type: "string" },
+      /* UK address structure */
       address: {
         type: "object",
         required: ["houseNumber", "street", "city", "postcode"],
         properties: {
-          houseNumber: { type: "string", minLength: 1 },
-          street: { type: "string", minLength: 2 },
-          city: { type: "string", minLength: 2 },
-          postcode: { type: "string", minLength: 4 },
-          country: { type: "string", minLength: 2 },
+          houseNumber: { type: "string" },
+          street: { type: "string" },
+          city: { type: "string" },
+          postcode: { type: "string" },
+          country: { type: "string", default: "UK" },
         },
       },
+      /* Order items */
       items: {
         type: "array",
         minItems: 1,
@@ -30,13 +28,31 @@ export const createOrderSchema = {
           type: "object",
           required: ["foodId", "quantity"],
           properties: {
-            foodId: { type: "string", minLength: 1 },
+            foodId: { type: "string" },
             quantity: { type: "integer", minimum: 1 },
+            /* Customer-selected options (array of JSON objects) */
+            selectedOptions: {
+              type: "array",
+              nullable: true,
+              description: "List of option-choice selections for this food.",
+              items: {
+                type: "object",
+                required: ["optionId", "choiceId"],
+                properties: {
+                  optionId: { type: "string" },
+                  optionTitle: { type: "string" },
+                  choiceId: { type: "string" },
+                  choiceLabel: { type: "string" },
+                  extraPrice: { type: "number", default: 0 },
+                },
+              },
+            },
           },
         },
       },
     },
   },
+  /* Response */
   response: {
     201: {
       description: "Order created successfully",
@@ -45,21 +61,9 @@ export const createOrderSchema = {
         id: { type: "string" },
         customer: { type: "string" },
         phone: { type: "string" },
-        address: {
-          type: "object",
-          properties: {
-            houseNumber: { type: "string" },
-            street: { type: "string" },
-            city: { type: "string" },
-            postcode: { type: "string" },
-            country: { type: "string" },
-          },
-        },
-        status: {
-          type: "string",
-          enum: ["pending", "preparing", "delivering", "completed", "canceled"],
-        },
+        status: { type: "string" },
         etaMinutes: { type: "integer", nullable: true },
+        address: { type: "object" },
         items: {
           type: "array",
           items: {
@@ -68,12 +72,18 @@ export const createOrderSchema = {
               id: { type: "string" },
               foodId: { type: "string" },
               quantity: { type: "integer" },
+              /* selectedOptions gets stored as JSON in DB */
+              selected: { type: ["array", "null", "object"] },
             },
           },
         },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" },
       },
+    },
+    400: {
+      type: "object",
+      properties: { error: { type: "string" } },
     },
   },
 };
@@ -84,7 +94,7 @@ export const getOrdersSchema = {
   querystring: {
     type: "object",
     properties: {
-      phone: { type: "string", description: "Filter by customer phone" },
+      phone: { type: "string", description: "Filter orders by customer phone" },
     },
   },
   response: {
@@ -100,8 +110,7 @@ export const getOrdersSchema = {
           etaMinutes: { type: "integer", nullable: true },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
-
-          // 👇 yeni alanlar
+          /* ---- NEW: address ---- */
           address: {
             type: "object",
             nullable: true,
@@ -113,25 +122,50 @@ export const getOrdersSchema = {
               country: { type: "string" },
             },
           },
+          /* ---- NEW: restaurant info ---- */
           restaurant: {
             type: "object",
             nullable: true,
             properties: {
               id: { type: "string" },
               name: { type: "string" },
-              city: { type: "string" },
-              postcode: { type: "string" },
             },
           },
+          /* ---- NEW: items array ---- */
           items: {
             type: "array",
             nullable: true,
+            description: "List of order items (foods with selected options)",
             items: {
               type: "object",
               properties: {
                 id: { type: "string" },
-                foodId: { type: "string" },
                 quantity: { type: "integer" },
+                /* food info */
+                food: {
+                  type: "object",
+                  nullable: true,
+                  properties: {
+                    id: { type: "string" },
+                    name: { type: "string" },
+                    basePrice: { type: "number", nullable: true },
+                  },
+                },
+                /* selected options & choices (stored as JSON) */
+                selected: {
+                  type: "array",
+                  nullable: true,
+                  items: {
+                    type: "object",
+                    properties: {
+                      optionId: { type: "string" },
+                      optionTitle: { type: "string" },
+                      choiceId: { type: "string" },
+                      choiceLabel: { type: "string" },
+                      extraPrice: { type: "number" },
+                    },
+                  },
+                },
               },
             },
           },
@@ -143,7 +177,7 @@ export const getOrdersSchema = {
 
 export const getOrderByIdSchema = {
   tags: ["orders"],
-  description: "Get an order by order ID",
+  description: "Get a single order by its ID (includes selected option data)",
   params: {
     type: "object",
     required: ["id"],
@@ -156,21 +190,9 @@ export const getOrderByIdSchema = {
         id: { type: "string" },
         customer: { type: "string" },
         phone: { type: "string" },
-        address: {
-          type: "object",
-          properties: {
-            houseNumber: { type: "string" },
-            street: { type: "string" },
-            city: { type: "string" },
-            postcode: { type: "string" },
-            country: { type: "string" },
-          },
-        },
-        status: {
-          type: "string",
-          enum: ["pending", "preparing", "delivering", "completed", "canceled"],
-        },
-        etaMinutes: { type: "integer", nullable: true },
+        address: { type: "object" },
+        status: { type: "string" },
+        etaMinutes: { type: "integer" },
         items: {
           type: "array",
           items: {
@@ -179,6 +201,7 @@ export const getOrderByIdSchema = {
               id: { type: "string" },
               foodId: { type: "string" },
               quantity: { type: "integer" },
+              selected: { type: ["array", "null", "object"] },
             },
           },
         },
@@ -195,7 +218,7 @@ export const getOrderByIdSchema = {
 
 export const updateOrderStatusSchema = {
   tags: ["orders"],
-  description: "Update the status of an order",
+  description: "Update the status of an existing order (e.g. pending → delivering)",
   params: {
     type: "object",
     required: ["id"],
@@ -217,11 +240,8 @@ export const updateOrderStatusSchema = {
       properties: {
         id: { type: "string" },
         customer: { type: "string" },
-        phone: { type: "string" },
         status: { type: "string" },
-        etaMinutes: { type: "integer", nullable: true },
-        createdAt: { type: "string", format: "date-time" },
-        updatedAt: { type: "string", format: "date-time" },
+        items: { type: "array" },
       },
     },
   },
@@ -229,17 +249,13 @@ export const updateOrderStatusSchema = {
 
 export const getOrderStatusSchema = {
   tags: ["orders"],
-  description: "Get current order(s) by phone number or customer name",
+  description: "Check order status by phone number or customer name",
   querystring: {
     type: "object",
     properties: {
       phone: { type: "string" },
-      name: { type: "string" }
+      name: { type: "string" },
     },
-    anyOf: [
-      { required: ["phone"] },
-      { required: ["name"] }
-    ]
   },
   response: {
     200: {
@@ -251,23 +267,18 @@ export const getOrderStatusSchema = {
           customer: { type: "string" },
           phone: { type: "string" },
           status: { type: "string" },
-          etaMinutes: { type: "integer", nullable: true },
+          etaMinutes: { type: "integer" },
           createdAt: { type: "string", format: "date-time" },
-          updatedAt: { type: "string", format: "date-time" }
-        }
-      }
-    },
-    404: {
-      type: "object",
-      properties: {
-        message: { type: "string" }
-      }
+        },
+      },
     },
     400: {
       type: "object",
-      properties: {
-        error: { type: "string" }
-      }
-    }
-  }
+      properties: { error: { type: "string" } },
+    },
+    404: {
+      type: "object",
+      properties: { message: { type: "string" } },
+    },
+  },
 };

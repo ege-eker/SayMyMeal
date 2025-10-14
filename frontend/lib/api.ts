@@ -11,16 +11,37 @@ export async function getMenuForRestaurant(restaurantId: string) {
   return res.json();
 }
 
+export async function getFoodsForMenu(menuId: string) {
+    const res = await fetch(`${API_URL}/menus/${menuId}`);
+    return res.json();
+}
+
+export async function getOptionsForFood(foodId: string) {
+    const res = await fetch(`${API_URL}/foods/${foodId}/options`);
+    return res.json();
+}
+
 export async function createOrder(data: {
   customer: string;
-  address: string;
+  phone: string;
   restaurantId: string;
-  items: { foodId: string; quantity: number }[];
+  address: any;
+  items: {
+    foodId: string;
+    quantity: number;
+    selectedOptions?: {
+      optionId: string;
+      optionTitle?: string;
+      choiceId: string;
+      choiceLabel?: string;
+      extraPrice?: number;
+    }[];
+  }[];
 }) {
   const res = await fetch(`${API_URL}/orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   return res.json();
 }

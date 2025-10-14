@@ -13,7 +13,7 @@ export const menuService = (app: FastifyInstance) => ({
 
   async findAll() {
     return app.prisma.menu.findMany({
-      include: { foods: true } // menüye ait yiyecekler de listelenebilir
+      include: { foods: true }
     });
   },
 

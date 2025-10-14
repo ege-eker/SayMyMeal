@@ -1,7 +1,7 @@
 export interface Food {
   id: string;
   name: string;
-  price: number;
+  basePrice: number;
   menuId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -9,11 +9,11 @@ export interface Food {
 
 export interface CreateFoodInput {
   name: string;
-  price: number;
+  basePrice: number;
   menuId: string;
 }
 
 export interface UpdateFoodInput {
   name?: string;
-  price?: number;
+  basePrice?: number;
 }

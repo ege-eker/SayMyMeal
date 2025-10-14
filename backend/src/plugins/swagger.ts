@@ -1,5 +1,4 @@
 import fp from "fastify-plugin";
-// @ts-ignore
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 

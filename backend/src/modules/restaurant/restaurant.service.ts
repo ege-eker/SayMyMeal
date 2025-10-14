@@ -38,14 +38,15 @@ export const restaurantService = (app: FastifyInstance) => ({
     return app.prisma.restaurant.findMany({ include: { menus: true } });
   },
 
-  async findById(id: string) {
-    return app.prisma.restaurant.findUnique({
-      where: { id },
-      include: {
-        menus: { include: { foods: true } },
+async findById(id: string) {
+  return app.prisma.restaurant.findUnique({
+    where: { id },
+    include: {
+      menus: {
       },
-    });
-  },
+    }
+  });
+},
 
   async remove(id: string) {
     return app.prisma.restaurant.delete({ where: { id } });

@@ -36,6 +36,17 @@ export const getMenusSchema = {
           id: { type: "string" },
           name: { type: "string" },
           restaurantId: { type: "string" },
+          foods: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string" },
+                name: { type: "string" },
+                basePrice: { type: "number" }
+              }
+            }
+          },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" }
         }
@@ -43,6 +54,7 @@ export const getMenusSchema = {
     }
   }
 };
+
 
 export const getMenuByIdSchema = {
   tags: ["menus"],
@@ -61,9 +73,18 @@ export const getMenuByIdSchema = {
         id: { type: "string" },
         name: { type: "string" },
         restaurantId: { type: "string" },
-        createdAt: { type: "string", format: "date-time" },
-        updatedAt: { type: "string", format: "date-time" }
-      }
+        foods: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    id: { type: "string" },
+                    name: { type: "string" },
+                    basePrice: { type: "number" },
+                }
+            }
+        },
+      },
     },
     404: {
       type: "object",

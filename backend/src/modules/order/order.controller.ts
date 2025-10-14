@@ -9,15 +9,12 @@ export const orderController = (app: any) => {
     create: async (req: FastifyRequest<{ Body: CreateOrderInput }>, reply: FastifyReply) => {
       try {
         const order = await service.create(req.body);
-        return reply.code(201).send(order);
+        reply.code(201).send(order);
       } catch (err: any) {
-        if (err.code === "DELIVERY_ZONE_ERROR")
-          return reply.code(400).send({ error: err.message });
-        if (err.message.includes("Restaurant not found"))
-          return reply.code(404).send({ error: err.message });
-        console.error("❌ Order create error:", err);
-        return reply.code(500).send({ error: "Internal Server Error" });
-      }
+          const status = err.statusCode || 500;
+          console.error("Order create error", err);
+          reply.code(status).send({ error: err.message });
+        }
     },
 
     getAll: async (_req: FastifyRequest, reply: FastifyReply) => {

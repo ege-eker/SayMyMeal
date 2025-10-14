@@ -1,19 +1,20 @@
 "use client";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { initRestaurantAssistant, stopRealtime } from "@/lib/realtime";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function RestaurantDetailPage() {
   const { id } = useParams();
   const { data: restaurant, error } = useSWR(`${API_URL}/restaurants/${id}`, fetcher);
   const [connected, setConnected] = useState(false);
 
-  if (error) return <div>❌ Error {error.message}</div>;
-  if (!restaurant) return <div>⏳ Loading...</div>;
+  if (error) return <div className="text-red-600">❌ Error loading: {String(error)}</div>;
+  if (!restaurant) return <div>⏳ Loading restaurant...</div>;
 
   const toggleAssistant = async () => {
     if (connected) {
@@ -26,38 +27,169 @@ export default function RestaurantDetailPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-10">
-      {/* Restoran Bilgisi */}
+    <div className="max-w-4xl mx-auto p-8">
+      {/* Header */}
       <div className="mb-6">
-        <img
-          src="https://assets.tmecosys.com/image/upload/t_web_rdp_recipe_584x480_1_5x/img/recipe/ras/Assets/48a49653c8716457eb0b2f7eb3c7d74c/Derivates/8d83d9ed4567fa15456d8eec7557e60006a15576.jpg"
-          alt={restaurant.name}
-          className="w-full h-60 object-cover rounded-lg"
-        />
+        <img src="https://www.barbecook.com/cdn/shop/articles/barbecook_030321_23625.jpg?v=1678958368&width=1680" alt={restaurant.name} className="w-full h-56 object-cover rounded-lg" />
         <h1 className="text-3xl font-bold mt-4">{restaurant.name}</h1>
-        <p className="text-gray-600">{restaurant.address}</p>
-        <p className="text-yellow-500">⭐ {restaurant.rating}</p>
+        <p className="text-gray-600">{restaurant.city}</p>
+        <p className="text-yellow-500">⭐ {restaurant.rating ?? "-"}</p>
 
-        {/* ✅ Asistan Başlat Butonu */}
         <button
           onClick={toggleAssistant}
-          className={`mt-4 px-6 py-2 rounded font-semibold shadow-lg transition
-            ${connected ? "bg-red-500 text-white hover:bg-red-600" : "bg-green-600 text-white hover:bg-green-700"}
-          `}
+          className={`mt-4 px-6 py-2 rounded font-semibold transition ${
+            connected
+              ? "bg-red-500 hover:bg-red-600 text-white"
+              : "bg-green-600 hover:bg-green-700 text-white"
+          }`}
         >
           {connected ? "⏹ Stop Assistant" : "🎤 Start Assistant"}
         </button>
       </div>
 
-      {/* Menü */}
-      {restaurant.menus.map((menu: any) => (
-        <div key={menu.id} className="mb-8">
-          <h2 className="text-2xl font-semibold">{menu.name}</h2>
-          <ul className="space-y-2 mt-2">
-            {menu.foods.map((food: any) => (
-              <li key={food.id} className="flex justify-between bg-gray-100 p-3 rounded">
-                <span>{food.name}</span>
-                <span className="font-bold">₺ {food.price}</span>
+      <MenuAccordion menus={restaurant.menus ?? []} />
+    </div>
+  );
+}
+
+/* ---------------- MENU ACCORDION ---------------- */
+function MenuAccordion({ menus }: { menus: any[] }) {
+  const [openIds, setOpenIds] = useState<string[]>([]);
+  const toggle = (id: string) =>
+    setOpenIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  if (!menus?.length) return <p className="text-gray-500 italic">No menus available.</p>;
+
+  return (
+    <div className="space-y-4">
+      {menus.map((menu) => (
+        <MenuCard
+          key={menu.id}
+          menu={menu}
+          isOpen={openIds.includes(menu.id)}
+          onToggle={() => toggle(menu.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- SINGLE MENU ---------------- */
+function MenuCard({
+  menu,
+  isOpen,
+  onToggle,
+}: {
+  menu: any;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const { data, error } = useSWR(`${API_URL}/menus/${menu.id}`, fetcher);
+
+  // hesaplama kısmı
+  const minPrice = useMemo(() => {
+    if (!data?.foods?.length) return null;
+    const prices = data.foods.map((f: any) => f.basePrice ?? f.price ?? 0);
+    return Math.min(...prices);
+  }, [data]);
+
+  return (
+    <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div
+        onClick={onToggle}
+        className="cursor-pointer flex justify-between items-center px-4 py-3 hover:bg-gray-100 transition"
+      >
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">{menu.name}</h2>
+          {minPrice !== null && (
+            <span className="text-gray-600 text-sm">from £{minPrice.toFixed(2)}</span>
+          )}
+        </div>
+        {isOpen ? (
+          <ChevronDown className="w-5 h-5 text-gray-600" />
+        ) : (
+          <ChevronRight className="w-5 h-5 text-gray-600" />
+        )}
+      </div>
+
+      {isOpen && (
+        <div className="p-4 border-t bg-gray-50">
+          {error && <div className="text-red-500 text-sm">Error loading foods</div>}
+          {!data && <div className="text-gray-500 italic">Loading foods...</div>}
+          {data && <MenuFoods foods={data.foods ?? []} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- FOODS ---------------- */
+function MenuFoods({ foods }: { foods: any[] }) {
+  const [openFoods, setOpenFoods] = useState<string[]>([]);
+  const toggle = (id: string) =>
+    setOpenFoods((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  if (!foods?.length)
+    return <p className="text-gray-500 italic">No foods in this menu.</p>;
+
+  return (
+    <div className="space-y-3">
+      {foods.map((food) => (
+        <div key={food.id} className="border rounded bg-white p-3 shadow-sm hover:shadow-md">
+          <div className="flex justify-between items-center cursor-pointer" onClick={() => toggle(food.id)}>
+            <div>
+              <h3 className="font-medium">
+                {food.name}{" "}
+                <span className="text-gray-500">
+                  £{(food.basePrice ?? food.price ?? 0).toFixed(2)}
+                </span>
+              </h3>
+              {food.description && (
+                <p className="text-xs text-gray-500">{food.description}</p>
+              )}
+            </div>
+            {openFoods.includes(food.id) ? (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            )}
+          </div>
+          {openFoods.includes(food.id) && <FoodOptions foodId={food.id} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- FOOD OPTIONS ---------------- */
+function FoodOptions({ foodId }: { foodId: string }) {
+  const { data, error } = useSWR(`${API_URL}/foods/${foodId}/options`, fetcher);
+  if (error) return <div className="text-red-500">Error loading options</div>;
+  if (!data) return <div className="text-gray-400 italic">Loading options...</div>;
+
+  const options = data ?? [];
+  if (!options.length)
+    return <p className="text-gray-400 text-sm italic">No options for this food.</p>;
+
+  return (
+    <div className="ml-3 border-l-2 border-purple-100 pl-3 mt-3 space-y-3">
+      {options.map((opt: any) => (
+        <div key={opt.id}>
+          <h4 className="text-sm font-semibold text-purple-700">
+            {opt.title}{" "}
+            <span className="text-xs text-gray-400 ml-1">
+              ({opt.multiple ? "multiple" : "choose 1"})
+            </span>
+          </h4>
+          <ul className="ml-3 mt-1">
+            {opt.choices.map((ch: any) => (
+              <li key={ch.id} className="text-sm text-gray-700">
+                • {ch.label}
+                {ch.extraPrice > 0 && (
+                  <span className="text-gray-500 ml-1">
+                    (+£{ch.extraPrice.toFixed(2)})
+                  </span>
+                )}
               </li>
             ))}
           </ul>

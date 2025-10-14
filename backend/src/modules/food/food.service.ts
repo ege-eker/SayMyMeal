@@ -6,7 +6,7 @@ export const foodService = (app: FastifyInstance) => ({
     return app.prisma.food.create({
       data: {
         name: data.name,
-        price: data.price,
+        basePrice: data.basePrice,
         menuId: data.menuId
       }
     });
@@ -14,14 +14,17 @@ export const foodService = (app: FastifyInstance) => ({
 
   async findAll() {
     return app.prisma.food.findMany({
-      include: { menu: true } // food → menu ilişkisi de döner
+      include: { menu: true }
     });
   },
 
   async findById(id: string) {
     return app.prisma.food.findUnique({
       where: { id },
-      include: { menu: true }
+      include: {
+        menu: { select: { id: true, name: true } },
+        options: true,
+      }
     });
   },
 
@@ -30,7 +33,7 @@ export const foodService = (app: FastifyInstance) => ({
       where: { id },
       data: {
         name: data.name,
-        price: data.price
+        basePrice: data.basePrice
       }
     });
   },

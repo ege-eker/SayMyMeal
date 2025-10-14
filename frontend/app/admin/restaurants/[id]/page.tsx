@@ -1,4 +1,6 @@
+// frontend/app/admin/restaurants/[id]/page.tsx
 "use client";
+
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { useState } from "react";
@@ -6,102 +8,134 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import MenuForm from "@/components/MenuForm";
 import FoodForm from "@/components/FoodForm";
+import FoodOptionForm from "@/components/FoodOptionForm";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-export default function RestaurantDetail() {
+export default function RestaurantDetailPage() {
   const { id } = useParams();
-  const { data, error, mutate } = useSWR(`${API_URL}/restaurants/${id}`, fetcher);
-  const [openMenu, setOpenMenu] = useState(false);
+  const { data: restaurant, error, mutate } = useSWR(
+    `${API_URL}/restaurants/${id}`,
+    fetcher
+  );
+  const [openMenuDialog, setOpenMenuDialog] = useState(false);
 
-  if (error) return <div>❌ Error fetching data</div>;
-  if (!data) return <div>⏳ Loading...</div>;
+  if (error) return <div>❌ Error fetching restaurant details</div>;
+  if (!restaurant) return <div>⏳ Loading...</div>;
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">{data.name}</h1>
-          <p className="text-gray-700">
-            {`${data.houseNumber} ${data.street}, ${data.city}, ${data.postcode}`}
-          </p>
-          <p className="text-yellow-600 mb-2">⭐ {data.rating ?? "-"}</p>
-          <p className="text-sm text-gray-500">
-            Delivery zones: {data.deliveryPostcodes?.join(", ")}
-          </p>
-        </div>
-        <Dialog open={openMenu} onOpenChange={setOpenMenu}>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">{restaurant.name}</h1>
+
+        <Dialog open={openMenuDialog} onOpenChange={setOpenMenuDialog}>
           <DialogTrigger asChild>
             <Button>➕ Add Menu</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <MenuForm
               restaurantId={id as string}
               onSuccess={() => {
-                setOpenMenu(false);
-                mutate();
+                setOpenMenuDialog(false);
+                mutate(); // refresh restaurant data
               }}
             />
           </DialogContent>
         </Dialog>
       </div>
 
-      {data.menus.map((menu: any) => (
-        <div key={menu.id} className="my-6 p-4 border rounded shadow">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-2xl font-semibold">{menu.name}</h2>
-            <Button
-              variant="destructive"
-              onClick={async () => {
-                await fetch(`${API_URL}/menus/${menu.id}`, { method: "DELETE" });
-                mutate();
-              }}
+      {/* Menus */}
+      {restaurant.menus.length === 0 ? (
+        <p className="text-gray-600">No menus yet. Add one above.</p>
+      ) : (
+        restaurant.menus.map((menu: any) => (
+          <MenuCard key={menu.id} menu={menu} onRefresh={mutate} />
+        ))
+      )}
+    </div>
+  );
+}
+
+/* ---- Subcomponent: MenuCard ---- */
+function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
+  const { data: menuDetail, mutate } = useSWR(
+    `${API_URL}/menus/${menu.id}`,
+    fetcher
+  );
+
+  if (!menuDetail) {
+    return (
+      <div className="border rounded-lg bg-white p-4 shadow-sm my-4">
+        <h2 className="text-lg font-semibold">{menu.name}</h2>
+        <p className="text-gray-400">Loading foods...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border rounded-lg bg-white p-4 shadow-sm my-4">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-lg font-semibold">{menuDetail.name}</h2>
+
+        <Button
+          variant="destructive"
+          onClick={async () => {
+            await fetch(`${API_URL}/menus/${menu.id}`, { method: "DELETE" });
+            onRefresh();
+          }}
+        >
+          Delete
+        </Button>
+      </div>
+
+      {/* Foods */}
+      {menuDetail.foods?.length ? (
+        <ul className="space-y-2">
+          {menuDetail.foods.map((food: any) => (
+            <li
+              key={food.id}
+              className="border rounded p-3 bg-gray-50 flex flex-col gap-1"
             >
-              Delete Menu
-            </Button>
-          </div>
-          <ul className="space-y-2">
-            {menu.foods.map((food: any) => (
-              <li
-                key={food.id}
-                className="flex justify-between p-2 bg-gray-50 rounded"
-              >
-                <span>{food.name}</span>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    defaultValue={food.price}
-                    className="border p-1 w-20"
-                    onBlur={async (e) => {
-                      await fetch(`${API_URL}/foods/${food.id}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          price: parseFloat(e.target.value),
-                        }),
-                      });
-                      mutate();
-                    }}
-                  />
-                  <Button
-                    variant="destructive"
-                    onClick={async () => {
-                      await fetch(`${API_URL}/foods/${food.id}`, {
-                        method: "DELETE",
-                      });
-                      mutate();
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <FoodForm menuId={menu.id} onSuccess={mutate} />
-        </div>
-      ))}
+              <div className="flex justify-between items-center">
+                <span>
+                    🍽️ {food.name} — £{(food.basePrice ?? food.price ?? 0).toFixed(2)}
+                </span>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={async () => {
+                    await fetch(`${API_URL}/foods/${food.id}`, {
+                      method: "DELETE",
+                    });
+                    mutate(); // refresh foods under menu
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+
+              {/* Food Options inline */}
+              <div className="ml-4 border-l-2 border-purple-200 pl-3">
+                <FoodOptionForm foodId={food.id} compact />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-gray-400 mb-3">No foods yet.</p>
+      )}
+
+      {/* Add Food */}
+      <div className="mt-3">
+        <FoodForm
+          menuId={menu.id}
+          onSuccess={() => {
+            mutate();
+          }}
+        />
+      </div>
     </div>
   );
 }

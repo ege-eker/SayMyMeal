@@ -3,10 +3,10 @@ export const createFoodSchema = {
   description: "Create a new food item for a menu",
   body: {
     type: "object",
-    required: ["name", "price", "menuId"],
+    required: ["name", "basePrice", "menuId"],
     properties: {
       name: { type: "string", minLength: 2 },
-      price: { type: "number", minimum: 0 },
+      basePrice: { type: "number", minimum: 0 },
       menuId: { type: "string" }
     }
   },
@@ -17,7 +17,7 @@ export const createFoodSchema = {
       properties: {
         id: { type: "string" },
         name: { type: "string" },
-        price: { type: "number" },
+        basePrice: { type: "number" },
         menuId: { type: "string" },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" }
@@ -37,7 +37,7 @@ export const getFoodsSchema = {
         properties: {
           id: { type: "string" },
           name: { type: "string" },
-          price: { type: "number" },
+          basePrice: { type: "number" },
           menuId: { type: "string" },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" }
@@ -63,8 +63,19 @@ export const getFoodByIdSchema = {
       properties: {
         id: { type: "string" },
         name: { type: "string" },
-        price: { type: "number" },
+        basePrice: { type: "number" },
         menuId: { type: "string" },
+        options: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    id: { type: "string" },
+                    title: { type: "string" },
+                    multiple: { type: "boolean" },
+                },
+            },
+        },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" }
       }
@@ -88,7 +99,7 @@ export const updateFoodSchema = {
     type: "object",
     properties: {
       name: { type: "string" },
-      price: { type: "number", minimum: 0 }
+      basePrice: { type: "number", minimum: 0 }
     }
   },
   response: {
@@ -97,7 +108,7 @@ export const updateFoodSchema = {
       properties: {
         id: { type: "string" },
         name: { type: "string" },
-        price: { type: "number" },
+        basePrice: { type: "number" },
         menuId: { type: "string" },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" }
