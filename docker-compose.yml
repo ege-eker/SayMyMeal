@@ -1,0 +1,53 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:15
+    container_name: restaurant_database
+    restart: always
+    environment:
+      POSTGRES_USER: restaurant
+      POSTGRES_PASSWORD: restaurant123
+      POSTGRES_DB: restaurant_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U restaurant -d restaurant_db" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: backend
+    environment:
+      - DATABASE_URL=postgresql://restaurant:restaurant123@postgres:5432/restaurant_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    ports:
+      - "4000:4000"
+    command: >
+      sh -c "bunx prisma migrate dev --name init && bun run start"
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:4000
+      - NEXT_PUBLIC_OPENAI_API_KEY=
+
+networks:
+  app-network:
+
+volumes:
+  postgres_data:

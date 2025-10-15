@@ -1,3 +1,4 @@
+// TODO
 import { FastifyRequest, FastifyReply } from "fastify";
 import { tools } from "./openai.functions";
 import {z} from "zod";
