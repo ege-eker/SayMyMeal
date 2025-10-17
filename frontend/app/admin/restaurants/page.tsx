@@ -55,7 +55,10 @@ export default function RestaurantsPage() {
               </td>
               <td className="p-3 text-yellow-600">⭐ {r.rating ?? "-"}</td>
               <td className="p-3 text-sm text-gray-600">
-                {r.deliveryPostcodes?.join(", ")}
+                {r.deliveryZones
+                // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+                    ?.map((z: any) => `${z.postcode} (${z.etaMinutes} min)`)
+                    .join(", ")}
               </td>
               <td className="p-3 flex space-x-2">
                 <Link href={`/admin/restaurants/${r.id}`}>
