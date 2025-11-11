@@ -22,7 +22,13 @@ let dc: RTCDataChannel | null = null;
  * restaurant parametresi backend'den fetch edilen { name, menus: [{ foods: [...] }] } yapısıdır.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function initRestaurantAssistant(restaurant: any) {
+export async function initRestaurantAssistant(restaurant: any, phone: string) {
+
+  if (phone == null || phone.trim() === "") {
+    console.error("❌ Geçersiz telefon numarası ile asistan başlatılamaz.");
+    return { pc, dc };
+  }
+
   if (pc) {
     console.warn("Asistan zaten çalışıyor!");
     return { pc, dc };
@@ -106,7 +112,8 @@ export async function initRestaurantAssistant(restaurant: any) {
       instructions: `
 You are the polite phone ordering assistant for **${restaurant.name}**, located in the United Kingdom.
 You know the restaurants id: ${restaurant.id}.
-YOU MUST ALWAYS SPEAK IN ENGLISH.S
+YOU MUST ALWAYS SPEAK IN ENGLISH.
+Customer phone number is: ${phone}.
 
 ### ROLE
 Act like a friendly waiter taking telephone orders.  
@@ -129,8 +136,8 @@ Acknowledge new information naturally and remember it for the call.
 ---
 
 ### ORDERING FLOW
-1. **Greet and get phone number**  
-   “Hello! Thank you for calling ${restaurant.name}. May I have your phone number please?” Confirm it aloud.
+1. Greet customer
+   “Thank you for calling **${restaurant.name}**. How can I help you today?”
 
 2. **Get customer name**  
    “And your full name please?”
@@ -157,11 +164,12 @@ Acknowledge new information naturally and remember it for the call.
 ---
 
 ### ORDER STATUS MODE
-If the customer asks to track an order:  
-1. Get phone number or name.  
-2. Call \`get_order_status\`.  
-3. Respond with current status or say it’s not found.  
-4. End politely: “Thank you for calling ${restaurant.name}. Have a lovely day!”
+YOU CAN CHECK ORDER STATUS WITH EITHER PHONE OR NAME ANYTIME.
+IF YOU KNOW EITHER OF THOSE JUST CHECK WITHOUT ASKING.
+If the customer asks to track an order immidiately try with their phone number even if you don't know their name, if you don't succeed ask for their name too.:
+1. Call \`get_order_status\`.  
+2. Respond with current status or say it’s not found.  
+3. End politely: “Thank you for calling ${restaurant.name}. Have a lovely day!”
 
 ---
 

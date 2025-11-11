@@ -3,6 +3,7 @@ import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { useState, useMemo } from "react";
 import { initRestaurantAssistant, stopRealtime } from "@/lib/realtime";
+import { startPhoneCollector, stopPhoneCollector } from "@/lib/realtimePhoneAgent";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -12,39 +13,70 @@ export default function RestaurantDetailPage() {
   const { id } = useParams();
   const { data: restaurant, error } = useSWR(`${API_URL}/restaurants/${id}`, fetcher);
   const [connected, setConnected] = useState(false);
+  const [stage, setStage] = useState<"idle" | "collecting" | "assistant">("idle");
+  const [phone, setPhone] = useState<string | null>(null);
 
   if (error) return <div className="text-red-600">❌ Error loading: {String(error)}</div>;
   if (!restaurant) return <div>⏳ Loading restaurant...</div>;
 
-  const toggleAssistant = async () => {
-    if (connected) {
+  // 🔹 button
+const toggleAssistant = async () => {
+  if (stage !== "idle") {
+    console.log("⏹ Stopping current agent(s)...");
+    try {
+      await stopPhoneCollector();
+    } catch {}
+    try {
       await stopRealtime();
-      setConnected(false);
-    } else {
-      await initRestaurantAssistant(restaurant);
-      setConnected(true);
-    }
-  };
+    } catch {}
+    setStage("idle");
+    setConnected(false);
+    console.log("🟥 Assistant fully stopped.");
+    return;
+  }
+  console.log("🎤 Starting phone collection...");
+  setStage("collecting");
+
+  await startPhoneCollector(async (collectedPhone) => {
+    console.log("📞 Collected phone:", collectedPhone);
+    setStage("assistant");
+    setPhone(collectedPhone);
+
+    await initRestaurantAssistant(restaurant, collectedPhone);
+    setConnected(true);
+    console.log("🤖 Restaurant assistant started");
+  });
+};
 
   return (
     <div className="max-w-4xl mx-auto p-8">
       {/* Header */}
       <div className="mb-6">
-        <img src="https://www.barbecook.com/cdn/shop/articles/barbecook_030321_23625.jpg?v=1678958368&width=1680" alt={restaurant.name} className="w-full h-56 object-cover rounded-lg" />
+        <img
+          src="https://www.barbecook.com/cdn/shop/articles/barbecook_030321_23625.jpg?v=1678958368&width=1680"
+          alt={restaurant.name}
+          className="w-full h-56 object-cover rounded-lg"
+        />
         <h1 className="text-3xl font-bold mt-4">{restaurant.name}</h1>
         <p className="text-gray-600">{restaurant.city}</p>
         <p className="text-yellow-500">⭐ {restaurant.rating ?? "-"}</p>
-
-        <button
-          onClick={toggleAssistant}
-          className={`mt-4 px-6 py-2 rounded font-semibold transition ${
-            connected
-              ? "bg-red-500 hover:bg-red-600 text-white"
-              : "bg-green-600 hover:bg-green-700 text-white"
-          }`}
-        >
-          {connected ? "⏹ Stop Assistant" : "🎤 Start Assistant"}
-        </button>
+<button
+  onClick={toggleAssistant}
+  className={`mt-4 px-6 py-2 rounded font-semibold transition ${
+    connected || stage !== "idle"
+      ? "bg-red-500 hover:bg-red-600 text-white"
+      : "bg-green-600 hover:bg-green-700 text-white"
+  }`}
+>
+  {connected || stage !== "idle" ? "⏹ Stop Assistant" : "🎤 Start Assistant"}
+</button>
+        <p className="text-sm text-gray-500 mt-2 italic">
+          {stage === "collecting"
+            ? "📱 Asking for phone number..."
+            : stage === "assistant"
+            ? `☎️ Connected (phone: ${phone ?? "-"})`
+            : ""}
+        </p>
       </div>
 
       <MenuAccordion menus={restaurant.menus ?? []} />
@@ -81,14 +113,13 @@ function MenuCard({
   isOpen,
   onToggle,
 }: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   menu: any;
   isOpen: boolean;
   onToggle: () => void;
 }) {
   const { data, error } = useSWR(`${API_URL}/menus/${menu.id}`, fetcher);
 
-  // hesaplama kısmı
   const minPrice = useMemo(() => {
     if (!data?.foods?.length) return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -148,9 +179,7 @@ function MenuFoods({ foods }: { foods: any[] }) {
                   £{(food.basePrice ?? food.price ?? 0).toFixed(2)}
                 </span>
               </h3>
-              {food.description && (
-                <p className="text-xs text-gray-500">{food.description}</p>
-              )}
+              {food.description && <p className="text-xs text-gray-500">{food.description}</p>}
             </div>
             {openFoods.includes(food.id) ? (
               <ChevronDown className="w-4 h-4 text-gray-500" />
