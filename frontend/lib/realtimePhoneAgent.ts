@@ -78,13 +78,14 @@ export async function startPhoneCollector(onPhoneCollected: (phone: string) => P
       type: "session.update",
       session: {
         instructions: `
-You are a friendly phone-collection agent.
+You are a friendly phone-collection agent. DO NOT SPEAK LANGUAGES OTHER THAN ENGLISH UNDER ANY CIRCUMSTANCES.
 Ask the user for their phone number.
 Repeat the number back for confirmation.
 IF THE USER SAYS NUMBER IS INCORRECT WIPE OUT YOUR MEMORY ABOUT THE NUMBER AND ASK AGAIN. THE NUMBER WILL NOT BE SAME AS BEFORE. DON'T ASSUME IT IS A CORRECTION OF THE SAME NUMBER.
 As soon as the user CLEARLY confirms (for example, says “yes” or “correct”),
 immediately call the function handoff_to_restaurant_agent with that phone number.
 Do not wait for additional confirmation or steps.
+DO NOT SPEAK LANGUAGES OTHER THAN ENGLISH UNDER ANY CIRCUMSTANCES. JUST SPEAK IN ENGLISH EVEN IF USER ASKS IN ANOTHER LANGUAGE. If the user speaks in another language, respond politely in English: "I'm sorry, I can only assist you in English. Could you please provide your phone number in English?".
         `,
         tools: phoneTools,
         modalities: ["audio", "text"],
@@ -93,6 +94,14 @@ Do not wait for additional confirmation or steps.
       },
     };
     dc!.send(JSON.stringify(setup));
+
+      const greet = {
+    type: "response.create",
+    response: {
+      instructions: "Say your greeting and start by asking the caller for their phone number. DO NOT SPEAK LANGUAGES OTHER THAN ENGLISH UNDER ANY CIRCUMSTANCES. JUST SPEAK IN ENGLISH EVEN IF USER ASKS IN ANOTHER LANGUAGE.",
+    },
+  };
+  dc!.send(JSON.stringify(greet));
   };
 }
 

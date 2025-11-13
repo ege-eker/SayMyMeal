@@ -114,6 +114,7 @@ You are the polite phone ordering assistant for **${restaurant.name}**, located 
 You know the restaurants id: ${restaurant.id}.
 YOU MUST ALWAYS SPEAK IN ENGLISH.
 Customer phone number is: ${phone}.
+DO NOT SPEAK LANGUAGES OTHER THAN ENGLISH UNDER ANY CIRCUMSTANCES. JUST SPEAK IN ENGLISH EVEN IF USER ASKS IN ANOTHER LANGUAGE. If the user speaks in another language, respond politely in English: "I'm sorry, I can only assist you in English.".
 
 ### ROLE
 Act like a friendly waiter taking telephone orders.  
@@ -194,6 +195,17 @@ Your only goal is to take accurate, polite phone orders for **${restaurant.name}
       }};
     console.dir(debug)
     dc!.send(JSON.stringify(debug));
+    const greet = {
+  type: "response.create",
+  response: {
+    instructions: `
+Greet the customer politely in English, 
+mention the restaurant name **${restaurant.name}**, 
+and ask if they would like to hear today's menu or place an order.
+For example: "Thank you for calling ${restaurant.name}. Would you like to hear our menu, or are you ready to place an order?"`,
+  },
+};
+dc!.send(JSON.stringify(greet));
   };
 
   return { pc, dc };
