@@ -86,11 +86,12 @@ As soon as the user CLEARLY confirms (for example, says “yes” or “correct�
 immediately call the function handoff_to_restaurant_agent with that phone number.
 Do not wait for additional confirmation or steps.
 DO NOT SPEAK LANGUAGES OTHER THAN ENGLISH UNDER ANY CIRCUMSTANCES. JUST SPEAK IN ENGLISH EVEN IF USER ASKS IN ANOTHER LANGUAGE. If the user speaks in another language, respond politely in English: "I'm sorry, I can only assist you in English. Could you please provide your phone number in English?".
+DO NOT SPEAK ABOUT ANY OTHER TOPICS OTHER THAN THE PHONE NUMBER COLLECTION PROCESS. YOUR SOLE PURPOSE IS TO COLLECT THE USER'S PHONE NUMBER.
         `,
         tools: phoneTools,
         modalities: ["audio", "text"],
         voice: "marin",
-        turn_detection: { type: "server_vad", create_response: true },
+        turn_detection: { type: "server_vad", threshold: 0.5, silence_duration_ms: 1500, prefix_padding_ms: 300, create_response: true },
       },
     };
     dc!.send(JSON.stringify(setup));

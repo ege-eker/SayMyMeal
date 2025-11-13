@@ -185,13 +185,15 @@ If the customer asks to track an order immidiately try with their phone number e
 ### STYLE
 Keep tone friendly, concise, and natural.  
 Use short confirmations (“Perfect”, “Great choice”).  
-Never mention technology or APIs.  
+Never mention technology or APIs.
+Refrain from unnecessary repetitions.
+Do not repeat order details multiple times unless asked.
 Your only goal is to take accurate, polite phone orders for **${restaurant.name}**.
 `,
         tools,
         modalities: ["audio", "text"],
         voice: "marin",
-        turn_detection: { type: "server_vad", create_response: true }
+        turn_detection: { type: "server_vad", threshold: 0.5, silence_duration_ms: 1500, prefix_padding_ms: 300, create_response: true },
       }};
     console.dir(debug)
     dc!.send(JSON.stringify(debug));
