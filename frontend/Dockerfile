@@ -1,5 +1,5 @@
 # ---------- Stage 1 – Build ----------
-FROM oven/bun:1 AS builder
+FROM oven/bun:1.3.6-alpine AS builder
 
 WORKDIR /app
 
@@ -9,11 +9,16 @@ RUN bun install
 
 COPY . .
 
+ARG API_URL
+ENV NEXT_PUBLIC_API_URL=$API_URL
+ARG OPENAI_API_KEY
+ENV NEXT_PUBLIC_OPENAI_API_KEY=$OPENAI_API_KEY
+
 RUN bun run build
 
 
 # ---------- Stage 2 – Runtime ----------
-FROM oven/bun:1 AS runner
+FROM oven/bun:1.3.6-alpine AS runner
 
 WORKDIR /app
 

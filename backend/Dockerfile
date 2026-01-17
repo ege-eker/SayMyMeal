@@ -1,5 +1,5 @@
 # ---------- Stage 1 – Build/Generate ----------
-FROM debian:bookworm-slim AS base
+FROM oven/bun:1.3.6 AS base
 
 WORKDIR /app
 
@@ -7,7 +7,6 @@ RUN apt-get update -y && apt-get install -y \
     curl ca-certificates openssl unzip \
   && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"
 
 COPY package*.json bun.lockb* ./
@@ -19,7 +18,7 @@ RUN bun prisma generate
 
 
 # ---------- Stage 2 – Runtime ----------
-FROM debian:bookworm-slim AS runner
+FROM oven/bun:1.3.6 AS runner
 
 WORKDIR /app
 
@@ -27,7 +26,6 @@ RUN apt-get update -y && apt-get install -y \
     openssl ca-certificates unzip curl \
   && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"
 
 COPY --from=base /app /app
