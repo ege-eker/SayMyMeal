@@ -142,7 +142,7 @@ export const tools: ChatCompletionTool[] = [
                     "List of selected options for this item (e.g., size or extras).",
                   items: {
                     type: "object",
-                    required: ["optionId", "choiceId"],
+                    required: ["optionId", "choiceId", "choiceLabel", "extraPrice"],
                     properties: {
                       optionId: {
                         type: "string",
