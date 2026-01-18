@@ -7,11 +7,9 @@ export default fp(async (fastify) => {
     swagger: {
       info: {
         title: "Ordering API",
-        description: "Restaurant ordering API (Fastify + Prisma)",
+        description: "Restaurant API",
         version: "1.0.0"
       },
-      host: "localhost:4000",
-      schemes: ["http"],
       consumes: ["application/json"],
       produces: ["application/json"],
     },
