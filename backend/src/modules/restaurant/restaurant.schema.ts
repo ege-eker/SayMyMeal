@@ -48,6 +48,7 @@ export const createRestaurantSchema = {
             },
           },
           rating: { type: "number", nullable: true },
+          isActive: { type: "boolean" },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
         },
@@ -81,6 +82,7 @@ export const getRestaurantsSchema = {
             },
           },
           rating: { type: "number", nullable: true },
+          isActive: { type: "boolean" },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
         },
@@ -109,6 +111,7 @@ export const getRestaurantByIdSchema = {
           postcode: {type: "string"},
           rating: {type: "number", nullable: true},
           deliveryZones: {type: "array", items: {type: "object"}},
+          isActive: {type: "boolean"},
           menus: {
               type: "array",
               items: {
@@ -176,6 +179,7 @@ export const updateRestaurantSchema = {
           },
         },
         rating: { type: "number", nullable: true },
+        isActive: { type: "boolean" },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" },
       },
@@ -200,6 +204,34 @@ export const deleteRestaurantSchema = {
     404: {
       type: "object",
       properties: { error: { type: "string" } },
+    },
+  },
+};
+
+export const activateRestaurantSchema = {
+  tags: ["restaurants"],
+  description: "Activate a restaurant and deactivate all others",
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: { id: { type: "string" } },
+  },
+  response: {
+    200: {
+      description: "Activated restaurant response",
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        name: { type: "string" },
+        isActive: { type: "boolean" },
+        message: { type: "string" },
+        updatedAt: { type: "string", format: "date-time" },
+      },
+    },
+    404: {
+      description: "Restaurant not found",
+      type: "object",
+      properties: { message: { type: "string" } },
     },
   },
 };

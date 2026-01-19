@@ -30,6 +30,11 @@ export const restaurantController = (app: any) => {
       }
     },
 
+    activate: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        const restaurant = await service.activate(req.params.id);
+        reply.send({ message: `${restaurant.name} is now active`, restaurant });
+    },
+
     remove: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       await service.remove(req.params.id);
       return reply.code(204).send();

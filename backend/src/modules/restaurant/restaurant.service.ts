@@ -38,15 +38,31 @@ export const restaurantService = (app: FastifyInstance) => ({
     return app.prisma.restaurant.findMany({ include: { menus: true } });
   },
 
-async findById(id: string) {
-  return app.prisma.restaurant.findUnique({
-    where: { id },
-    include: {
-      menus: {
-      },
-    }
-  });
-},
+  async findById(id: string) {
+    return app.prisma.restaurant.findUnique({
+      where: { id },
+      include: {
+        menus: {
+        },
+      }
+    });
+  },
+
+  async activate(id: string) {
+      await app.prisma.restaurant.updateMany({
+          data: { isActive: false },
+      });
+
+      const updated = await app.prisma.restaurant.update({
+            where: { id },
+            data: { isActive: true },
+      });
+
+      app.log.info("🧹 Resetting WhatsApp sessions (active restaurant changed)");
+      app.whatsappService.clearSessions();
+
+      return updated;
+  },
 
   async remove(id: string) {
     return app.prisma.restaurant.delete({ where: { id } });

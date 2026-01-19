@@ -11,7 +11,7 @@ interface TwilioWhatsAppBody {
 }
 
 export async function whatsappController(app: FastifyInstance) {
-  const service = whatsappService(app);
+  const service = app.whatsappService;
 
   app.post(
     "/webhook",

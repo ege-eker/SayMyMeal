@@ -42,6 +42,7 @@ export default function RestaurantsPage() {
             <th className="p-3">Address</th>
             <th className="p-3">Rating</th>
             <th className="p-3">Delivery Zones</th>
+            <th className="p-3 text-center">Active</th>
             <th className="p-3">Actions</th>
           </tr>
         </thead>
@@ -60,6 +61,9 @@ export default function RestaurantsPage() {
                     ?.map((z: any) => `${z.postcode} (${z.etaMinutes} min)`)
                     .join(", ")}
               </td>
+              <td className="p-3 text-center">
+                {r.isActive ? "✅" : ""}
+              </td>
               <td className="p-3 flex space-x-2">
                 <Link href={`/admin/restaurants/${r.id}`}>
                   <Button variant="outline">Menus</Button>
@@ -74,6 +78,17 @@ export default function RestaurantsPage() {
                   }}
                 >
                   Delete
+                </Button>
+                <Button
+                    variant={r.isActive ? "secondary" : "outline"}
+                    onClick={async () => {
+                    await fetch(`${API_URL}/restaurants/${r.id}/activate`, {
+                        method: "POST",
+                    });
+                    mutate();
+                    }}
+                >
+                    {r.isActive ? "✅ Aktif" : "Aktif Et"}
                 </Button>
               </td>
             </tr>

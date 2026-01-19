@@ -12,7 +12,9 @@ interface SessionState {
 
 async function loadRestaurant(app: FastifyInstance) {
   // todo findUnique(where:{id:…})
-  const restaurant = await app.prisma.restaurant.findFirst();
+  const restaurant = await app.prisma.restaurant.findFirst({
+      where: { isActive: true },
+  });
   if (!restaurant) throw new Error("No restaurant found in database");
   return { id: restaurant.id, name: restaurant.name };
 }
@@ -49,6 +51,12 @@ async function downloadTwilioAudio(mediaUrl: string): Promise<Buffer> {
 export function whatsappService(app: FastifyInstance) {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const sessions = new Map<string, SessionState>();
+
+  function clearSessions() {
+    app.log.warn("🧹 Clearing WhatsApp sessions due to restaurant switch");
+    sessions.clear();
+    app.log.warn(`🧹 Sessions after clear: ${sessions.size}`);
+  }
 
   // Clear old sessions every 15mins
   setInterval(() => {
@@ -203,5 +211,5 @@ export function whatsappService(app: FastifyInstance) {
     return handleMessage(phone, transcribedText);
   }
 
-  return { handleMessage, handleVoiceMessage };
+  return { handleMessage, handleVoiceMessage, clearSessions };
 }
