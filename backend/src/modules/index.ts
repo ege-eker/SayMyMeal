@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import authRoutes from "./auth/auth.routes";
 import restaurantRoutes from "./restaurant/restaurant.routes";
 import menuRoutes from "./menu/menu.routes";
 import foodRoutes from "./food/food.routes";
@@ -8,6 +9,7 @@ import openaiRoutes from "./openai/openai.routes";
 import whatsappRoutes from "./whatsapp/whatsapp.routes";
 
 async function registerRoutes(app: FastifyInstance) {
+  app.register(authRoutes);
   app.register(restaurantRoutes);
   app.register(menuRoutes);
   app.register(foodRoutes);

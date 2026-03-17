@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import db from './plugins/db';
 import cors from './plugins/cors';
 import swagger from './plugins/swagger';
+import jwt from './plugins/jwt';
 import registerRoutes from "./modules";
 import formbody from "@fastify/formbody";
 import whatsapp from './plugins/whatsapp';
@@ -11,6 +12,7 @@ const buildApp = () => {
     app.register(formbody);
     app.register(db);
     app.register(cors);
+    app.register(jwt);
     app.register(swagger);
     app.register(whatsapp);
     app.register(registerRoutes);
