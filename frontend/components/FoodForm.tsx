@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { authFetch } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -23,9 +24,8 @@ export default function FoodForm({ menuId, onSuccess }: { menuId: string; onSucc
       />
       <Button
         onClick={async () => {
-          await fetch(`${API_URL}/foods`, {
+          await authFetch(`${API_URL}/foods`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 name: form.name,
                 basePrice: form.basePrice,
@@ -36,7 +36,7 @@ export default function FoodForm({ menuId, onSuccess }: { menuId: string; onSucc
           onSuccess();
         }}
       >
-        ➕ Add
+        Add
       </Button>
     </div>
   );

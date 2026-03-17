@@ -2,10 +2,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { authFetch } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-// --- Tip Tanımları ---
 interface DeliveryZone {
   postcode: string;
   etaMinutes: number;
@@ -13,6 +13,7 @@ interface DeliveryZone {
 
 interface RestaurantFormData {
   name: string;
+  slug: string;
   houseNumber: string;
   street: string;
   city: string;
@@ -24,6 +25,7 @@ interface RestaurantFormData {
 export default function RestaurantForm({ onSuccess }: { onSuccess: () => void }) {
   const [form, setForm] = useState<RestaurantFormData>({
     name: "",
+    slug: "",
     houseNumber: "",
     street: "",
     city: "",
@@ -61,14 +63,14 @@ export default function RestaurantForm({ onSuccess }: { onSuccess: () => void })
   };
 
   const handleSubmit = async () => {
-    await fetch(`${API_URL}/restaurants`, {
+    await authFetch(`${API_URL}/restaurants`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
 
     setForm({
       name: "",
+      slug: "",
       houseNumber: "",
       street: "",
       city: "",
@@ -82,11 +84,18 @@ export default function RestaurantForm({ onSuccess }: { onSuccess: () => void })
 
   return (
     <div className="flex flex-col space-y-3">
-      {/* Temel Bilgiler */}
       <Input
         placeholder="Restaurant Name"
         value={form.name}
         onChange={(e) => handleChange("name", e.target.value)}
+      />
+
+      <Input
+        placeholder="Slug (e.g. my-restaurant)"
+        value={form.slug}
+        onChange={(e) =>
+          handleChange("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+        }
       />
 
       <div className="grid grid-cols-2 gap-2">
@@ -142,13 +151,13 @@ export default function RestaurantForm({ onSuccess }: { onSuccess: () => void })
               variant="destructive"
               onClick={() => removeZone(idx)}
             >
-              ✕
+              X
             </Button>
           </div>
         ))}
 
         <Button type="button" variant="outline" onClick={addZone}>
-          ➕ Add Zone
+          Add Zone
         </Button>
       </div>
 
@@ -158,7 +167,7 @@ export default function RestaurantForm({ onSuccess }: { onSuccess: () => void })
         min={0}
         max={5}
         step={0.1}
-        placeholder="Rating (0–5)"
+        placeholder="Rating (0-5)"
         value={form.rating}
         onChange={(e) => handleChange("rating", Number(e.target.value))}
       />

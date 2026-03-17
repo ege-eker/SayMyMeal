@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { authFetch, deleteChoice as deleteChoiceApi } from "@/lib/api";
+import ConfirmDelete from "@/components/ConfirmDelete";
+import { Trash2 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -45,9 +48,8 @@ export default function FoodOptionForm({
   const createOption = async () => {
     if (!title) return;
     setIsLoading(true);
-    await fetch(`${API_URL}/foods/options`, {
+    await authFetch(`${API_URL}/foods/options`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ foodId, title, multiple }),
     });
     setIsLoading(false);
@@ -57,8 +59,7 @@ export default function FoodOptionForm({
   };
 
   const deleteOption = async (optionId: string) => {
-    if (!confirm("Are you sure you want to delete this option group?")) return;
-    await fetch(`${API_URL}/foods/options/${optionId}`, {
+    await authFetch(`${API_URL}/foods/options/${optionId}`, {
       method: "DELETE",
     });
     fetchOptions();
@@ -75,10 +76,10 @@ export default function FoodOptionForm({
           compact ? "text-sm text-gray-700" : "text-lg"
         } mb-2`}
       >
-        🧩 Food Options
+        Food Options
       </h3>
 
-      {/* Yeni Option Ekle */}
+      {/* Add Option */}
       <div className="flex items-center gap-2 mb-3">
         <Input
           placeholder="Option title (e.g. Choose your Side)"
@@ -95,11 +96,11 @@ export default function FoodOptionForm({
           <span>Multiple</span>
         </label>
         <Button size="sm" disabled={isLoading} onClick={createOption}>
-          ➕ Add
+          Add
         </Button>
       </div>
 
-      {/* Mevcut options */}
+      {/* Existing options */}
       {options.map((opt) => (
         <div key={opt.id} className="border-t pt-2 mt-2">
           <div className="flex justify-between items-center">
@@ -109,24 +110,43 @@ export default function FoodOptionForm({
                 ({opt.multiple ? "multiple" : "single"})
               </span>
             </h4>
-            <Button
-              variant="destructive"
-              size="icon"
-              onClick={() => deleteOption(opt.id)}
-            >
-              🗑️
-            </Button>
+            <ConfirmDelete
+              title={`Delete option "${opt.title}"?`}
+              description="This will delete the option group and all its choices. This action cannot be undone."
+              onConfirm={() => deleteOption(opt.id)}
+              trigger={
+                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 px-2">
+                  <Trash2 className="w-3.5 h-3.5 mr-1" />
+                  Delete
+                </Button>
+              }
+            />
           </div>
 
           <ul className="ml-4 text-sm mt-1">
             {opt.choices.map((ch) => (
-              <li key={ch.id}>
-                • {ch.label}{" "}
-                {ch.extraPrice > 0 && (
-                  <span className="text-gray-400">
-                    (+£{ch.extraPrice.toFixed(2)})
-                  </span>
-                )}
+              <li key={ch.id} className="flex items-center justify-between py-0.5">
+                <span>
+                  {ch.label}{" "}
+                  {ch.extraPrice > 0 && (
+                    <span className="text-gray-400">
+                      (+£{ch.extraPrice.toFixed(2)})
+                    </span>
+                  )}
+                </span>
+                <ConfirmDelete
+                  title={`Delete choice "${ch.label}"?`}
+                  description="This action cannot be undone."
+                  onConfirm={async () => {
+                    await deleteChoiceApi(ch.id);
+                    fetchOptions();
+                  }}
+                  trigger={
+                    <button className="text-red-400 hover:text-red-600 ml-2">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  }
+                />
               </li>
             ))}
             {opt.choices.length === 0 && (
@@ -159,9 +179,8 @@ function AddChoiceForm({
   const submit = async () => {
     if (!label) return;
     setLoading(true);
-    await fetch(`${API_URL}/foods/options/choice`, {
+    await authFetch(`${API_URL}/foods/options/choice`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         optionId,
         label,
@@ -195,7 +214,7 @@ function AddChoiceForm({
         size="sm"
         className="whitespace-nowrap"
       >
-        ➕ Add Choice
+        Add Choice
       </Button>
     </div>
   );
