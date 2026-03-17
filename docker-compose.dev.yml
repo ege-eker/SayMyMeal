@@ -1,0 +1,23 @@
+services:
+  backend:
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    command: sh -c "bunx prisma migrate deploy && bun --watch run src/server.ts"
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend/app:/app/app
+      - ./frontend/components:/app/components
+      - ./frontend/lib:/app/lib
+      - ./frontend/public:/app/public
+    command: bun run dev
+    environment:
+      - NEXT_PUBLIC_API_URL=${API_URL}
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
