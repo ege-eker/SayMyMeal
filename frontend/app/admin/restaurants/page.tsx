@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import RestaurantForm from "@/components/RestaurantForm";
+import { authFetch } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -13,8 +14,8 @@ export default function RestaurantsPage() {
   const { data: restaurants, error, mutate } = useSWR(`${API_URL}/restaurants`, fetcher);
   const [open, setOpen] = useState(false);
 
-  if (error) return <div>❌ Error</div>;
-  if (!restaurants) return <div>⏳ Loading...</div>;
+  if (error) return <div>Error</div>;
+  if (!restaurants) return <div>Loading...</div>;
 
   return (
     <div className="space-y-6">
@@ -22,7 +23,7 @@ export default function RestaurantsPage() {
         <h2 className="text-2xl font-bold">Restaurants</h2>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button>➕ Add Restaurant</Button>
+            <Button>Add Restaurant</Button>
           </DialogTrigger>
           <DialogContent>
             <RestaurantForm
@@ -39,30 +40,24 @@ export default function RestaurantsPage() {
         <thead>
           <tr className="bg-gray-200 text-left">
             <th className="p-3">Name</th>
+            <th className="p-3">Slug</th>
             <th className="p-3">Address</th>
             <th className="p-3">Rating</th>
-            <th className="p-3">Delivery Zones</th>
             <th className="p-3 text-center">Active</th>
             <th className="p-3">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {restaurants.map((r: any) => (
             <tr key={r.id} className="border-t hover:bg-gray-50">
               <td className="p-3">{r.name}</td>
+              <td className="p-3 text-sm text-gray-500">/{r.slug}</td>
               <td className="p-3">
                 {`${r.houseNumber} ${r.street}, ${r.city}, ${r.postcode}`}
               </td>
-              <td className="p-3 text-yellow-600">⭐ {r.rating ?? "-"}</td>
-              <td className="p-3 text-sm text-gray-600">
-                {r.deliveryZones
-                // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-                    ?.map((z: any) => `${z.postcode} (${z.etaMinutes} min)`)
-                    .join(", ")}
-              </td>
+              <td className="p-3 text-yellow-600">{r.rating ?? "-"}</td>
               <td className="p-3 text-center">
-                {r.isActive ? "✅" : ""}
+                {r.isActive ? "Active" : ""}
               </td>
               <td className="p-3 flex space-x-2">
                 <Link href={`/admin/restaurants/${r.id}`}>
@@ -71,7 +66,7 @@ export default function RestaurantsPage() {
                 <Button
                   variant="destructive"
                   onClick={async () => {
-                    await fetch(`${API_URL}/restaurants/${r.id}`, {
+                    await authFetch(`${API_URL}/restaurants/${r.id}`, {
                       method: "DELETE",
                     });
                     mutate();
@@ -82,13 +77,13 @@ export default function RestaurantsPage() {
                 <Button
                     variant={r.isActive ? "secondary" : "outline"}
                     onClick={async () => {
-                    await fetch(`${API_URL}/restaurants/${r.id}/activate`, {
+                    await authFetch(`${API_URL}/restaurants/${r.id}/activate`, {
                         method: "POST",
                     });
                     mutate();
                     }}
                 >
-                    {r.isActive ? "✅ Aktif" : "Aktif Et"}
+                    {r.isActive ? "Active" : "Activate"}
                 </Button>
               </td>
             </tr>
