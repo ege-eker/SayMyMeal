@@ -1,6 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import twilio from "twilio";
-import { whatsappService } from "./whatsapp.service";
 
 interface TwilioWhatsAppBody {
   Body?: string;

@@ -1,17 +1,17 @@
 export const createRestaurantSchema = {
     tags: ["restaurants"],
-    description: "create a new restaurant with UK address and delivery zones",
+    description: "Create a new restaurant with UK address, delivery zones, and unique slug",
     body: {
       type: "object",
-      required: ["name", "houseNumber", "street", "city", "postcode", "deliveryZones"],
+      required: ["name", "slug", "houseNumber", "street", "city", "postcode", "deliveryZones"],
       properties: {
         name: { type: "string", minLength: 2 },
+        slug: { type: "string", minLength: 2, pattern: "^[a-z0-9-]+$" },
         houseNumber: { type: "string", minLength: 1 },
         street: { type: "string", minLength: 2 },
         city: { type: "string", minLength: 2 },
         postcode: { type: "string", minLength: 4 },
         deliveryZones: {
-          description: "List of delivery postcodes and their estimated delivery times (minutes)",
           type: "array",
           minItems: 1,
           items: {
@@ -28,112 +28,98 @@ export const createRestaurantSchema = {
     },
     response: {
       201: {
-        description: "restaurant created successfully",
         type: "object",
         properties: {
           id: { type: "string" },
           name: { type: "string" },
+          slug: { type: "string" },
           houseNumber: { type: "string" },
           street: { type: "string" },
           city: { type: "string" },
           postcode: { type: "string" },
-          deliveryZones: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                postcode: { type: "string" },
-                etaMinutes: { type: "integer" },
-              },
-            },
-          },
+          deliveryZones: { type: "array", items: { type: "object" } },
           rating: { type: "number", nullable: true },
           isActive: { type: "boolean" },
+          ownerId: { type: "string", nullable: true },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
         },
       },
+      400: { type: "object", properties: { error: { type: "string" } } },
     },
+};
+
+const restaurantResponseProperties = {
+  id: { type: "string" },
+  name: { type: "string" },
+  slug: { type: "string" },
+  houseNumber: { type: "string" },
+  street: { type: "string" },
+  city: { type: "string" },
+  postcode: { type: "string" },
+  deliveryZones: { type: "array", items: { type: "object" } },
+  rating: { type: "number", nullable: true },
+  isActive: { type: "boolean" },
+  ownerId: { type: "string", nullable: true },
+  createdAt: { type: "string", format: "date-time" },
+  updatedAt: { type: "string", format: "date-time" },
 };
 
 export const getRestaurantsSchema = {
   tags: ["restaurants"],
-  description: "get all restaurants",
+  description: "Get all restaurants",
   response: {
     200: {
       type: "array",
-      items: {
-        type: "object",
-        properties: {
-          id: { type: "string" },
-          name: { type: "string" },
-          houseNumber: { type: "string" },
-          street: { type: "string" },
-          city: { type: "string" },
-          postcode: { type: "string" },
-          deliveryZones: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                postcode: { type: "string" },
-                etaMinutes: { type: "integer" },
-              },
-            },
-          },
-          rating: { type: "number", nullable: true },
-          isActive: { type: "boolean" },
-          createdAt: { type: "string", format: "date-time" },
-          updatedAt: { type: "string", format: "date-time" },
-        },
-      },
+      items: { type: "object", properties: restaurantResponseProperties },
     },
   },
 };
 
 export const getRestaurantByIdSchema = {
   tags: ["restaurants"],
-  description: "Get restaurant by ID with its menus.",
+  description: "Get restaurant by ID with its menus",
   params: {
     type: "object",
     properties: { id: { type: "string" } },
-    required: ["id"]
+    required: ["id"],
   },
   response: {
     200: {
       type: "object",
       properties: {
-          id: {type: "string"},
-          name: {type: "string"},
-          houseNumber: {type: "string"},
-          street: {type: "string"},
-          city: {type: "string"},
-          postcode: {type: "string"},
-          rating: {type: "number", nullable: true},
-          deliveryZones: {type: "array", items: {type: "object"}},
-          isActive: {type: "boolean"},
-          menus: {
-              type: "array",
-              items: {
-                  type: "object",
-                  properties: {
-                      id: {type: "string"},
-                      name: {type: "string"},
-                  },
-              },
+        ...restaurantResponseProperties,
+        menus: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { id: { type: "string" }, name: { type: "string" } },
           },
+        },
       },
     },
-    404: {
-        type: "object",
-        properties: { error: { type: "string" } },
-    },
+    404: { type: "object", properties: { message: { type: "string" } } },
   },
+};
+
+export const getRestaurantBySlugSchema = {
+  tags: ["restaurants"],
+  description: "Get restaurant by slug with full menu tree",
+  params: {
+    type: "object",
+    properties: { slug: { type: "string" } },
+    required: ["slug"],
+  },
+};
+
+export const getMyRestaurantsSchema = {
+  tags: ["restaurants"],
+  description: "Get restaurants owned by the authenticated user",
 };
 
 export const updateRestaurantSchema = {
   tags: ["restaurants"],
-  description: "update restaurant by id",
+  description: "Update restaurant by ID (owner only)",
   params: {
     type: "object",
     required: ["id"],
@@ -143,6 +129,7 @@ export const updateRestaurantSchema = {
     type: "object",
     properties: {
       name: { type: "string", minLength: 2 },
+      slug: { type: "string", minLength: 2, pattern: "^[a-z0-9-]+$" },
       houseNumber: { type: "string" },
       street: { type: "string" },
       city: { type: "string" },
@@ -161,77 +148,24 @@ export const updateRestaurantSchema = {
       },
     },
   },
-  response: {
-    200: {
-      type: "object",
-      properties: {
-        id: { type: "string" },
-        name: { type: "string" },
-        postcode: { type: "string" },
-        deliveryZones: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              postcode: { type: "string" },
-              etaMinutes: { type: "integer" },
-            },
-          },
-        },
-        rating: { type: "number", nullable: true },
-        isActive: { type: "boolean" },
-        createdAt: { type: "string", format: "date-time" },
-        updatedAt: { type: "string", format: "date-time" },
-      },
-    },
-    404: {
-      type: "object",
-      properties: { error: { type: "string" } },
-    },
-  },
 };
 
 export const deleteRestaurantSchema = {
   tags: ["restaurants"],
-  description: "delete a restaurant by id",
+  description: "Delete a restaurant by ID (owner only)",
   params: {
     type: "object",
     required: ["id"],
     properties: { id: { type: "string" } },
-  },
-  response: {
-    204: { type: "null", description: "restaurant deleted" },
-    404: {
-      type: "object",
-      properties: { error: { type: "string" } },
-    },
   },
 };
 
 export const activateRestaurantSchema = {
   tags: ["restaurants"],
-  description: "Activate a restaurant and deactivate all others",
+  description: "Activate a restaurant and deactivate all others (owner only)",
   params: {
     type: "object",
     required: ["id"],
     properties: { id: { type: "string" } },
-  },
-  response: {
-    200: {
-      description: "Activated restaurant response",
-      type: "object",
-      properties: {
-        id: { type: "string" },
-        name: { type: "string" },
-        isActive: { type: "boolean" },
-        message: { type: "string" },
-        updatedAt: { type: "string", format: "date-time" },
-      },
-    },
-    404: {
-      description: "Restaurant not found",
-      type: "object",
-      properties: { message: { type: "string" } },
-    },
   },
 };

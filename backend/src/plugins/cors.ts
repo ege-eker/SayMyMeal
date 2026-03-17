@@ -3,7 +3,7 @@ import cors from "@fastify/cors";
 
 export default fp(async (fastify) => {
   fastify.register(cors, {
-    origin: "*", // dev
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   });
 });

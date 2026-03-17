@@ -33,4 +33,16 @@ export const optionService = (app: FastifyInstance) => ({
   async removeOption(optionId: string) {
     return app.prisma.foodOption.delete({ where: { id: optionId } });
   },
+
+  async removeChoice(choiceId: string) {
+    return app.prisma.optionChoice.delete({ where: { id: choiceId } });
+  },
+
+  async getRestaurantIdFromChoice(choiceId: string): Promise<string | null> {
+    const choice = await app.prisma.optionChoice.findUnique({
+      where: { id: choiceId },
+      select: { option: { select: { food: { select: { menu: { select: { restaurantId: true } } } } } } },
+    });
+    return choice?.option?.food?.menu?.restaurantId ?? null;
+  },
 });

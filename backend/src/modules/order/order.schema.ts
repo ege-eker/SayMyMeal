@@ -95,6 +95,8 @@ export const getOrdersSchema = {
     type: "object",
     properties: {
       phone: { type: "string", description: "Filter orders by customer phone" },
+      restaurantId: { type: "string", description: "Filter orders by restaurant ID" },
+      acknowledged: { type: "string", enum: ["true", "false"], description: "Filter by acknowledgement status" },
     },
   },
   response: {
@@ -108,6 +110,7 @@ export const getOrdersSchema = {
           phone: { type: "string" },
           status: { type: "string" },
           etaMinutes: { type: "integer", nullable: true },
+          acknowledgedAt: { type: "string", format: "date-time", nullable: true },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
           /* ---- NEW: address ---- */
@@ -243,6 +246,46 @@ export const updateOrderStatusSchema = {
         status: { type: "string" },
         items: { type: "array" },
       },
+    },
+  },
+};
+
+export const getMyOrdersSchema = {
+  tags: ["orders"],
+  description: "Get orders for the authenticated customer",
+};
+
+export const acknowledgeOrderSchema = {
+  tags: ["orders"],
+  description: "Acknowledge an order (mark as printed/seen by tablet)",
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: { id: { type: "string" } },
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        customer: { type: "string" },
+        phone: { type: "string" },
+        status: { type: "string" },
+        etaMinutes: { type: "integer", nullable: true },
+        acknowledgedAt: { type: "string", format: "date-time", nullable: true },
+        createdAt: { type: "string", format: "date-time" },
+        updatedAt: { type: "string", format: "date-time" },
+        items: { type: "array" },
+        restaurant: { type: "object" },
+      },
+    },
+    404: {
+      type: "object",
+      properties: { message: { type: "string" } },
+    },
+    403: {
+      type: "object",
+      properties: { error: { type: "string" } },
     },
   },
 };

@@ -6,19 +6,21 @@ export interface DeliveryZone {
 export interface Restaurant {
   id: string;
   name: string;
-
+  slug: string;
   houseNumber: string;
   street: string;
   city: string;
   postcode: string;
   deliveryZones: DeliveryZone[];
   rating?: number | null;
+  ownerId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface CreateRestaurantInput {
   name: string;
+  slug: string;
   houseNumber: string;
   street: string;
   city: string;

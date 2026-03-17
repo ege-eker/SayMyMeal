@@ -3,16 +3,18 @@ import { Prisma } from "@prisma/client";
 import { CreateRestaurantInput, UpdateRestaurantInput } from "./restaurant.types";
 
 export const restaurantService = (app: FastifyInstance) => ({
-  async create(data: CreateRestaurantInput) {
+  async create(data: CreateRestaurantInput, ownerId?: string) {
     return app.prisma.restaurant.create({
       data: {
         name: data.name,
+        slug: data.slug,
         houseNumber: data.houseNumber,
         street: data.street,
         city: data.city,
         postcode: data.postcode,
         rating: data.rating,
         deliveryZones: data.deliveryZones as unknown as Prisma.InputJsonValue,
+        ownerId: ownerId || null,
       },
     });
   },
@@ -22,6 +24,7 @@ export const restaurantService = (app: FastifyInstance) => ({
       where: { id },
       data: {
         name: data.name,
+        slug: data.slug,
         houseNumber: data.houseNumber,
         street: data.street,
         city: data.city,
@@ -41,27 +44,50 @@ export const restaurantService = (app: FastifyInstance) => ({
   async findById(id: string) {
     return app.prisma.restaurant.findUnique({
       where: { id },
+      include: { menus: {} },
+    });
+  },
+
+  async findBySlug(slug: string) {
+    return app.prisma.restaurant.findUnique({
+      where: { slug },
       include: {
         menus: {
+          include: {
+            foods: {
+              include: {
+                options: {
+                  include: { choices: true },
+                },
+              },
+            },
+          },
         },
-      }
+      },
+    });
+  },
+
+  async findByOwner(ownerId: string) {
+    return app.prisma.restaurant.findMany({
+      where: { ownerId },
+      include: { menus: true },
     });
   },
 
   async activate(id: string) {
-      await app.prisma.restaurant.updateMany({
-          data: { isActive: false },
-      });
+    await app.prisma.restaurant.updateMany({
+      data: { isActive: false },
+    });
 
-      const updated = await app.prisma.restaurant.update({
-            where: { id },
-            data: { isActive: true },
-      });
+    const updated = await app.prisma.restaurant.update({
+      where: { id },
+      data: { isActive: true },
+    });
 
-      app.log.info("🧹 Resetting WhatsApp sessions (active restaurant changed)");
-      app.whatsappService.clearSessions();
+    app.log.info("Resetting WhatsApp sessions (active restaurant changed)");
+    app.whatsappService.clearSessions();
 
-      return updated;
+    return updated;
   },
 
   async remove(id: string) {

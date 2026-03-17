@@ -110,3 +110,16 @@ export const deleteOptionSchema = {
     204: { type: "null", description: "Option deleted" },
   },
 };
+
+export const deleteChoiceSchema = {
+  tags: ["foods", "options"],
+  description: "Delete an option choice by ID",
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: { id: { type: "string" } },
+  },
+  response: {
+    204: { type: "null", description: "Choice deleted" },
+  },
+};

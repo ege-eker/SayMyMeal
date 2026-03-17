@@ -4,17 +4,31 @@ import {
     createOrderSchema,
     getOrdersSchema,
     getOrderByIdSchema,
-    updateOrderStatusSchema, getOrderStatusSchema
+    updateOrderStatusSchema,
+    getOrderStatusSchema,
+    getMyOrdersSchema,
+    acknowledgeOrderSchema,
 } from "./order.schema";
+import { authenticate, optionalAuth, requireRole } from '../../middleware/auth';
 
 async function orderRoutes(app: FastifyInstance) {
     const ctrl = orderController(app);
+    const ownerAuth = requireRole('OWNER');
 
-    app.post("/orders", { schema: createOrderSchema }, ctrl.create);
-    app.get("/orders", { schema: getOrdersSchema }, ctrl.getAll);
-    app.get("/orders/:id", { schema: getOrderByIdSchema }, ctrl.getById);
-    app.put("/orders/:id/status", { schema: updateOrderStatusSchema }, ctrl.updateStatus);
-    app.get("/orders/status", {schema: getOrderStatusSchema}, ctrl.statusLookup);
+    // optionalAuth: if token present, attach userId; otherwise voice/WhatsApp works as before
+    app.post("/orders", { schema: createOrderSchema, preHandler: [optionalAuth] }, ctrl.create as any);
+
+    // Customer: my orders
+    app.get("/orders/my", { schema: getMyOrdersSchema, preHandler: [authenticate] }, ctrl.getMyOrders);
+
+    // Public: order status lookup (voice/WhatsApp)
+    app.get("/orders/status", { schema: getOrderStatusSchema }, ctrl.statusLookup);
+
+    // Owner: get orders (filtered by restaurantId)
+    app.get("/orders", { schema: getOrdersSchema, preHandler: [ownerAuth] }, ctrl.getAll as any);
+    app.get("/orders/:id", { schema: getOrderByIdSchema, preHandler: [ownerAuth] }, ctrl.getById as any);
+    app.put("/orders/:id/status", { schema: updateOrderStatusSchema, preHandler: [ownerAuth] }, ctrl.updateStatus as any);
+    app.post("/orders/:id/acknowledge", { schema: acknowledgeOrderSchema, preHandler: [ownerAuth] }, ctrl.acknowledge as any);
 }
 
 export default orderRoutes;
