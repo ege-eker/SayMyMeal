@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { APP_NAME } from "@/lib/config";
 
 export default function LandingPage() {
   const { user, logout } = useAuth();
@@ -10,7 +11,7 @@ export default function LandingPage() {
     <main className="min-h-screen bg-gradient-to-br from-purple-700 via-purple-600 to-indigo-700 text-white">
       {/* Nav */}
       <nav className="flex justify-between items-center px-6 py-4 max-w-6xl mx-auto">
-        <span className="text-xl font-bold">Restaurant Platform</span>
+        <span className="text-xl font-bold">{APP_NAME}</span>
         <div className="flex items-center gap-4">
           {user ? (
             <>
@@ -109,7 +110,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="text-center py-8 text-purple-300 text-sm">
-        Restaurant Platform &copy; {new Date().getFullYear()}
+        {APP_NAME} &copy; {new Date().getFullYear()}
       </footer>
     </main>
   );
