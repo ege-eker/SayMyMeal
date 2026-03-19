@@ -35,6 +35,7 @@ model Restaurant {
   postcode      String
   rating        Float?
   deliveryZones Json?
+  pollToken     String?  @unique
   menus         Menu[]
   orders        Order[]
   owner         User?    @relation(fields: [ownerId], references: [id])

@@ -27,6 +27,7 @@ async function restaurantRoutes(app: FastifyInstance) {
     app.put("/restaurants/:id", { schema: updateRestaurantSchema, preHandler: [ownerAuth] }, ctrl.update as any);
     app.post("/restaurants/:id/activate", { schema: activateRestaurantSchema, preHandler: [ownerAuth] }, ctrl.activate as any);
     app.delete("/restaurants/:id", { schema: deleteRestaurantSchema, preHandler: [ownerAuth] }, ctrl.remove as any);
+    app.post("/restaurants/:id/poll-token", { preHandler: [ownerAuth] }, ctrl.regeneratePollToken as any);
 }
 
 export default restaurantRoutes;

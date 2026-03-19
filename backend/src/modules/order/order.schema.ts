@@ -99,6 +99,7 @@ export const getOrdersSchema = {
       phone: { type: "string", description: "Filter orders by customer phone" },
       restaurantId: { type: "string", description: "Filter orders by restaurant ID" },
       acknowledged: { type: "string", enum: ["true", "false"], description: "Filter by acknowledgement status" },
+      pollToken: { type: "string", description: "Restaurant poll token (alternative to JWT auth)" },
     },
   },
   response: {
@@ -315,6 +316,12 @@ export const acknowledgeOrderSchema = {
     type: "object",
     required: ["id"],
     properties: { id: { type: "string" } },
+  },
+  querystring: {
+    type: "object",
+    properties: {
+      pollToken: { type: "string", description: "Restaurant poll token (alternative to JWT auth)" },
+    },
   },
   response: {
     200: {

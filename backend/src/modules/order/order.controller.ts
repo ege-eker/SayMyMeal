@@ -19,20 +19,36 @@ export const orderController = (app: any) => {
         }
     },
 
-    getAll: async (req: FastifyRequest<{ Querystring: { restaurantId?: string; acknowledged?: string } }>, reply: FastifyReply) => {
-      const { restaurantId } = req.query;
+    getAll: async (req: FastifyRequest<{ Querystring: { restaurantId?: string; acknowledged?: string; pollToken?: string } }>, reply: FastifyReply) => {
+      const { restaurantId, pollToken } = req.query;
       const acknowledged = req.query.acknowledged === 'true' ? true
                          : req.query.acknowledged === 'false' ? false
                          : undefined;
+
+      // Auth via pollToken (tablet polling)
+      if (pollToken) {
+        const restaurant = await app.prisma.restaurant.findUnique({
+          where: { pollToken },
+          select: { id: true },
+        });
+        if (!restaurant) return reply.code(401).send({ error: 'Invalid poll token' });
+        const orders = await service.findAll(restaurant.id, undefined, acknowledged);
+        return reply.send(orders);
+      }
+
+      // Auth via JWT (owner dashboard)
+      if (!req.user) return reply.code(401).send({ error: 'Unauthorized' });
+      if (req.user.role !== 'OWNER') return reply.code(403).send({ error: 'Forbidden' });
+
       if (restaurantId) {
-        const isOwner = await verifyOwnership(app, req.user!.id, restaurantId);
+        const isOwner = await verifyOwnership(app, req.user.id, restaurantId);
         if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
         const orders = await service.findAll(restaurantId, undefined, acknowledged);
         return reply.send(orders);
       }
       // No restaurantId: return only orders for owner's restaurants
       const myRestaurants = await app.prisma.restaurant.findMany({
-        where: { ownerId: req.user!.id },
+        where: { ownerId: req.user.id },
         select: { id: true },
       });
       const ids = myRestaurants.map((r: { id: string }) => r.id);
@@ -58,11 +74,26 @@ export const orderController = (app: any) => {
       return reply.send(updated);
     },
 
-    acknowledge: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    acknowledge: async (req: FastifyRequest<{ Params: { id: string }; Querystring: { pollToken?: string } }>, reply: FastifyReply) => {
+      const { pollToken } = req.query;
       const order = await service.findById(req.params.id);
       if (!order) return reply.code(404).send({ message: "Order not found" });
-      const isOwner = await verifyOwnership(app, req.user!.id, order.restaurantId);
-      if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
+
+      if (pollToken) {
+        const restaurant = await app.prisma.restaurant.findUnique({
+          where: { pollToken },
+          select: { id: true },
+        });
+        if (!restaurant || restaurant.id !== order.restaurantId) {
+          return reply.code(403).send({ error: 'Invalid poll token for this order' });
+        }
+      } else {
+        if (!req.user) return reply.code(401).send({ error: 'Unauthorized' });
+        if (req.user.role !== 'OWNER') return reply.code(403).send({ error: 'Forbidden' });
+        const isOwner = await verifyOwnership(app, req.user.id, order.restaurantId);
+        if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
+      }
+
       const updated = await service.acknowledge(req.params.id);
       return reply.send(updated);
     },

@@ -24,11 +24,11 @@ async function orderRoutes(app: FastifyInstance) {
     // Public: order status lookup (voice/WhatsApp)
     app.get("/orders/status", { schema: getOrderStatusSchema }, ctrl.statusLookup);
 
-    // Owner: get orders (filtered by restaurantId)
-    app.get("/orders", { schema: getOrdersSchema, preHandler: [ownerAuth] }, ctrl.getAll as any);
+    // Owner or pollToken: get orders (filtered by restaurantId)
+    app.get("/orders", { schema: getOrdersSchema, preHandler: [optionalAuth] }, ctrl.getAll as any);
     app.get("/orders/:id", { schema: getOrderByIdSchema, preHandler: [ownerAuth] }, ctrl.getById as any);
     app.put("/orders/:id/status", { schema: updateOrderStatusSchema, preHandler: [ownerAuth] }, ctrl.updateStatus as any);
-    app.post("/orders/:id/acknowledge", { schema: acknowledgeOrderSchema, preHandler: [ownerAuth] }, ctrl.acknowledge as any);
+    app.post("/orders/:id/acknowledge", { schema: acknowledgeOrderSchema, preHandler: [optionalAuth] }, ctrl.acknowledge as any);
 }
 
 export default orderRoutes;

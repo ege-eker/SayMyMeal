@@ -67,5 +67,17 @@ export const restaurantController = (app: any) => {
       await service.remove(req.params.id);
       return reply.code(204).send();
     },
+
+    regeneratePollToken: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const isOwner = await verifyOwnership(app, req.user!.id, req.params.id);
+      if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
+      const token = crypto.randomUUID();
+      const restaurant = await app.prisma.restaurant.update({
+        where: { id: req.params.id },
+        data: { pollToken: token },
+        select: { id: true, pollToken: true },
+      });
+      return reply.send(restaurant);
+    },
   };
 };
