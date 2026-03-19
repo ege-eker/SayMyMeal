@@ -6,7 +6,8 @@ import useSWR from "swr";
 import { getRestaurantBySlug } from "@/lib/api";
 import { useCart, CartItemOption } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import CartDrawer from "@/components/CartDrawer";
 import Link from "next/link";
 
@@ -21,6 +22,7 @@ export default function RestaurantMenuPage() {
   const [optionModal, setOptionModal] = useState<any>(null);
   const [selectedOptions, setSelectedOptions] = useState<CartItemOption[]>([]);
   const [addQuantity, setAddQuantity] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (restaurant) {
@@ -117,10 +119,39 @@ export default function RestaurantMenuPage() {
 
       {/* Menu */}
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Search */}
+        <div className="relative">
+          <Input
+            placeholder="Search menu..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pr-10"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         {restaurant.menus.length === 0 ? (
           <p className="text-gray-500 text-center py-12">No menus available yet.</p>
         ) : (
-          restaurant.menus.map((menu: any) => (
+          restaurant.menus.map((menu: any) => {
+            const term = searchTerm.toLowerCase();
+            const filteredFoods = term
+              ? menu.foods?.filter((food: any) =>
+                  food.name.toLowerCase().includes(term) ||
+                  (food.description && food.description.toLowerCase().includes(term))
+                )
+              : menu.foods;
+
+            if (term && (!filteredFoods || filteredFoods.length === 0)) return null;
+
+            return (
             <div key={menu.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="bg-gray-100 px-4 py-3">
                 <h2 className="text-lg font-semibold">{menu.name}</h2>
@@ -129,7 +160,7 @@ export default function RestaurantMenuPage() {
                 )}
               </div>
               <div className="divide-y">
-                {menu.foods?.map((food: any) => (
+                {filteredFoods?.map((food: any) => (
                   <div
                     key={food.id}
                     className="px-4 py-3 flex justify-between items-center hover:bg-gray-50"
@@ -157,7 +188,8 @@ export default function RestaurantMenuPage() {
                 ))}
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </main>
 
@@ -166,7 +198,7 @@ export default function RestaurantMenuPage() {
         <DialogContent className="max-w-md">
           {optionModal && (
             <div className="space-y-4">
-              <h3 className="text-lg font-bold">{optionModal.name}</h3>
+              <DialogTitle className="text-lg font-bold">{optionModal.name}</DialogTitle>
               <p className="text-gray-600">£{optionModal.basePrice.toFixed(2)}</p>
 
               {optionModal.options.map((option: any) => (
