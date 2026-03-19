@@ -16,8 +16,11 @@ services:
       - ./frontend/components:/app/components
       - ./frontend/lib:/app/lib
       - ./frontend/public:/app/public
-    command: bun run dev
+      - /app/.next
+      - /app/node_modules
+    command: bun next dev --webpack
     environment:
       - NEXT_PUBLIC_API_URL=${API_URL}
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
+      - HOSTNAME=0.0.0.0
