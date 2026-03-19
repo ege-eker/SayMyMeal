@@ -257,6 +257,55 @@ export const updateOrderStatusSchema = {
 export const getMyOrdersSchema = {
   tags: ["orders"],
   description: "Get orders for the authenticated customer",
+  response: {
+    200: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          customer: { type: "string" },
+          phone: { type: "string" },
+          status: { type: "string" },
+          etaMinutes: { type: "integer", nullable: true },
+          notes: { type: "string", nullable: true },
+          address: { type: "object", nullable: true },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+          items: {
+            type: "array",
+            nullable: true,
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string" },
+                quantity: { type: "integer" },
+                food: {
+                  type: "object",
+                  nullable: true,
+                  properties: {
+                    id: { type: "string" },
+                    name: { type: "string" },
+                    basePrice: { type: "number", nullable: true },
+                  },
+                },
+                selected: { type: "array", nullable: true },
+              },
+            },
+          },
+          restaurant: {
+            type: "object",
+            nullable: true,
+            properties: {
+              id: { type: "string" },
+              name: { type: "string" },
+              slug: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const acknowledgeOrderSchema = {
