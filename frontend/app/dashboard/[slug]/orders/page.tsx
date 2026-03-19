@@ -92,6 +92,12 @@ function OrderCard({
         </div>
       </div>
 
+      {order.notes && (
+        <p className="text-sm text-gray-500 italic bg-yellow-50 px-3 py-2 rounded border border-yellow-200">
+          Note: {order.notes}
+        </p>
+      )}
+
       <div className="border-t pt-2">
         {order.items?.length > 0 ? (
           <ul className="divide-y divide-gray-100">

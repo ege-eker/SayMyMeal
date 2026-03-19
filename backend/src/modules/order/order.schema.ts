@@ -20,6 +20,7 @@ export const createOrderSchema = {
           country: { type: "string", default: "UK" },
         },
       },
+      notes: { type: "string", nullable: true },
       /* Order items */
       items: {
         type: "array",
@@ -63,6 +64,7 @@ export const createOrderSchema = {
         phone: { type: "string" },
         status: { type: "string" },
         etaMinutes: { type: "integer", nullable: true },
+        notes: { type: "string", nullable: true },
         address: { type: "object" },
         items: {
           type: "array",
@@ -111,6 +113,7 @@ export const getOrdersSchema = {
           status: { type: "string" },
           etaMinutes: { type: "integer", nullable: true },
           acknowledgedAt: { type: "string", format: "date-time", nullable: true },
+          notes: { type: "string", nullable: true },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
           /* ---- NEW: address ---- */
@@ -196,6 +199,7 @@ export const getOrderByIdSchema = {
         address: { type: "object" },
         status: { type: "string" },
         etaMinutes: { type: "integer" },
+        notes: { type: "string", nullable: true },
         items: {
           type: "array",
           items: {

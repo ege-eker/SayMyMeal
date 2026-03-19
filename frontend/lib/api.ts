@@ -164,6 +164,7 @@ export async function createOrder(data: {
   phone: string;
   restaurantId: string;
   address: any;
+  notes?: string;
   items: {
     foodId: string;
     quantity: number;

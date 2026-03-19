@@ -73,6 +73,11 @@ export default function MyOrdersPage() {
                     </span>
                   </div>
                 </div>
+                {order.notes && (
+                  <p className="text-sm text-gray-500 italic bg-gray-50 px-3 py-2 rounded">
+                    Note: {order.notes}
+                  </p>
+                )}
                 <div className="border-t pt-2">
                   {order.items?.map((item: any) => (
                     <p key={item.id} className="text-sm text-gray-600">

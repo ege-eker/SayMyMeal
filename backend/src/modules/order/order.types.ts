@@ -43,6 +43,7 @@ export interface CreateOrderInput {
   address: UKAddress;
   restaurantId: string;
   items: CreateOrderItemInput[];
+  notes?: string;
 }
 
 export interface UpdateOrderStatusInput {

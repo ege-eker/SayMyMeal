@@ -52,6 +52,7 @@ export const orderService = (app: FastifyInstance) => ({
           address: data.address as unknown as Prisma.InputJsonValue,
           status: "pending",
           etaMinutes: matchedZone.etaMinutes,
+          notes: data.notes || null,
           restaurantId: data.restaurantId,
           userId: userId || null,
           items: {

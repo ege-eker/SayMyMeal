@@ -27,6 +27,7 @@ export default function CheckoutPage() {
     city: "",
     postcode: "",
   });
+  const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -66,6 +67,7 @@ export default function CheckoutPage() {
         phone: user.phone || "",
         restaurantId: cart.restaurantId!,
         address,
+        notes: notes.trim() || undefined,
         items: cart.items.map((item) => ({
           foodId: item.foodId,
           quantity: item.quantity,
@@ -174,6 +176,18 @@ export default function CheckoutPage() {
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="notes">Order Notes</Label>
+            <textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Special requests..."
+              rows={3}
+              className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
           </div>
 
           <Button type="submit" className="w-full" disabled={submitting}>
