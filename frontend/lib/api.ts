@@ -157,6 +157,43 @@ export async function deleteChoice(id: string) {
   await authFetch(`${API_URL}/foods/options/choice/${id}`, { method: "DELETE" });
 }
 
+// ---- Image Upload ----
+
+export async function uploadImage(
+  entity: "foods" | "menus" | "restaurants",
+  id: string,
+  file: File
+): Promise<{ imageUrl: string }> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${API_URL}/${entity}/${id}/image`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Upload failed" }));
+    throw new Error(err.error || "Upload failed");
+  }
+  return res.json();
+}
+
+export async function removeImage(
+  entity: "foods" | "menus" | "restaurants",
+  id: string
+): Promise<void> {
+  const res = await authFetch(`${API_URL}/${entity}/${id}/image`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Remove failed" }));
+    throw new Error(err.error || "Remove failed");
+  }
+}
+
 // ---- Orders ----
 
 export async function createOrder(data: {

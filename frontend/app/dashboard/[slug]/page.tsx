@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import FoodOptionForm from "@/components/FoodOptionForm";
 import ConfirmDelete from "@/components/ConfirmDelete";
+import ImageUpload from "@/components/ImageUpload";
 import { Trash2 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -37,9 +38,18 @@ export default function DashboardRestaurantPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">{restaurant.name}</h1>
-          <p className="text-sm text-gray-500">/{restaurant.slug}</p>
+        <div className="flex items-center gap-4">
+          <ImageUpload
+            entity="restaurants"
+            entityId={restaurant.id}
+            currentImageUrl={restaurant.imageUrl}
+            onSuccess={() => mutate()}
+            size="md"
+          />
+          <div>
+            <h1 className="text-2xl font-bold">{restaurant.name}</h1>
+            <p className="text-sm text-gray-500">/{restaurant.slug}</p>
+          </div>
         </div>
         <Dialog open={openMenuDialog} onOpenChange={setOpenMenuDialog}>
           <DialogTrigger asChild>
@@ -101,7 +111,16 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
   return (
     <div className="border rounded-lg bg-white p-4 shadow-sm">
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg font-semibold">{menuDetail.name}</h2>
+        <div className="flex items-center gap-3">
+          <ImageUpload
+            entity="menus"
+            entityId={menu.id}
+            currentImageUrl={menuDetail.imageUrl}
+            onSuccess={() => mutate()}
+            size="sm"
+          />
+          <h2 className="text-lg font-semibold">{menuDetail.name}</h2>
+        </div>
         <ConfirmDelete
           title={`Delete menu "${menuDetail.name}"?`}
           description="This will delete the menu and all its foods and options. This action cannot be undone."
@@ -123,9 +142,18 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
           {menuDetail.foods.map((food: any) => (
             <li key={food.id} className="border rounded p-3 bg-gray-50">
               <div className="flex justify-between items-center">
-                <span>
-                  {food.name} — £{(food.basePrice ?? 0).toFixed(2)}
-                </span>
+                <div className="flex items-center gap-3">
+                  <ImageUpload
+                    entity="foods"
+                    entityId={food.id}
+                    currentImageUrl={food.imageUrl}
+                    onSuccess={() => mutate()}
+                    size="sm"
+                  />
+                  <span>
+                    {food.name} — £{(food.basePrice ?? 0).toFixed(2)}
+                  </span>
+                </div>
                 <ConfirmDelete
                   title={`Delete "${food.name}"?`}
                   description="This will delete the food and all its options. This action cannot be undone."
