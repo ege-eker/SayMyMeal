@@ -9,7 +9,7 @@ RUN apt-get update -y && apt-get install -y \
 
 ENV PATH="/root/.bun/bin:${PATH}"
 
-COPY package*.json bun.lockb* ./
+COPY package*.json bun.lock* ./
 RUN bun install --frozen-lockfile
 
 COPY . .

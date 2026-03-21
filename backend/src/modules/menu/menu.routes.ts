@@ -5,7 +5,9 @@ import {
   getMenusSchema,
   getMenuByIdSchema,
   updateMenuSchema,
-  deleteMenuSchema
+  deleteMenuSchema,
+  uploadMenuImageSchema,
+  removeMenuImageSchema
 } from "./menu.schema";
 import { requireRole } from "../../middleware/auth";
 
@@ -20,6 +22,8 @@ async function menuRoutes(app: FastifyInstance) {
   // Owner-only writes
   app.post("/menus", { schema: createMenuSchema, preHandler: [ownerAuth] }, ctrl.create as any);
   app.put("/menus/:id", { schema: updateMenuSchema, preHandler: [ownerAuth] }, ctrl.update as any);
+  app.post("/menus/:id/image", { schema: uploadMenuImageSchema, preHandler: [ownerAuth] }, ctrl.uploadImage as any);
+  app.delete("/menus/:id/image", { schema: removeMenuImageSchema, preHandler: [ownerAuth] }, ctrl.removeImage as any);
   app.delete("/menus/:id", { schema: deleteMenuSchema, preHandler: [ownerAuth] }, ctrl.remove as any);
 }
 

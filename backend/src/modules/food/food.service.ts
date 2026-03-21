@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { CreateFoodInput, UpdateFoodInput } from "./food.types";
+import { deleteUploadedFile } from "../../utils/upload";
 
 export const foodService = (app: FastifyInstance) => ({
   async create(data: CreateFoodInput) {
@@ -38,7 +39,27 @@ export const foodService = (app: FastifyInstance) => ({
     });
   },
 
+  async updateImage(id: string, imageUrl: string) {
+    const existing = await app.prisma.food.findUnique({ where: { id }, select: { imageUrl: true } });
+    await deleteUploadedFile(existing?.imageUrl);
+    return app.prisma.food.update({
+      where: { id },
+      data: { imageUrl },
+    });
+  },
+
+  async removeImage(id: string) {
+    const existing = await app.prisma.food.findUnique({ where: { id }, select: { imageUrl: true } });
+    await deleteUploadedFile(existing?.imageUrl);
+    return app.prisma.food.update({
+      where: { id },
+      data: { imageUrl: null },
+    });
+  },
+
   async remove(id: string) {
+    const existing = await app.prisma.food.findUnique({ where: { id }, select: { imageUrl: true } });
+    await deleteUploadedFile(existing?.imageUrl);
     return app.prisma.food.delete({ where: { id } });
   }
 });

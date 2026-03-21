@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { foodService } from "./food.service";
 import { CreateFoodInput, UpdateFoodInput } from "./food.types";
 import { verifyOwnership, getRestaurantIdFromMenu, getRestaurantIdFromFood } from "../../middleware/auth";
+import { saveUploadedFile } from "../../utils/upload";
 
 export const foodController = (app: any) => {
   const service = foodService(app);
@@ -47,6 +48,39 @@ export const foodController = (app: any) => {
       } catch (e) {
         return reply.code(404).send({ error: "Not found" });
       }
+    },
+
+    uploadImage: async (
+      req: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      const restaurantId = await getRestaurantIdFromFood(app, req.params.id);
+      if (!restaurantId) return reply.code(404).send({ error: "Not found" });
+      const isOwner = await verifyOwnership(app, req.user!.id, restaurantId);
+      if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
+
+      const file = await req.file();
+      if (!file) return reply.code(400).send({ error: "No file uploaded" });
+
+      try {
+        const imageUrl = await saveUploadedFile(file, "foods");
+        await service.updateImage(req.params.id, imageUrl);
+        return reply.send({ imageUrl });
+      } catch (e: any) {
+        return reply.code(400).send({ error: e.message });
+      }
+    },
+
+    removeImage: async (
+      req: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      const restaurantId = await getRestaurantIdFromFood(app, req.params.id);
+      if (!restaurantId) return reply.code(404).send({ error: "Not found" });
+      const isOwner = await verifyOwnership(app, req.user!.id, restaurantId);
+      if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
+      await service.removeImage(req.params.id);
+      return reply.send({ imageUrl: null });
     },
 
     remove: async (

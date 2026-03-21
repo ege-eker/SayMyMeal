@@ -33,6 +33,7 @@ export const createRestaurantSchema = {
           id: { type: "string" },
           name: { type: "string" },
           slug: { type: "string" },
+          imageUrl: { type: "string", nullable: true },
           houseNumber: { type: "string" },
           street: { type: "string" },
           city: { type: "string" },
@@ -53,6 +54,7 @@ const restaurantResponseProperties = {
   id: { type: "string" },
   name: { type: "string" },
   slug: { type: "string" },
+  imageUrl: { type: "string", nullable: true },
   houseNumber: { type: "string" },
   street: { type: "string" },
   city: { type: "string" },
@@ -168,4 +170,41 @@ export const activateRestaurantSchema = {
     required: ["id"],
     properties: { id: { type: "string" } },
   },
+};
+
+export const removeRestaurantImageSchema = {
+  tags: ["restaurants"],
+  description: "Remove image from a restaurant",
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: { id: { type: "string" } }
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        imageUrl: { type: "null" }
+      }
+    }
+  }
+};
+
+export const uploadRestaurantImageSchema = {
+  tags: ["restaurants"],
+  description: "Upload an image for a restaurant",
+  consumes: ["multipart/form-data"],
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: { id: { type: "string" } }
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        imageUrl: { type: "string" }
+      }
+    }
+  }
 };

@@ -16,6 +16,7 @@ export const createMenuSchema = {
       properties: {
         id: { type: "string" },
         name: { type: "string" },
+        imageUrl: { type: "string", nullable: true },
         restaurantId: { type: "string" },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" }
@@ -35,6 +36,7 @@ export const getMenusSchema = {
         properties: {
           id: { type: "string" },
           name: { type: "string" },
+          imageUrl: { type: "string", nullable: true },
           restaurantId: { type: "string" },
           foods: {
             type: "array",
@@ -43,6 +45,7 @@ export const getMenusSchema = {
               properties: {
                 id: { type: "string" },
                 name: { type: "string" },
+                imageUrl: { type: "string", nullable: true },
                 basePrice: { type: "number" }
               }
             }
@@ -72,6 +75,7 @@ export const getMenuByIdSchema = {
       properties: {
         id: { type: "string" },
         name: { type: "string" },
+        imageUrl: { type: "string", nullable: true },
         restaurantId: { type: "string" },
         foods: {
             type: "array",
@@ -80,6 +84,7 @@ export const getMenuByIdSchema = {
                 properties: {
                     id: { type: "string" },
                     name: { type: "string" },
+                    imageUrl: { type: "string", nullable: true },
                     basePrice: { type: "number" },
                 }
             }
@@ -117,6 +122,7 @@ export const updateMenuSchema = {
       properties: {
         id: { type: "string" },
         name: { type: "string" },
+        imageUrl: { type: "string", nullable: true },
         restaurantId: { type: "string" },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" }
@@ -150,6 +156,43 @@ export const deleteMenuSchema = {
       type: "object",
       properties: {
         error: { type: "string" }
+      }
+    }
+  }
+};
+
+export const removeMenuImageSchema = {
+  tags: ["menus"],
+  description: "Remove image from a menu",
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: { id: { type: "string" } }
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        imageUrl: { type: "null" }
+      }
+    }
+  }
+};
+
+export const uploadMenuImageSchema = {
+  tags: ["menus"],
+  description: "Upload an image for a menu",
+  consumes: ["multipart/form-data"],
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: { id: { type: "string" } }
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        imageUrl: { type: "string" }
       }
     }
   }

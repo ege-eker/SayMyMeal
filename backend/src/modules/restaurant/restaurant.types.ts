@@ -7,6 +7,7 @@ export interface Restaurant {
   id: string;
   name: string;
   slug: string;
+  imageUrl?: string | null;
   houseNumber: string;
   street: string;
   city: string;

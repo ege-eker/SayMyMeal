@@ -1,6 +1,7 @@
 export interface Food {
   id: string;
   name: string;
+  imageUrl?: string | null;
   basePrice: number;
   menuId: string;
   createdAt: Date;

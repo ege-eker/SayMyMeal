@@ -29,6 +29,7 @@ model Restaurant {
   id            String   @id @default(uuid())
   name          String
   slug          String   @unique
+  imageUrl      String?
   houseNumber   String
   street        String
   city          String
@@ -49,6 +50,7 @@ model Menu {
   id           String     @id @default(uuid())
   name         String
   description  String?
+  imageUrl     String?
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId String
   foods        Food[]
@@ -60,6 +62,7 @@ model Food {
   id          String       @id @default(uuid())
   name        String
   description String?
+  imageUrl    String?
   basePrice   Float
   menu        Menu         @relation(fields: [menuId], references: [id], onDelete: Cascade)
   menuId      String

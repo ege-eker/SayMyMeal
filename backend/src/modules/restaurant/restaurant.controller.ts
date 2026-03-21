@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import { restaurantService } from "./restaurant.service";
 import { CreateRestaurantInput, UpdateRestaurantInput } from "./restaurant.types";
 import { verifyOwnership } from "../../middleware/auth";
+import { saveUploadedFile } from "../../utils/upload";
 
 export const restaurantController = (app: any) => {
   const service = restaurantService(app);
@@ -66,6 +67,29 @@ export const restaurantController = (app: any) => {
       if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
       await service.remove(req.params.id);
       return reply.code(204).send();
+    },
+
+    removeImage: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const isOwner = await verifyOwnership(app, req.user!.id, req.params.id);
+      if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
+      await service.removeImage(req.params.id);
+      return reply.send({ imageUrl: null });
+    },
+
+    uploadImage: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const isOwner = await verifyOwnership(app, req.user!.id, req.params.id);
+      if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
+
+      const file = await req.file();
+      if (!file) return reply.code(400).send({ error: "No file uploaded" });
+
+      try {
+        const imageUrl = await saveUploadedFile(file, "restaurants");
+        await service.updateImage(req.params.id, imageUrl);
+        return reply.send({ imageUrl });
+      } catch (e: any) {
+        return reply.code(400).send({ error: e.message });
+      }
     },
 
     regeneratePollToken: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {

@@ -17,6 +17,7 @@ export const createFoodSchema = {
       properties: {
         id: { type: "string" },
         name: { type: "string" },
+        imageUrl: { type: "string", nullable: true },
         basePrice: { type: "number" },
         menuId: { type: "string" },
         createdAt: { type: "string", format: "date-time" },
@@ -37,6 +38,7 @@ export const getFoodsSchema = {
         properties: {
           id: { type: "string" },
           name: { type: "string" },
+          imageUrl: { type: "string", nullable: true },
           basePrice: { type: "number" },
           menuId: { type: "string" },
           createdAt: { type: "string", format: "date-time" },
@@ -63,6 +65,7 @@ export const getFoodByIdSchema = {
       properties: {
         id: { type: "string" },
         name: { type: "string" },
+        imageUrl: { type: "string", nullable: true },
         basePrice: { type: "number" },
         menuId: { type: "string" },
         options: {
@@ -108,6 +111,7 @@ export const updateFoodSchema = {
       properties: {
         id: { type: "string" },
         name: { type: "string" },
+        imageUrl: { type: "string", nullable: true },
         basePrice: { type: "number" },
         menuId: { type: "string" },
         createdAt: { type: "string", format: "date-time" },
@@ -117,6 +121,43 @@ export const updateFoodSchema = {
     404: {
       type: "object",
       properties: { error: { type: "string" } }
+    }
+  }
+};
+
+export const uploadFoodImageSchema = {
+  tags: ["foods"],
+  description: "Upload an image for a food item",
+  consumes: ["multipart/form-data"],
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: { id: { type: "string" } }
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        imageUrl: { type: "string" }
+      }
+    }
+  }
+};
+
+export const removeFoodImageSchema = {
+  tags: ["foods"],
+  description: "Remove image from a food item",
+  params: {
+    type: "object",
+    required: ["id"],
+    properties: { id: { type: "string" } }
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        imageUrl: { type: "null" }
+      }
     }
   }
 };

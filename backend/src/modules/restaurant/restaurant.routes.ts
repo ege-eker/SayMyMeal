@@ -8,7 +8,9 @@ import {
     getMyRestaurantsSchema,
     updateRestaurantSchema,
     deleteRestaurantSchema,
-    activateRestaurantSchema
+    activateRestaurantSchema,
+    uploadRestaurantImageSchema,
+    removeRestaurantImageSchema
 } from "./restaurant.schema";
 import { authenticate, requireRole } from "../../middleware/auth";
 
@@ -25,6 +27,8 @@ async function restaurantRoutes(app: FastifyInstance) {
     app.get("/restaurants/my", { schema: getMyRestaurantsSchema, preHandler: [ownerAuth] }, ctrl.getMyRestaurants);
     app.post("/restaurants", { schema: createRestaurantSchema, preHandler: [ownerAuth] }, ctrl.create as any);
     app.put("/restaurants/:id", { schema: updateRestaurantSchema, preHandler: [ownerAuth] }, ctrl.update as any);
+    app.post("/restaurants/:id/image", { schema: uploadRestaurantImageSchema, preHandler: [ownerAuth] }, ctrl.uploadImage as any);
+    app.delete("/restaurants/:id/image", { schema: removeRestaurantImageSchema, preHandler: [ownerAuth] }, ctrl.removeImage as any);
     app.post("/restaurants/:id/activate", { schema: activateRestaurantSchema, preHandler: [ownerAuth] }, ctrl.activate as any);
     app.delete("/restaurants/:id", { schema: deleteRestaurantSchema, preHandler: [ownerAuth] }, ctrl.remove as any);
     app.post("/restaurants/:id/poll-token", { preHandler: [ownerAuth] }, ctrl.regeneratePollToken as any);
