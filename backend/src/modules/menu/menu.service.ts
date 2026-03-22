@@ -14,14 +14,14 @@ export const menuService = (app: FastifyInstance) => ({
 
   async findAll() {
     return app.prisma.menu.findMany({
-      include: { foods: true }
+      include: { foods: { orderBy: { createdAt: "asc" } } }
     });
   },
 
   async findById(id: string) {
     return app.prisma.menu.findUnique({
       where: { id },
-      include: { foods: true }
+      include: { foods: { orderBy: { createdAt: "asc" } } }
     });
   },
 

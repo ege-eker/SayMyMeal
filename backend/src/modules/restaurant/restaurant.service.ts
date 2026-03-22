@@ -39,13 +39,13 @@ export const restaurantService = (app: FastifyInstance) => ({
   },
 
   async findAll() {
-    return app.prisma.restaurant.findMany({ include: { menus: true } });
+    return app.prisma.restaurant.findMany({ include: { menus: { orderBy: { createdAt: "asc" } } } });
   },
 
   async findById(id: string) {
     return app.prisma.restaurant.findUnique({
       where: { id },
-      include: { menus: {} },
+      include: { menus: { orderBy: { createdAt: "asc" } } },
     });
   },
 
@@ -54,8 +54,10 @@ export const restaurantService = (app: FastifyInstance) => ({
       where: { slug },
       include: {
         menus: {
+          orderBy: { createdAt: "asc" },
           include: {
             foods: {
+              orderBy: { createdAt: "asc" },
               include: {
                 options: {
                   include: { choices: true },
@@ -71,7 +73,7 @@ export const restaurantService = (app: FastifyInstance) => ({
   async findByOwner(ownerId: string) {
     return app.prisma.restaurant.findMany({
       where: { ownerId },
-      include: { menus: true },
+      include: { menus: { orderBy: { createdAt: "asc" } } },
     });
   },
 
