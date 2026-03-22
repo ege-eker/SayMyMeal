@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import FoodOptionForm from "@/components/FoodOptionForm";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import ImageUpload from "@/components/ImageUpload";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronDown } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -89,6 +89,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
   );
   const [foodName, setFoodName] = useState("");
   const [foodPrice, setFoodPrice] = useState("");
+  const [open, setOpen] = useState(true);
 
   const handleAddFood = async () => {
     if (!foodName.trim() || !foodPrice) return;
@@ -111,7 +112,8 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
   return (
     <div className="border rounded-lg bg-white p-4 shadow-sm">
       <div className="flex justify-between items-center mb-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => setOpen(!open)}>
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
           <ImageUpload
             entity="menus"
             entityId={menu.id}
@@ -137,67 +139,75 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
         />
       </div>
 
-      {menuDetail.foods?.length > 0 ? (
-        <ul className="space-y-2 mb-3">
-          {menuDetail.foods.map((food: any) => (
-            <li key={food.id} className="border rounded p-3 bg-gray-50">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <ImageUpload
-                    entity="foods"
-                    entityId={food.id}
-                    currentImageUrl={food.imageUrl}
-                    onSuccess={() => mutate()}
-                    size="sm"
-                  />
-                  <span>
-                    {food.name} — £{(food.basePrice ?? 0).toFixed(2)}
-                  </span>
-                </div>
-                <ConfirmDelete
-                  title={`Delete "${food.name}"?`}
-                  description="This will delete the food and all its options. This action cannot be undone."
-                  onConfirm={async () => {
-                    await deleteFood(food.id);
-                    mutate();
-                  }}
-                  trigger={
-                    <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Delete
-                    </Button>
-                  }
-                />
-              </div>
-              <div className="ml-4 border-l-2 border-purple-200 pl-3 mt-2">
-                <FoodOptionForm foodId={food.id} compact />
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm text-gray-400 mb-3">No foods yet.</p>
-      )}
+      <div
+        className="overflow-hidden transition-all duration-300 ease-in-out"
+        style={{
+          maxHeight: open ? "5000px" : "0px",
+          opacity: open ? 1 : 0,
+        }}
+      >
+          {menuDetail.foods?.length > 0 ? (
+            <ul className="space-y-2 mb-3">
+              {menuDetail.foods.map((food: any) => (
+                <li key={food.id} className="border rounded p-3 bg-gray-50">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <ImageUpload
+                        entity="foods"
+                        entityId={food.id}
+                        currentImageUrl={food.imageUrl}
+                        onSuccess={() => mutate()}
+                        size="sm"
+                      />
+                      <span>
+                        {food.name} — £{(food.basePrice ?? 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <ConfirmDelete
+                      title={`Delete "${food.name}"?`}
+                      description="This will delete the food and all its options. This action cannot be undone."
+                      onConfirm={async () => {
+                        await deleteFood(food.id);
+                        mutate();
+                      }}
+                      trigger={
+                        <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
+                      }
+                    />
+                  </div>
+                  <div className="ml-4 border-l-2 border-purple-200 pl-3 mt-2">
+                    <FoodOptionForm foodId={food.id} compact />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-400 mb-3">No foods yet.</p>
+          )}
 
-      {/* Add Food inline */}
-      <div className="flex gap-2 items-center">
-        <Input
-          placeholder="Food Name"
-          value={foodName}
-          onChange={(e) => setFoodName(e.target.value)}
-          className="flex-1"
-        />
-        <Input
-          type="number"
-          placeholder="Price"
-          value={foodPrice}
-          onChange={(e) => setFoodPrice(e.target.value)}
-          className="w-24"
-          step="0.01"
-        />
-        <Button size="sm" onClick={handleAddFood}>
-          Add Food
-        </Button>
+          {/* Add Food inline */}
+          <div className="flex gap-2 items-center">
+            <Input
+              placeholder="Food Name"
+              value={foodName}
+              onChange={(e) => setFoodName(e.target.value)}
+              className="flex-1"
+            />
+            <Input
+              type="number"
+              placeholder="Price"
+              value={foodPrice}
+              onChange={(e) => setFoodPrice(e.target.value)}
+              className="w-24"
+              step="0.01"
+            />
+            <Button size="sm" onClick={handleAddFood}>
+              Add Food
+            </Button>
+          </div>
       </div>
     </div>
   );

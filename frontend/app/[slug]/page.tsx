@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import CartDrawer from "@/components/CartDrawer";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -25,12 +26,18 @@ export default function RestaurantMenuPage() {
   const [selectedOptions, setSelectedOptions] = useState<CartItemOption[]>([]);
   const [addQuantity, setAddQuantity] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (restaurant) {
       cart.setRestaurant(restaurant.id, restaurant.slug);
     }
   }, [restaurant]);
+
+  const toggleMenu = (menuId: string) => {
+    setOpenMenus((prev) => ({ ...prev, [menuId]: prev[menuId] === false ? true : false }));
+  };
+  const isMenuOpen = (menuId: string) => openMenus[menuId] !== false;
 
   if (error) return <div className="p-8 text-red-500">Error loading restaurant</div>;
   if (!restaurant) return <div className="p-8">Loading...</div>;
@@ -208,31 +215,51 @@ export default function RestaurantMenuPage() {
               <div key={menu.id} className="space-y-4">
                 {/* Menu Header */}
                 {menu.imageUrl ? (
-                  <div className="relative h-40 rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => toggleMenu(menu.id)}
+                    className="relative w-full h-40 rounded-xl overflow-hidden text-left"
+                  >
                     <img
                       src={`${API_URL}${menu.imageUrl}`}
                       alt={menu.name}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    <div className="absolute bottom-0 left-0 px-4 pb-3">
-                      <h2 className="text-xl font-bold text-white">{menu.name}</h2>
+                    <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 flex items-end justify-between">
+                      <div>
+                        <h2 className="text-xl font-bold text-white">{menu.name}</h2>
+                        {menu.description && (
+                          <p className="text-sm text-white/80">{menu.description}</p>
+                        )}
+                      </div>
+                      <ChevronDown className={`w-5 h-5 text-white/80 shrink-0 transition-transform duration-300 ${isMenuOpen(menu.id) ? "rotate-180" : ""}`} />
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toggleMenu(menu.id)}
+                    className="w-full px-1 flex items-center justify-between text-left"
+                  >
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">{menu.name}</h2>
                       {menu.description && (
-                        <p className="text-sm text-white/80">{menu.description}</p>
+                        <p className="text-sm text-gray-500">{menu.description}</p>
                       )}
                     </div>
-                  </div>
-                ) : (
-                  <div className="px-1">
-                    <h2 className="text-xl font-bold text-gray-900">{menu.name}</h2>
-                    {menu.description && (
-                      <p className="text-sm text-gray-500">{menu.description}</p>
-                    )}
-                  </div>
+                    <ChevronDown className={`w-5 h-5 text-gray-400 shrink-0 transition-transform duration-300 ${isMenuOpen(menu.id) ? "rotate-180" : ""}`} />
+                  </button>
                 )}
 
                 {/* Food Items */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-hidden transition-all duration-300 ease-in-out"
+                  style={{
+                    maxHeight: isMenuOpen(menu.id) ? "2000px" : "0px",
+                    opacity: isMenuOpen(menu.id) ? 1 : 0,
+                  }}
+                >
                   {filteredFoods?.map((food: any) => (
                     <div
                       key={food.id}
