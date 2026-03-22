@@ -119,7 +119,7 @@ export const orderService = (app: FastifyInstance) => ({
             where: { userId },
             include: {
               items: { include: { food: true } },
-              restaurant: { select: { id: true, name: true, slug: true } },
+              restaurant: { select: { id: true, name: true, slug: true, imageUrl: true } },
             },
             orderBy: { createdAt: "desc" },
         });
