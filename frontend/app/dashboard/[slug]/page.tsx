@@ -37,7 +37,7 @@ export default function DashboardRestaurantPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div className="flex items-center gap-4">
           <ImageUpload
             entity="restaurants"
@@ -111,7 +111,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
 
   return (
     <div className="border rounded-lg bg-white p-4 shadow-sm">
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
         <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => setOpen(!open)}>
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
           <ImageUpload
@@ -150,7 +150,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
             <ul className="space-y-2 mb-3">
               {menuDetail.foods.map((food: any) => (
                 <li key={food.id} className="border rounded p-3 bg-gray-50">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                     <div className="flex items-center gap-3">
                       <ImageUpload
                         entity="foods"
@@ -189,7 +189,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
           )}
 
           {/* Add Food inline */}
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
             <Input
               placeholder="Food Name"
               value={foodName}
@@ -201,10 +201,10 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
               placeholder="Price"
               value={foodPrice}
               onChange={(e) => setFoodPrice(e.target.value)}
-              className="w-24"
+              className="w-full sm:w-24"
               step="0.01"
             />
-            <Button size="sm" onClick={handleAddFood}>
+            <Button size="sm" onClick={handleAddFood} className="w-full sm:w-auto">
               Add Food
             </Button>
           </div>

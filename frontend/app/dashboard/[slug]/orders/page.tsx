@@ -81,12 +81,12 @@ function OrderCard({
 
   return (
     <div className="border rounded-lg bg-white shadow-sm p-4 space-y-3">
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
         <div>
           <h3 className="font-semibold">{order.customer} ({order.phone})</h3>
-          <p className="text-sm text-gray-500">{addressStr}</p>
+          <p className="text-sm text-gray-500 break-words">{addressStr}</p>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           <p className="font-bold text-green-600">£{total.toFixed(2)}</p>
           <p className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleString()}</p>
         </div>

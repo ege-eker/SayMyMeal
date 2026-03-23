@@ -1,18 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { APP_NAME } from "@/lib/config";
+import { Menu, X } from "lucide-react";
 
 export default function LandingPage() {
   const { user, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-amber-600 via-amber-500 to-orange-600 text-white">
       {/* Nav */}
-      <nav className="flex justify-between items-center px-6 py-4 max-w-6xl mx-auto">
+      <nav className="flex justify-between items-center px-4 sm:px-6 py-4 max-w-6xl mx-auto">
         <span className="text-xl font-bold">{APP_NAME}</span>
-        <div className="flex items-center gap-4">
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-4">
           {user ? (
             <>
               <span className="text-sm text-amber-200">Hi, {user.name}</span>
@@ -55,7 +59,42 @@ export default function LandingPage() {
             </>
           )}
         </div>
+        {/* Mobile hamburger */}
+        <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden">
+          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </nav>
+      {/* Mobile nav menu */}
+      {menuOpen && (
+        <div className="md:hidden px-4 pb-4 space-y-3 max-w-6xl mx-auto">
+          {user ? (
+            <>
+              <span className="block text-sm text-amber-200">Hi, {user.name}</span>
+              {user.role === "OWNER" ? (
+                <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block bg-white text-amber-700 px-4 py-2 rounded-lg text-sm font-semibold text-center">
+                  Dashboard
+                </Link>
+              ) : (
+                <Link href="/orders" onClick={() => setMenuOpen(false)} className="block bg-white text-amber-700 px-4 py-2 rounded-lg text-sm font-semibold text-center">
+                  My Orders
+                </Link>
+              )}
+              <button onClick={() => { logout(); setMenuOpen(false); }} className="block text-sm text-amber-200 hover:text-white">
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" onClick={() => setMenuOpen(false)} className="block text-sm text-amber-200 hover:text-white">
+                Login
+              </Link>
+              <Link href="/register" onClick={() => setMenuOpen(false)} className="block bg-white text-amber-700 px-4 py-2 rounded-lg text-sm font-semibold text-center">
+                Register
+              </Link>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Hero */}
       <div className="flex flex-col items-center justify-center text-center px-6 py-24">
@@ -84,7 +123,7 @@ export default function LandingPage() {
       </div>
 
       {/* Features */}
-      <div className="max-w-5xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16 grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
         <div className="bg-white/10 rounded-xl p-6 backdrop-blur">
           <h3 className="text-xl font-bold mb-3">Easy Setup</h3>
           <p className="text-amber-200">

@@ -48,7 +48,7 @@ export default function CartPage() {
           <div className="space-y-4">
             <div className="bg-white rounded-lg shadow-sm divide-y">
               {cart.items.map((item, idx) => (
-                <div key={idx} className="p-4 flex justify-between items-center">
+                <div key={idx} className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                   <div className="flex-1">
                     <h3 className="font-medium">{item.foodName}</h3>
                     {item.selectedOptions.length > 0 && (

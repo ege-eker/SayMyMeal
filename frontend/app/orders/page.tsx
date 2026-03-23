@@ -173,7 +173,7 @@ export default function MyOrdersPage() {
                   {address && (
                     <div className="flex items-start gap-2 text-sm text-gray-500">
                       <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>{address}</span>
+                      <span className="break-words">{address}</span>
                     </div>
                   )}
                   {order.notes && (

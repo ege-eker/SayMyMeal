@@ -80,24 +80,26 @@ export default function FoodOptionForm({
       </h3>
 
       {/* Add Option */}
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
         <Input
           placeholder="Option title (e.g. Choose your Side)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="flex-1"
         />
-        <label className="flex items-center space-x-1 text-sm text-gray-500">
-          <input
-            type="checkbox"
-            checked={multiple}
-            onChange={(e) => setMultiple(e.target.checked)}
-          />
-          <span>Multiple</span>
-        </label>
-        <Button size="sm" disabled={isLoading} onClick={createOption}>
-          Add
-        </Button>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center space-x-1 text-sm text-gray-500">
+            <input
+              type="checkbox"
+              checked={multiple}
+              onChange={(e) => setMultiple(e.target.checked)}
+            />
+            <span>Multiple</span>
+          </label>
+          <Button size="sm" disabled={isLoading} onClick={createOption}>
+            Add
+          </Button>
+        </div>
       </div>
 
       {/* Existing options */}
@@ -194,7 +196,7 @@ function AddChoiceForm({
   };
 
   return (
-    <div className="flex items-center gap-2 mt-2">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
       <Input
         placeholder="Choice name (e.g. Fries)"
         value={label}
@@ -205,14 +207,14 @@ function AddChoiceForm({
         placeholder="Extra"
         value={extra}
         onChange={(e) => setExtra(e.target.value)}
-        className="w-24 text-sm"
+        className="w-full sm:w-24 text-sm"
         type="number"
       />
       <Button
         onClick={submit}
         disabled={loading}
         size="sm"
-        className="whitespace-nowrap"
+        className="whitespace-nowrap w-full sm:w-auto"
       >
         Add Choice
       </Button>

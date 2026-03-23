@@ -83,7 +83,7 @@ export default function DashboardPage() {
                   setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })
                 }
               />
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Input
                   placeholder="House Number"
                   value={form.houseNumber}
@@ -95,7 +95,7 @@ export default function DashboardPage() {
                   onChange={(e) => setForm({ ...form, street: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Input
                   placeholder="City"
                   value={form.city}
@@ -169,7 +169,7 @@ export default function DashboardPage() {
       ) : (
         <div className="grid gap-4">
           {restaurants.map((r: any) => (
-            <div key={r.id} className="bg-white rounded-lg shadow-sm p-4 flex justify-between items-center">
+            <div key={r.id} className="bg-white rounded-lg shadow-sm p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <div>
                 <h3 className="font-semibold text-lg">{r.name}</h3>
                 <p className="text-sm text-gray-500">/{r.slug}</p>
@@ -184,7 +184,7 @@ export default function DashboardPage() {
                   {r.isActive ? "Active" : "Inactive"}
                 </span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Link href={`/${r.slug}`}>
                   <Button size="sm" variant="outline">
                     View

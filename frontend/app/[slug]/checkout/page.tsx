@@ -137,7 +137,7 @@ export default function CheckoutPage() {
             <div className="bg-red-50 text-red-600 p-3 rounded text-sm">{error}</div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="houseNumber">House Number</Label>
               <Input
@@ -157,7 +157,7 @@ export default function CheckoutPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="city">City</Label>
               <Input

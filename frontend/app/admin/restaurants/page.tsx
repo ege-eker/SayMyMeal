@@ -36,30 +36,31 @@ export default function RestaurantsPage() {
         </Dialog>
       </div>
 
+      <div className="overflow-x-auto">
       <table className="table-auto w-full bg-white rounded-lg shadow-md">
         <thead>
           <tr className="bg-gray-200 text-left">
-            <th className="p-3">Name</th>
-            <th className="p-3">Slug</th>
-            <th className="p-3">Address</th>
-            <th className="p-3">Rating</th>
-            <th className="p-3 text-center">Active</th>
-            <th className="p-3">Actions</th>
+            <th className="p-3 whitespace-nowrap">Name</th>
+            <th className="p-3 whitespace-nowrap hidden md:table-cell">Slug</th>
+            <th className="p-3 whitespace-nowrap hidden lg:table-cell">Address</th>
+            <th className="p-3 whitespace-nowrap hidden md:table-cell">Rating</th>
+            <th className="p-3 text-center whitespace-nowrap">Active</th>
+            <th className="p-3 whitespace-nowrap">Actions</th>
           </tr>
         </thead>
         <tbody>
           {restaurants.map((r: any) => (
             <tr key={r.id} className="border-t hover:bg-gray-50">
               <td className="p-3">{r.name}</td>
-              <td className="p-3 text-sm text-gray-500">/{r.slug}</td>
-              <td className="p-3">
+              <td className="p-3 text-sm text-gray-500 hidden md:table-cell">/{r.slug}</td>
+              <td className="p-3 hidden lg:table-cell">
                 {`${r.houseNumber} ${r.street}, ${r.city}, ${r.postcode}`}
               </td>
-              <td className="p-3 text-yellow-600">{r.rating ?? "-"}</td>
+              <td className="p-3 text-yellow-600 hidden md:table-cell">{r.rating ?? "-"}</td>
               <td className="p-3 text-center">
                 {r.isActive ? "Active" : ""}
               </td>
-              <td className="p-3 flex space-x-2">
+              <td className="p-3 flex flex-wrap gap-2">
                 <Link href={`/admin/restaurants/${r.id}`}>
                   <Button variant="outline">Menus</Button>
                 </Link>
@@ -90,6 +91,7 @@ export default function RestaurantsPage() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

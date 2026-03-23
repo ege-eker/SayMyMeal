@@ -98,7 +98,7 @@ export default function RestaurantForm({ onSuccess }: { onSuccess: () => void })
         }
       />
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Input
           placeholder="House Number"
           value={form.houseNumber}
@@ -111,7 +111,7 @@ export default function RestaurantForm({ onSuccess }: { onSuccess: () => void })
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Input
           placeholder="City"
           value={form.city}
