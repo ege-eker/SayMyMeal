@@ -130,7 +130,7 @@ function RegisterForm() {
           </Button>
           <p className="text-center text-sm text-gray-600">
             Already have an account?{" "}
-            <Link href="/login" className="text-purple-600 hover:underline">
+            <Link href="/login" className="text-amber-600 hover:underline">
               Login
             </Link>
           </p>
@@ -142,7 +142,7 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30">
       <Suspense fallback={<div>Loading...</div>}>
         <RegisterForm />
       </Suspense>

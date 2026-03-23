@@ -75,7 +75,7 @@ export default function ImageUpload({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className={`${sizeClasses[size]} rounded-lg border-2 border-dashed border-gray-300 hover:border-purple-400 transition-colors overflow-hidden flex items-center justify-center bg-gray-50`}
+          className={`${sizeClasses[size]} rounded-lg border-2 border-dashed border-gray-300 hover:border-amber-400 transition-colors overflow-hidden flex items-center justify-center bg-gray-50`}
         >
           {busy ? (
             <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />

@@ -92,7 +92,7 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-4">
-          <Link href={`/${slug}/cart`} className="text-sm text-purple-600 hover:underline">
+          <Link href={`/${slug}/cart`} className="text-sm text-amber-600 hover:underline">
             Back to Cart
           </Link>
           <h1 className="text-2xl font-bold">Checkout</h1>
@@ -186,7 +186,7 @@ export default function CheckoutPage() {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Special requests..."
               rows={3}
-              className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 

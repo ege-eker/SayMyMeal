@@ -120,7 +120,7 @@ export default function RestaurantMenuPage() {
           </div>
           <button
             onClick={() => setDrawerOpen(true)}
-            className="absolute top-4 right-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 shadow-lg"
+            className="absolute top-4 right-4 bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 shadow-lg"
           >
             Cart
             {cart.itemCount > 0 && (
@@ -144,7 +144,7 @@ export default function RestaurantMenuPage() {
             </div>
             <button
               onClick={() => setDrawerOpen(true)}
-              className="relative bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+              className="relative bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700"
             >
               Cart
               {cart.itemCount > 0 && (
@@ -164,7 +164,7 @@ export default function RestaurantMenuPage() {
             <h2 className="font-semibold text-lg truncate">{restaurant.name}</h2>
             <button
               onClick={() => setDrawerOpen(true)}
-              className="relative bg-purple-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-purple-700"
+              className="relative bg-amber-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-amber-700"
             >
               Cart
               {cart.itemCount > 0 && (
@@ -287,7 +287,7 @@ export default function RestaurantMenuPage() {
                               <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">{food.description}</p>
                             )}
                             {food.options?.length > 0 && (
-                              <p className="text-xs text-purple-600 mt-1.5">
+                              <p className="text-xs text-amber-600 mt-1.5">
                                 {food.options.length} option{food.options.length > 1 ? "s" : ""} available
                               </p>
                             )}
@@ -349,7 +349,7 @@ export default function RestaurantMenuPage() {
                         <label
                           key={choice.id}
                           className={`flex items-center justify-between p-2 rounded cursor-pointer border ${
-                            isSelected ? "border-purple-500 bg-purple-50" : "border-gray-200"
+                            isSelected ? "border-amber-500 bg-amber-50" : "border-gray-200"
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -358,7 +358,7 @@ export default function RestaurantMenuPage() {
                               name={option.id}
                               checked={isSelected}
                               onChange={() => handleOptionSelect(option, choice)}
-                              className="accent-purple-600"
+                              className="accent-amber-600"
                             />
                             <span>{choice.label}</span>
                           </div>

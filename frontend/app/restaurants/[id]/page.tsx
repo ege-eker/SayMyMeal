@@ -205,11 +205,11 @@ function FoodOptions({ foodId }: { foodId: string }) {
     return <p className="text-gray-400 text-sm italic">No options for this food.</p>;
 
   return (
-    <div className="ml-3 border-l-2 border-purple-100 pl-3 mt-3 space-y-3">
+    <div className="ml-3 border-l-2 border-amber-100 pl-3 mt-3 space-y-3">
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {options.map((opt: any) => (
         <div key={opt.id}>
-          <h4 className="text-sm font-semibold text-purple-700">
+          <h4 className="text-sm font-semibold text-amber-700">
             {opt.title}{" "}
             <span className="text-xs text-gray-400 ml-1">
               ({opt.multiple ? "multiple" : "choose 1"})

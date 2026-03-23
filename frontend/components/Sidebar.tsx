@@ -23,7 +23,7 @@ export default function Sidebar() {
             href={link.href}
             className={`block px-4 py-2 rounded-lg ${
               pathname.startsWith(link.href)
-                ? "bg-purple-600"
+                ? "bg-amber-600"
                 : "hover:bg-gray-700"
             }`}
           >

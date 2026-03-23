@@ -28,7 +28,7 @@ export default function CartPage() {
       <header className="bg-white shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <Link href={`/${slug}`} className="text-sm text-purple-600 hover:underline">
+            <Link href={`/${slug}`} className="text-sm text-amber-600 hover:underline">
               Back to Menu
             </Link>
             <h1 className="text-2xl font-bold">Your Cart</h1>

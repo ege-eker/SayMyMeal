@@ -52,7 +52,7 @@ export default function MyOrdersPage() {
       <header className="bg-white shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">My Orders</h1>
-          <Link href="/" className="text-purple-600 hover:underline text-sm">
+          <Link href="/" className="text-amber-600 hover:underline text-sm">
             Home
           </Link>
         </div>
@@ -87,8 +87,8 @@ export default function MyOrdersPage() {
                       className="w-10 h-10 rounded-lg object-cover shrink-0"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
-                      <span className="text-purple-600 font-bold text-sm">
+                    <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                      <span className="text-amber-600 font-bold text-sm">
                         {(order.restaurant?.name ?? "?")[0]}
                       </span>
                     </div>

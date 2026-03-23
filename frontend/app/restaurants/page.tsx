@@ -30,7 +30,7 @@ export default function RestaurantsPage() {
               <div className="mt-3">
                 <Link
                   href={`/restaurants/${rest.id}`}
-                  className="inline-block bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
+                  className="inline-block bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition"
                 >
                   Select
                 </Link>

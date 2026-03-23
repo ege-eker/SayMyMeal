@@ -6,16 +6,16 @@ export default function RestaurantsUserLayout({ children }: { children: React.Re
       {/* Navbar */}
       <nav className="bg-white shadow px-6 py-4 flex justify-between items-center">
         {/* Logo */}
-        <Link href="/" className="text-xl font-bold text-purple-600">
+        <Link href="/" className="text-xl font-bold text-amber-600">
           🍔 Voice Ordering System
         </Link>
 
         {/* Menü */}
         <div className="space-x-6">
-          <Link href="/restaurants" className="text-gray-700 hover:text-purple-600 font-medium">
+          <Link href="/restaurants" className="text-gray-700 hover:text-amber-600 font-medium">
             Restaurants
           </Link>
-          <Link href="/orders" className="text-gray-700 hover:text-purple-600 font-medium">
+          <Link href="/orders" className="text-gray-700 hover:text-amber-600 font-medium">
             Orders
           </Link>
         </div>

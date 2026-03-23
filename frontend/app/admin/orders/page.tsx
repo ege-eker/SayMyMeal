@@ -135,7 +135,7 @@ function OrderCard({
           value={order.status}
           disabled={loading}
           onChange={(e) => onStatusChange(order.id, e.target.value)}
-          className="border rounded px-2 py-1 text-sm focus:ring focus:ring-purple-300"
+          className="border rounded px-2 py-1 text-sm focus:ring focus:ring-amber-300"
         >
           {statusOptions.map((s) => (
             <option key={s} value={s}>

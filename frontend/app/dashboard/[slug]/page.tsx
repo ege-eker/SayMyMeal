@@ -178,7 +178,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
                       }
                     />
                   </div>
-                  <div className="ml-4 border-l-2 border-purple-200 pl-3 mt-2">
+                  <div className="ml-4 border-l-2 border-amber-200 pl-3 mt-2">
                     <FoodOptionForm foodId={food.id} compact />
                   </div>
                 </li>

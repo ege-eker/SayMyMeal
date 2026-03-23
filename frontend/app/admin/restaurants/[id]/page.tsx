@@ -110,7 +110,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
                   Delete
                 </Button>
               </div>
-              <div className="ml-4 border-l-2 border-purple-200 pl-3">
+              <div className="ml-4 border-l-2 border-amber-200 pl-3">
                 <FoodOptionForm foodId={food.id} compact />
               </div>
             </li>

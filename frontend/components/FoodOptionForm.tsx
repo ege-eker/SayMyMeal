@@ -104,7 +104,7 @@ export default function FoodOptionForm({
       {options.map((opt) => (
         <div key={opt.id} className="border-t pt-2 mt-2">
           <div className="flex justify-between items-center">
-            <h4 className="text-purple-700 text-sm font-medium">
+            <h4 className="text-amber-700 text-sm font-medium">
               {opt.title}{" "}
               <span className="text-gray-500 text-xs">
                 ({opt.multiple ? "multiple" : "single"})
