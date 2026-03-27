@@ -35,9 +35,9 @@ export default function RestaurantMenuPage() {
   }, [restaurant]);
 
   const toggleMenu = (menuId: string) => {
-    setOpenMenus((prev) => ({ ...prev, [menuId]: prev[menuId] === false ? true : false }));
+    setOpenMenus((prev) => ({ ...prev, [menuId]: !prev[menuId] }));
   };
-  const isMenuOpen = (menuId: string) => openMenus[menuId] !== false;
+  const isMenuOpen = (menuId: string) => openMenus[menuId] === true;
 
   if (error) return <div className="p-8 text-red-500">Error loading restaurant</div>;
   if (!restaurant) return <div className="p-8">Loading...</div>;
