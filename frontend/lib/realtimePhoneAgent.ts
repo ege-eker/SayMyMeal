@@ -1,5 +1,14 @@
+import { getNoiseCancelledStream, type AudioStats } from "./noiseCancellation";
+
 let pc: RTCPeerConnection | null = null;
 let dc: RTCDataChannel | null = null;
+let cleanupNoise: (() => void) | null = null;
+let phoneStatsSubscriber: ((cb: (stats: AudioStats) => void) => void) | null = null;
+
+/** Subscribe to real-time audio stats during phone collection phase */
+export function subscribePhoneAudioStats(cb: (stats: AudioStats) => void) {
+  phoneStatsSubscriber?.(cb);
+}
 
 const phoneTools = [
   {
@@ -20,12 +29,18 @@ export async function startPhoneCollector(onPhoneCollected: (phone: string) => P
   if (pc) return;
 
   pc = new RTCPeerConnection();
-  const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const { stream: mic, cleanup, setReference, onStats } = await getNoiseCancelledStream();
+  cleanupNoise = cleanup;
+  phoneStatsSubscriber = onStats;
   mic.getTracks().forEach((t) => pc!.addTrack(t, mic));
 
   const audioEl = document.createElement("audio");
   audioEl.autoplay = true;
-  pc.ontrack = (e) => (audioEl.srcObject = e.streams[0]);
+  pc.ontrack = (e) => {
+    // Feed the AI's audio output as echo reference
+    setReference(e.streams[0]);
+    audioEl.srcObject = e.streams[0];
+  };
 
   dc = pc.createDataChannel("oai-events");
   const pendingArgs: Record<string, string> = {};
@@ -82,7 +97,7 @@ You are a friendly phone-collection agent. DO NOT SPEAK LANGUAGES OTHER THAN ENG
 Ask the user for their phone number.
 Repeat the number back for confirmation.
 IF THE USER SAYS NUMBER IS INCORRECT WIPE OUT YOUR MEMORY ABOUT THE NUMBER AND ASK AGAIN. THE NUMBER WILL NOT BE SAME AS BEFORE. DON'T ASSUME IT IS A CORRECTION OF THE SAME NUMBER.
-As soon as the user CLEARLY confirms (for example, says “yes” or “correct”),
+As soon as the user CLEARLY confirms (for example, says "yes" or "correct"),
 immediately call the function handoff_to_restaurant_agent with that phone number.
 Do not wait for additional confirmation or steps.
 DO NOT SPEAK LANGUAGES OTHER THAN ENGLISH UNDER ANY CIRCUMSTANCES. JUST SPEAK IN ENGLISH EVEN IF USER ASKS IN ANOTHER LANGUAGE. If the user speaks in another language, respond politely in English: "I'm sorry, I can only assist you in English. Could you please provide your phone number in English?".
@@ -91,7 +106,7 @@ DO NOT SPEAK ABOUT ANY OTHER TOPICS OTHER THAN THE PHONE NUMBER COLLECTION PROCE
         tools: phoneTools,
         modalities: ["audio", "text"],
         voice: "marin",
-        turn_detection: { type: "server_vad", threshold: 0.5, silence_duration_ms: 1500, prefix_padding_ms: 300, create_response: true },
+        turn_detection: { type: "semantic_vad", eagerness: "medium", create_response: true },
       },
     };
     dc!.send(JSON.stringify(setup));
@@ -107,6 +122,10 @@ DO NOT SPEAK ABOUT ANY OTHER TOPICS OTHER THAN THE PHONE NUMBER COLLECTION PROCE
 }
 
 export function stopPhoneCollector() {
+  if (cleanupNoise) {
+    cleanupNoise();
+    cleanupNoise = null;
+  }
   if (dc) dc.close();
   if (pc) {
     pc.getSenders().forEach((s) => s.track?.stop());

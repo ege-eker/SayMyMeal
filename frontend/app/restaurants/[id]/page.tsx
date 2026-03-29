@@ -1,9 +1,9 @@
 "use client";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
-import { useState, useMemo } from "react";
-import { initRestaurantAssistant, stopRealtime } from "@/lib/realtime";
-import { startPhoneCollector, stopPhoneCollector } from "@/lib/realtimePhoneAgent";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { initRestaurantAssistant, stopRealtime, subscribeAudioStats, type AudioStats } from "@/lib/realtime";
+import { startPhoneCollector, stopPhoneCollector, subscribePhoneAudioStats } from "@/lib/realtimePhoneAgent";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -15,6 +15,18 @@ export default function RestaurantDetailPage() {
   const [connected, setConnected] = useState(false);
   const [stage, setStage] = useState<"idle" | "collecting" | "assistant">("idle");
   const [phone, setPhone] = useState<string | null>(null);
+  const [audioStats, setAudioStats] = useState<AudioStats | null>(null);
+
+  // Subscribe to audio stats for both stages
+  useEffect(() => {
+    if (stage === "collecting") {
+      subscribePhoneAudioStats(setAudioStats);
+    } else if (connected) {
+      subscribeAudioStats(setAudioStats);
+    } else {
+      setAudioStats(null);
+    }
+  }, [stage, connected]);
 
   if (error) return <div className="text-red-600">❌ Error loading: {String(error)}</div>;
   if (!restaurant) return <div>⏳ Loading restaurant...</div>;
@@ -77,9 +89,89 @@ const toggleAssistant = async () => {
             ? `☎️ Connected (phone: ${phone ?? "-"})`
             : ""}
         </p>
+
+        {/* Audio Debug Panel */}
+        {audioStats && <AudioDebugPanel stats={audioStats} />}
       </div>
 
       <MenuAccordion menus={restaurant.menus ?? []} />
+    </div>
+  );
+}
+
+/* ---------------- AUDIO DEBUG PANEL ---------------- */
+function AudioDebugPanel({ stats }: { stats: AudioStats }) {
+  // Normalize dB to 0–100% for the bars (range: -100 to 0 dB)
+  const micPct = Math.max(0, Math.min(100, ((stats.micDb + 100) / 100) * 100));
+  const spkPct = Math.max(0, Math.min(100, ((stats.speakerDb + 100) / 100) * 100));
+  const threshPct = ((stats.activeThreshold + 100) / 100) * 100;
+
+  return (
+    <div className="mt-4 p-4 bg-gray-900 rounded-lg text-xs font-mono text-gray-300 space-y-3">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-white font-semibold text-sm">Echo Cancellation Monitor</span>
+        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+          stats.speakerActive
+            ? "bg-amber-500/20 text-amber-400"
+            : "bg-green-500/20 text-green-400"
+        }`}>
+          {stats.speakerActive ? "AI SPEAKING — Echo gate active" : "LISTENING"}
+        </span>
+      </div>
+
+      {/* Mic Level */}
+      <div>
+        <div className="flex justify-between mb-1">
+          <span>Mic Level</span>
+          <span>{stats.micDb} dB</span>
+        </div>
+        <div className="relative h-3 bg-gray-700 rounded overflow-hidden">
+          <div
+            className={`h-full transition-all duration-75 rounded ${
+              stats.gateOpen ? "bg-green-500" : "bg-red-500"
+            }`}
+            style={{ width: `${micPct}%` }}
+          />
+          {/* Threshold marker */}
+          <div
+            className="absolute top-0 h-full w-0.5 bg-yellow-400"
+            style={{ left: `${threshPct}%` }}
+          />
+        </div>
+        <div className="flex justify-between mt-0.5 text-gray-500">
+          <span>-100 dB</span>
+          <span className="text-yellow-400">Threshold: {stats.activeThreshold} dB</span>
+          <span>0 dB</span>
+        </div>
+      </div>
+
+      {/* Speaker Level */}
+      <div>
+        <div className="flex justify-between mb-1">
+          <span>Speaker (AI) Level</span>
+          <span>{stats.speakerDb} dB</span>
+        </div>
+        <div className="relative h-3 bg-gray-700 rounded overflow-hidden">
+          <div
+            className={`h-full transition-all duration-75 rounded ${
+              stats.speakerActive ? "bg-amber-500" : "bg-blue-500"
+            }`}
+            style={{ width: `${spkPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Gate Status */}
+      <div className="flex items-center gap-4 pt-1 border-t border-gray-700">
+        <div className="flex items-center gap-2">
+          <div className={`w-2.5 h-2.5 rounded-full ${stats.gateOpen ? "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]" : "bg-red-400"}`} />
+          <span>Gate: {stats.gateOpen ? "OPEN (sending audio)" : "CLOSED (muted)"}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className={`w-2.5 h-2.5 rounded-full ${stats.speakerActive ? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]" : "bg-gray-500"}`} />
+          <span>Echo suppression: {stats.speakerActive ? "ON" : "OFF"}</span>
+        </div>
+      </div>
     </div>
   );
 }

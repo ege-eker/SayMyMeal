@@ -9,6 +9,7 @@ import {
 
 } from "./api";
 import {createOrderSchema} from "@/utils/schemes";
+import { getNoiseCancelledStream, AudioStats } from "./noiseCancellation";
 
 // Argümanları call_id bazlı toplamak için
 const pendingArgs: Record<string, string> = {};
@@ -16,6 +17,15 @@ const pendingCalls: Record<string, string> = {};
 
 let pc: RTCPeerConnection | null = null;
 let dc: RTCDataChannel | null = null;
+let cleanupNoise: (() => void) | null = null;
+let statsSubscriber: ((cb: (stats: AudioStats) => void) => void) | null = null;
+
+export { type AudioStats };
+
+/** Subscribe to real-time audio stats — call after initRestaurantAssistant */
+export function subscribeAudioStats(cb: (stats: AudioStats) => void) {
+  statsSubscriber?.(cb);
+}
 
 /**
  * Restoran seçildikten sonra asistanı başlatır.
@@ -36,10 +46,15 @@ export async function initRestaurantAssistant(restaurant: any, phone: string) {
 
   pc = new RTCPeerConnection();
 
-  const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const { stream: mic, cleanup, setReference, onStats } = await getNoiseCancelledStream();
+  cleanupNoise = cleanup;
+  statsSubscriber = onStats;
   mic.getTracks().forEach(track => pc!.addTrack(track, mic));
 
   pc.ontrack = (event) => {
+    // Feed the AI's audio output as echo reference — this is what Teams/Meet do
+    setReference(event.streams[0]);
+
     const audioEl = document.createElement("audio");
     audioEl.srcObject = event.streams[0];
     audioEl.autoplay = true;
@@ -117,20 +132,20 @@ Customer phone number is: ${phone}.
 DO NOT SPEAK LANGUAGES OTHER THAN ENGLISH UNDER ANY CIRCUMSTANCES. JUST SPEAK IN ENGLISH EVEN IF USER ASKS IN ANOTHER LANGUAGE. If the user speaks in another language, respond politely in English: "I'm sorry, I can only assist you in English.".
 
 ### ROLE
-Act like a friendly waiter taking telephone orders.  
-Always be respectful, warm, and efficient.  
+Act like a friendly waiter taking telephone orders.
+Always be respectful, warm, and efficient.
 You represent only **${restaurant.name}**.
 
 ---
 
 ### CONTEXT & FUNCTION USE
-You know basic restaurant info, but start with no menus or foods.  
+You know basic restaurant info, but start with no menus or foods.
 Fetch data only when needed:
-- If the customer asks what’s available → call **\`get_menus\`**.  
-- When they choose a menu → call **\`get_foods\`**.  
-- When they choose a food → call **\`get_food_options\`**.  
-- When order details are complete → call **\`create_order\`**.  
-- For delivery tracking → call **\`get_order_status\`**.  
+- If the customer asks what's available → call **\`get_menus\`**.
+- When they choose a menu → call **\`get_foods\`**.
+- When they choose a food → call **\`get_food_options\`**.
+- When order details are complete → call **\`create_order\`**.
+- For delivery tracking → call **\`get_order_status\`**.
 
 Acknowledge new information naturally and remember it for the call.
 
@@ -138,29 +153,29 @@ Acknowledge new information naturally and remember it for the call.
 
 ### ORDERING FLOW
 1. Greet customer
-   “Thank you for calling **${restaurant.name}**. How can I help you today?”
+   "Thank you for calling **${restaurant.name}**. How can I help you today?"
 
-2. **Get customer name**  
-   “And your full name please?”
+2. **Get customer name**
+   "And your full name please?"
 
-3. **Offer menus or respond to interest**  
-   - If asked what’s served, fetch menus with \`get_menus\`.  
+3. **Offer menus or respond to interest**
+   - If asked what's served, fetch menus with \`get_menus\`.
    - List menu names and invite a choice.
 
-4. **Handle food selection**  
-   - After fetching foods, mention names and prices.  
-   - When the customer chooses, fetch options with \`get_food_options\`.  
-   - Discuss required options, quantity, and confirm the item.  
-   - Repeat if adding more items.  
+4. **Handle food selection**
+   - After fetching foods, mention names and prices.
+   - When the customer chooses, fetch options with \`get_food_options\`.
+   - Discuss required options, quantity, and confirm the item.
+   - Repeat if adding more items.
    - Summarize clearly before moving on.
 
-5. **Collect delivery address**  
+5. **Collect delivery address**
    Get house number, street, city, and postcode, then confirm aloud.
 
-6. **Create and confirm the order**  
-   Call \`create_order\` with confirmed name, phone, address, and items.  
-   After success, confirm naturally:  
-   “Your order for 2 Bold Meal Deals (Chicken Gyro with Coke) for John Smith, 10 Downing Street, London SW1A 2AA, phone 07700 900 982 has been placed. Delivery in about 30 minutes.”
+6. **Create and confirm the order**
+   Call \`create_order\` with confirmed name, phone, address, and items.
+   After success, confirm naturally:
+   "Your order for 2 Bold Meal Deals (Chicken Gyro with Coke) for John Smith, 10 Downing Street, London SW1A 2AA, phone 07700 900 982 has been placed. Delivery in about 30 minutes."
 
 ---
 
@@ -168,23 +183,23 @@ Acknowledge new information naturally and remember it for the call.
 YOU CAN CHECK ORDER STATUS WITH EITHER PHONE OR NAME ANYTIME.
 IF YOU KNOW EITHER OF THOSE JUST CHECK WITHOUT ASKING.
 If the customer asks to track an order immidiately try with their phone number even if you don't know their name, if you don't succeed ask for their name too.:
-1. Call \`get_order_status\`.  
-2. Respond with current status or say it’s not found.  
-3. End politely: “Thank you for calling ${restaurant.name}. Have a lovely day!”
+1. Call \`get_order_status\`.
+2. Respond with current status or say it's not found.
+3. End politely: "Thank you for calling ${restaurant.name}. Have a lovely day!"
 
 ---
 
 ### BEHAVIOUR & MEMORY
-- Fetch only when necessary.  
-- Use real IDs returned from previous responses.  
-- Remember known data until the call ends.  
+- Fetch only when necessary.
+- Use real IDs returned from previous responses.
+- Remember known data until the call ends.
 - Confirm corrections aloud.
 
 ---
 
 ### STYLE
-Keep tone friendly, concise, and natural.  
-Use short confirmations (“Perfect”, “Great choice”).  
+Keep tone friendly, concise, and natural.
+Use short confirmations ("Perfect", "Great choice").
 Never mention technology or APIs.
 Refrain from unnecessary repetitions.
 Do not repeat order details multiple times unless asked.
@@ -193,7 +208,7 @@ Your only goal is to take accurate, polite phone orders for **${restaurant.name}
         tools,
         modalities: ["audio", "text"],
         voice: "marin",
-        turn_detection: { type: "server_vad", threshold: 0.5, silence_duration_ms: 1500, prefix_padding_ms: 300, create_response: true },
+        turn_detection: { type: "semantic_vad", eagerness: "medium", create_response: true },
       }};
     console.dir(debug)
     dc!.send(JSON.stringify(debug));
@@ -201,8 +216,8 @@ Your only goal is to take accurate, polite phone orders for **${restaurant.name}
   type: "response.create",
   response: {
     instructions: `
-Greet the customer politely in English, 
-mention the restaurant name **${restaurant.name}**, 
+Greet the customer politely in English,
+mention the restaurant name **${restaurant.name}**,
 and ask if they would like to hear today's menu or place an order.
 For example: "Thank you for calling ${restaurant.name}. Would you like to hear our menu, or are you ready to place an order?"`,
   },
@@ -220,6 +235,10 @@ export async function stopRealtime() {
   if (dc) {
     dc.close();
     dc = null;
+  }
+  if (cleanupNoise) {
+    cleanupNoise();
+    cleanupNoise = null;
   }
   if (pc) {
     pc.getSenders().forEach(sender => sender.track?.stop());
