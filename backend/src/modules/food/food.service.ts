@@ -8,7 +8,9 @@ export const foodService = (app: FastifyInstance) => ({
       data: {
         name: data.name,
         basePrice: data.basePrice,
-        menuId: data.menuId
+        menuId: data.menuId,
+        allergens: data.allergens ?? [],
+        dietTags: data.dietTags ?? [],
       }
     });
   },
@@ -34,7 +36,9 @@ export const foodService = (app: FastifyInstance) => ({
       where: { id },
       data: {
         name: data.name,
-        basePrice: data.basePrice
+        basePrice: data.basePrice,
+        allergens: data.allergens,
+        dietTags: data.dietTags,
       }
     });
   },

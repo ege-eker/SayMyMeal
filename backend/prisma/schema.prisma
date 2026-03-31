@@ -13,16 +13,19 @@ enum UserRole {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  phone        String?
-  role         UserRole @default(CUSTOMER)
-  restaurants  Restaurant[]
-  orders       Order[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  passwordHash       String
+  name               String
+  phone              String?
+  role               UserRole @default(CUSTOMER)
+  allergens          String[] @default([])
+  dietaryPreferences String[] @default([])
+  allergenAsked      Boolean  @default(false)
+  restaurants        Restaurant[]
+  orders             Order[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Restaurant {
@@ -64,6 +67,8 @@ model Food {
   description String?
   imageUrl    String?
   basePrice   Float
+  allergens   String[]     @default([])
+  dietTags    String[]     @default([])
   menu        Menu         @relation(fields: [menuId], references: [id], onDelete: Cascade)
   menuId      String
   options     FoodOption[]
@@ -115,4 +120,15 @@ model OrderItem {
   foodId   String
   quantity Int
   selected Json?
+}
+
+model WhatsAppProfile {
+  id                 String   @id @default(uuid())
+  phone              String   @unique
+  name               String?
+  allergens          String[] @default([])
+  dietaryPreferences String[] @default([])
+  allergenAsked      Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }

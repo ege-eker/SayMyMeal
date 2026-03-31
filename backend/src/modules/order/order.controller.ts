@@ -110,5 +110,21 @@ export const orderController = (app: any) => {
       const orders = await service.findByUser(req.user!.id);
       return reply.send(orders);
     },
+
+    allergenCheck: async (req: FastifyRequest<{ Querystring: { foodIds: string } }>, reply: FastifyReply) => {
+      const foodIds = req.query.foodIds?.split(",").filter(Boolean) ?? [];
+      if (!foodIds.length) return reply.code(400).send({ error: "foodIds required" });
+      const user = await app.prisma.user.findUnique({ where: { id: req.user!.id }, select: { allergens: true } });
+      const result = await service.checkAllergens(foodIds, user?.allergens ?? []);
+      return reply.send(result);
+    },
+
+    allergenCheckByPhone: async (req: FastifyRequest<{ Querystring: { phone: string; foodIds: string } }>, reply: FastifyReply) => {
+      const { phone, foodIds: foodIdsStr } = req.query;
+      if (!phone || !foodIdsStr) return reply.code(400).send({ error: "phone and foodIds required" });
+      const foodIds = foodIdsStr.split(",").filter(Boolean);
+      const result = await service.checkAllergensByPhone(phone, foodIds);
+      return reply.send(result);
+    },
   };
 };

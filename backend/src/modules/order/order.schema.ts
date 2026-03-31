@@ -305,6 +305,14 @@ export const getMyOrdersSchema = {
               imageUrl: { type: "string", nullable: true },
             },
           },
+          user: {
+            type: "object",
+            nullable: true,
+            properties: {
+              allergens: { type: "array", items: { type: "string" } },
+              dietaryPreferences: { type: "array", items: { type: "string" } },
+            },
+          },
         },
       },
     },
@@ -348,6 +356,67 @@ export const acknowledgeOrderSchema = {
     403: {
       type: "object",
       properties: { error: { type: "string" } },
+    },
+  },
+};
+
+export const allergenCheckSchema = {
+  tags: ["orders"],
+  description: "Check allergen conflicts for the authenticated user against given food items",
+  querystring: {
+    type: "object",
+    required: ["foodIds"],
+    properties: {
+      foodIds: { type: "string", description: "Comma-separated food IDs" },
+    },
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        warnings: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              foodId: { type: "string" },
+              foodName: { type: "string" },
+              matchedAllergens: { type: "array", items: { type: "string" } },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const allergenCheckByPhoneSchema = {
+  tags: ["orders"],
+  description: "Check allergen conflicts by phone number (for WhatsApp/Realtime)",
+  querystring: {
+    type: "object",
+    required: ["phone", "foodIds"],
+    properties: {
+      phone: { type: "string" },
+      foodIds: { type: "string", description: "Comma-separated food IDs" },
+    },
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        warnings: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              foodId: { type: "string" },
+              foodName: { type: "string" },
+              matchedAllergens: { type: "array", items: { type: "string" } },
+            },
+          },
+        },
+      },
     },
   },
 };

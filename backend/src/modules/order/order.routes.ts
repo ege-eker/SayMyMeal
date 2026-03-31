@@ -8,6 +8,8 @@ import {
     getOrderStatusSchema,
     getMyOrdersSchema,
     acknowledgeOrderSchema,
+    allergenCheckSchema,
+    allergenCheckByPhoneSchema,
 } from "./order.schema";
 import { authenticate, optionalAuth, requireRole } from '../../middleware/auth';
 
@@ -23,6 +25,12 @@ async function orderRoutes(app: FastifyInstance) {
 
     // Public: order status lookup (voice/WhatsApp)
     app.get("/orders/status", { schema: getOrderStatusSchema }, ctrl.statusLookup);
+
+    // Allergen check: authenticated user
+    app.get("/orders/allergen-check", { schema: allergenCheckSchema, preHandler: [authenticate] }, ctrl.allergenCheck);
+
+    // Allergen check: by phone (WhatsApp/Realtime, no auth)
+    app.get("/orders/allergen-check-by-phone", { schema: allergenCheckByPhoneSchema }, ctrl.allergenCheckByPhone);
 
     // Owner or pollToken: get orders (filtered by restaurantId)
     app.get("/orders", { schema: getOrdersSchema, preHandler: [optionalAuth] }, ctrl.getAll as any);

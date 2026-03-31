@@ -10,3 +10,8 @@ export interface LoginInput {
   email: string;
   password: string;
 }
+
+export interface UpdateAllergenProfileInput {
+  allergens: string[];
+  dietaryPreferences: string[];
+}

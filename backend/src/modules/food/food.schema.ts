@@ -7,7 +7,9 @@ export const createFoodSchema = {
     properties: {
       name: { type: "string", minLength: 2 },
       basePrice: { type: "number", minimum: 0 },
-      menuId: { type: "string" }
+      menuId: { type: "string" },
+      allergens: { type: "array", items: { type: "string" }, default: [] },
+      dietTags: { type: "array", items: { type: "string" }, default: [] }
     }
   },
   response: {
@@ -19,6 +21,8 @@ export const createFoodSchema = {
         name: { type: "string" },
         imageUrl: { type: "string", nullable: true },
         basePrice: { type: "number" },
+        allergens: { type: "array", items: { type: "string" } },
+        dietTags: { type: "array", items: { type: "string" } },
         menuId: { type: "string" },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" }
@@ -40,6 +44,8 @@ export const getFoodsSchema = {
           name: { type: "string" },
           imageUrl: { type: "string", nullable: true },
           basePrice: { type: "number" },
+          allergens: { type: "array", items: { type: "string" } },
+          dietTags: { type: "array", items: { type: "string" } },
           menuId: { type: "string" },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" }
@@ -67,6 +73,8 @@ export const getFoodByIdSchema = {
         name: { type: "string" },
         imageUrl: { type: "string", nullable: true },
         basePrice: { type: "number" },
+        allergens: { type: "array", items: { type: "string" } },
+        dietTags: { type: "array", items: { type: "string" } },
         menuId: { type: "string" },
         options: {
             type: "array",
@@ -102,7 +110,9 @@ export const updateFoodSchema = {
     type: "object",
     properties: {
       name: { type: "string" },
-      basePrice: { type: "number", minimum: 0 }
+      basePrice: { type: "number", minimum: 0 },
+      allergens: { type: "array", items: { type: "string" } },
+      dietTags: { type: "array", items: { type: "string" } }
     }
   },
   response: {
@@ -113,6 +123,8 @@ export const updateFoodSchema = {
         name: { type: "string" },
         imageUrl: { type: "string", nullable: true },
         basePrice: { type: "number" },
+        allergens: { type: "array", items: { type: "string" } },
+        dietTags: { type: "array", items: { type: "string" } },
         menuId: { type: "string" },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" }

@@ -120,9 +120,39 @@ export const orderService = (app: FastifyInstance) => ({
             include: {
               items: { include: { food: true } },
               restaurant: { select: { id: true, name: true, slug: true, imageUrl: true } },
+              user: { select: { allergens: true, dietaryPreferences: true } },
             },
             orderBy: { createdAt: "desc" },
         });
+    },
+
+    async checkAllergens(foodIds: string[], userAllergens: string[]) {
+      if (!userAllergens.length || !foodIds.length) return { warnings: [] };
+      const foods = await app.prisma.food.findMany({
+        where: { id: { in: foodIds } },
+        select: { id: true, name: true, allergens: true },
+      });
+      const warnings = foods
+        .filter(f => f.allergens.some(a => userAllergens.includes(a)))
+        .map(f => ({
+          foodId: f.id,
+          foodName: f.name,
+          matchedAllergens: f.allergens.filter(a => userAllergens.includes(a)),
+        }));
+      return { warnings };
+    },
+
+    async checkAllergensByPhone(phone: string, foodIds: string[]) {
+      // Try User first, then WhatsAppProfile
+      const user = await app.prisma.user.findFirst({ where: { phone } });
+      if (user && user.allergens.length > 0) {
+        return this.checkAllergens(foodIds, user.allergens);
+      }
+      const wp = await app.prisma.whatsAppProfile.findUnique({ where: { phone } });
+      if (wp && wp.allergens.length > 0) {
+        return this.checkAllergens(foodIds, wp.allergens);
+      }
+      return { warnings: [] };
     },
 
     async findByCustomerOrPhone(name?: string, phone?: string) {
