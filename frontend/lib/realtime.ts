@@ -5,8 +5,10 @@ import {
     createOrder,
     getOrderStatus,
     getFoodsForMenu,
-    getOptionsForFood
-
+    getOptionsForFood,
+    getAllergenProfileByPhone,
+    setAllergenProfileByPhone,
+    checkFoodAllergensByPhone,
 } from "./api";
 import {createOrderSchema} from "@/utils/schemes";
 import { getNoiseCancelledStream, AudioStats } from "./noiseCancellation";
@@ -189,6 +191,19 @@ If the customer asks to track an order immidiately try with their phone number e
 
 ---
 
+### ALLERGEN FLOW
+After a successful order:
+- Call **get_allergen_profile({ phone: "${phone}" })** to check if allergenAsked is true.
+- If allergenAsked is false, ask: "Do you have any food allergies or dietary preferences we should know about? For example gluten, nuts, milk, eggs, vegan, or halal."
+- Save their response using **set_allergen_profile**. If they say "none", save with empty arrays.
+
+Before placing any order (if customer has allergen profile):
+- Call **check_food_allergens** with the foodIds about to be ordered and the customer's phone.
+- If warnings are returned, tell the customer: "Just to let you know, [food] contains [allergen] which is in your allergen profile. Would you still like to proceed?"
+- Only call create_order after they confirm.
+
+---
+
 ### BEHAVIOUR & MEMORY
 - Fetch only when necessary.
 - Use real IDs returned from previous responses.
@@ -289,6 +304,21 @@ async function handleFunctionCall(name: string, call_id: string, args: any, dc: 
       console.log("🔍 Checking order status:", args);
       result = await getOrderStatus({ phone: args.phone, name: args.name });
       console.log("✅ Order status result:", result);
+    }
+
+    else if (name === "get_allergen_profile") {
+      result = await getAllergenProfileByPhone(args.phone);
+    }
+
+    else if (name === "set_allergen_profile") {
+      result = await setAllergenProfileByPhone(args.phone, {
+        allergens: args.allergens,
+        dietaryPreferences: args.dietaryPreferences,
+      });
+    }
+
+    else if (name === "check_food_allergens") {
+      result = await checkFoodAllergensByPhone(args.phone, args.foodIds);
     }
 
     else if (name === "create_order") {

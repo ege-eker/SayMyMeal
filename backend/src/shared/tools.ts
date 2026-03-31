@@ -182,6 +182,82 @@ export const tools: ChatCompletionTool[] = [
   {
     type: "function",
     function: {
+      name: "get_allergen_profile",
+      description: "Get a customer's allergen and dietary profile by phone number. Returns allergens, dietary preferences, and whether they have been asked before.",
+      parameters: {
+        type: "object",
+        required: ["phone"],
+        properties: {
+          phone: {
+            type: "string",
+            description: "Customer phone number to look up allergen profile.",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "set_allergen_profile",
+      description: "Save or update a customer's allergen and dietary preferences by phone number.",
+      parameters: {
+        type: "object",
+        required: ["phone", "allergens", "dietaryPreferences"],
+        properties: {
+          phone: {
+            type: "string",
+            description: "Customer phone number.",
+          },
+          name: {
+            type: "string",
+            description: "Customer name (optional).",
+          },
+          allergens: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: ["celery","gluten","crustaceans","eggs","fish","lupin","milk","molluscs","mustard","nuts","peanuts","sesame","soybeans","sulphites"],
+            },
+            description: "List of allergens the customer has. Use empty array if none.",
+          },
+          dietaryPreferences: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: ["halal","kosher","vegetarian","vegan","diet"],
+            },
+            description: "List of dietary preferences. Use empty array if none.",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "check_food_allergens",
+      description: "Check if any foods in an order conflict with the customer's allergen profile.",
+      parameters: {
+        type: "object",
+        required: ["foodIds", "phone"],
+        properties: {
+          foodIds: {
+            type: "array",
+            items: { type: "string" },
+            description: "List of food item IDs to check.",
+          },
+          phone: {
+            type: "string",
+            description: "Customer phone number to look up allergen profile.",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "get_order_status",
       description:
         "Retrieve the current status of a customer's order using their name or phone number.",
