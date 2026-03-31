@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import CartDrawer from "@/components/CartDrawer";
+import AllergenBadges from "@/components/AllergenBadges";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 
@@ -286,6 +287,7 @@ export default function RestaurantMenuPage() {
                             {food.description && (
                               <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">{food.description}</p>
                             )}
+                            <AllergenBadges allergens={food.allergens} dietTags={food.dietTags} compact />
                             {food.options?.length > 0 && (
                               <p className="text-xs text-amber-600 mt-1.5">
                                 {food.options.length} option{food.options.length > 1 ? "s" : ""} available

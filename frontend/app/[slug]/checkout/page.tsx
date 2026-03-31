@@ -3,12 +3,14 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import { getRestaurantBySlug, createOrder } from "@/lib/api";
+import { getRestaurantBySlug, createOrder, checkAllergens } from "@/lib/api";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ALLERGEN_LABELS } from "@/lib/allergens";
+import type { Allergen } from "@/lib/allergens";
 import Link from "next/link";
 
 export default function CheckoutPage() {
@@ -30,6 +32,8 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [allergenWarnings, setAllergenWarnings] = useState<{ foodId: string; foodName: string; matchedAllergens: string[] }[]>([]);
+  const [allergenAcknowledged, setAllergenAcknowledged] = useState(false);
 
   useEffect(() => {
     if (restaurant) {
@@ -42,6 +46,17 @@ export default function CheckoutPage() {
       router.push(`/login?returnUrl=/${slug}/checkout`);
     }
   }, [authLoading, user, router, slug]);
+
+  useEffect(() => {
+    if (user?.allergens && user.allergens.length > 0 && cart.items.length > 0) {
+      const foodIds = [...new Set(cart.items.map(i => i.foodId))];
+      checkAllergens(foodIds).then(res => {
+        if (res.warnings?.length > 0) {
+          setAllergenWarnings(res.warnings);
+        }
+      }).catch(() => {});
+    }
+  }, [user, cart.items]);
 
   if (authLoading || !user) return <div className="p-8">Loading...</div>;
   if (cart.items.length === 0) {
@@ -129,6 +144,30 @@ export default function CheckoutPage() {
           </div>
         </div>
 
+        {/* Allergen Warnings */}
+        {allergenWarnings.length > 0 && (
+          <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 space-y-3">
+            <h3 className="font-semibold text-amber-800">Allergen Warning</h3>
+            <ul className="text-sm text-amber-700 space-y-1">
+              {allergenWarnings.map(w => (
+                <li key={w.foodId}>
+                  <strong>{w.foodName}</strong> contains{" "}
+                  {w.matchedAllergens.map(a => ALLERGEN_LABELS[a as Allergen] ?? a).join(", ")}
+                </li>
+              ))}
+            </ul>
+            <label className="flex items-center gap-2 text-sm text-amber-800 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allergenAcknowledged}
+                onChange={e => setAllergenAcknowledged(e.target.checked)}
+                className="accent-amber-600"
+              />
+              I acknowledge the allergen risks and wish to proceed
+            </label>
+          </div>
+        )}
+
         {/* Delivery Address */}
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-4 space-y-4">
           <h2 className="font-semibold">Delivery Address</h2>
@@ -190,7 +229,11 @@ export default function CheckoutPage() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={submitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={submitting || (allergenWarnings.length > 0 && !allergenAcknowledged)}
+          >
             {submitting ? "Placing Order..." : "Place Order"}
           </Button>
         </form>

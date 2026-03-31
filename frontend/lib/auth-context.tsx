@@ -10,6 +10,9 @@ interface User {
   name: string;
   role: "CUSTOMER" | "OWNER";
   phone?: string;
+  allergens?: string[];
+  dietaryPreferences?: string[];
+  allergenAsked?: boolean;
 }
 
 interface AuthContextType {
@@ -19,6 +22,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User>;
   register: (data: { email: string; password: string; name: string; phone?: string; role?: string }) => Promise<User>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -96,13 +100,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data.user;
   };
 
+  const refreshUser = useCallback(async () => {
+    const t = localStorage.getItem("token");
+    if (t) await fetchMe(t);
+  }, [fetchMe]);
+
   const logout = () => {
     clearAuth();
     window.location.href = "/";
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -240,6 +240,48 @@ export async function updateOrderStatus(id: string, status: string) {
   return res.json();
 }
 
+// ---- Allergen Profile ----
+
+export async function updateAllergenProfile(data: { allergens: string[]; dietaryPreferences: string[] }) {
+  const res = await authFetch(`${API_URL}/auth/allergen-profile`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function checkAllergens(foodIds: string[]) {
+  const res = await authFetch(`${API_URL}/orders/allergen-check?foodIds=${foodIds.join(",")}`);
+  return res.json();
+}
+
+export async function getAllergenProfileByPhone(phone: string) {
+  const res = await fetch(`${API_URL}/auth/allergen-profile-by-phone?phone=${encodeURIComponent(phone)}`);
+  return res.json();
+}
+
+export async function setAllergenProfileByPhone(phone: string, data: { allergens: string[]; dietaryPreferences: string[] }) {
+  const res = await fetch(`${API_URL}/auth/allergen-profile-by-phone`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone, allergens: data.allergens, dietaryPreferences: data.dietaryPreferences }),
+  });
+  return res.json();
+}
+
+export async function checkFoodAllergensByPhone(phone: string, foodIds: string[]) {
+  const res = await fetch(`${API_URL}/orders/allergen-check-by-phone?phone=${encodeURIComponent(phone)}&foodIds=${foodIds.join(",")}`);
+  return res.json();
+}
+
+export async function updateFood(id: string, data: { name?: string; basePrice?: number; allergens?: string[]; dietTags?: string[] }) {
+  const res = await authFetch(`${API_URL}/foods/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
 export async function getOrderStatus(params: { phone?: string; name?: string }) {
   const url = new URL(`${API_URL}/orders/status`);
   if (params.phone) url.searchParams.append("phone", params.phone);

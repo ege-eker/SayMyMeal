@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { useAuth } from "@/lib/auth-context";
 import { getMyOrders } from "@/lib/api";
+import AllergenPromptModal from "@/components/AllergenPromptModal";
 import Link from "next/link";
 import { MapPin, StickyNote } from "lucide-react";
 
@@ -30,7 +31,7 @@ function formatAddress(addr: any) {
 }
 
 export default function MyOrdersPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth();
   const router = useRouter();
   const { data: orders, error } = useSWR(
     user ? "my-orders" : null,
@@ -49,6 +50,11 @@ export default function MyOrdersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Allergen prompt after first order */}
+      {user && user.allergenAsked === false && orders && orders.length > 0 && (
+        <AllergenPromptModal onComplete={() => refreshUser()} />
+      )}
+
       <header className="bg-white shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">My Orders</h1>

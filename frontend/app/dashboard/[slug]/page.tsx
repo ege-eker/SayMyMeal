@@ -11,6 +11,7 @@ import FoodOptionForm from "@/components/FoodOptionForm";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import ImageUpload from "@/components/ImageUpload";
 import { Trash2, ChevronDown } from "lucide-react";
+import AllergenTagEditor from "@/components/AllergenTagEditor";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -178,7 +179,13 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
                       }
                     />
                   </div>
-                  <div className="ml-4 border-l-2 border-amber-200 pl-3 mt-2">
+                  <div className="ml-4 border-l-2 border-amber-200 pl-3 mt-2 space-y-2">
+                    <AllergenTagEditor
+                      foodId={food.id}
+                      allergens={food.allergens ?? []}
+                      dietTags={food.dietTags ?? []}
+                      onUpdate={() => mutate()}
+                    />
                     <FoodOptionForm foodId={food.id} compact />
                   </div>
                 </li>
