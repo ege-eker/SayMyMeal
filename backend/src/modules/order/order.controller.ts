@@ -111,8 +111,9 @@ export const orderController = (app: any) => {
       return reply.send(orders);
     },
 
-    allergenCheck: async (req: FastifyRequest<{ Querystring: { foodIds: string } }>, reply: FastifyReply) => {
-      const foodIds = req.query.foodIds?.split(",").filter(Boolean) ?? [];
+    allergenCheck: async (req: FastifyRequest, reply: FastifyReply) => {
+      const { foodIds: foodIdsParam } = req.query as { foodIds: string };
+      const foodIds = foodIdsParam?.split(",").filter(Boolean) ?? [];
       if (!foodIds.length) return reply.code(400).send({ error: "foodIds required" });
       const user = await app.prisma.user.findUnique({ where: { id: req.user!.id }, select: { allergens: true } });
       const result = await service.checkAllergens(foodIds, user?.allergens ?? []);

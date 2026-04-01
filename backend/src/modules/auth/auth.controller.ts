@@ -65,9 +65,9 @@ export const authController = (app: any) => {
       }
     },
 
-    updateAllergenProfile: async (req: FastifyRequest<{ Body: UpdateAllergenProfileInput }>, reply: FastifyReply) => {
+    updateAllergenProfile: async (req: FastifyRequest, reply: FastifyReply) => {
       try {
-        const result = await service.updateAllergenProfile(req.user!.id, req.body);
+        const result = await service.updateAllergenProfile(req.user!.id, req.body as UpdateAllergenProfileInput);
         reply.send(result);
       } catch (err: any) {
         app.log.error(err);
