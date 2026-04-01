@@ -34,6 +34,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [allergenWarnings, setAllergenWarnings] = useState<{ foodId: string; foodName: string; matchedAllergens: string[] }[]>([]);
   const [allergenAcknowledged, setAllergenAcknowledged] = useState(false);
+  const [busyAcknowledged, setBusyAcknowledged] = useState(false);
 
   useEffect(() => {
     if (restaurant) {
@@ -144,6 +145,27 @@ export default function CheckoutPage() {
           </div>
         </div>
 
+        {/* Busy Mode Warning */}
+        {restaurant?.isBusy && (
+          <div className="bg-orange-50 border border-orange-300 rounded-lg p-4 space-y-3">
+            <h3 className="font-semibold text-orange-800">High Demand</h3>
+            <p className="text-sm text-orange-700">
+              This restaurant is currently busy. Estimated delivery time will be approximately{" "}
+              <strong>{restaurant.busyExtraMinutes ?? 15} minutes longer</strong> than usual.
+              Do you wish to continue?
+            </p>
+            <label className="flex items-center gap-2 text-sm text-orange-800 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={busyAcknowledged}
+                onChange={e => setBusyAcknowledged(e.target.checked)}
+                className="accent-orange-600"
+              />
+              I understand delivery will take longer and wish to proceed
+            </label>
+          </div>
+        )}
+
         {/* Allergen Warnings */}
         {allergenWarnings.length > 0 && (
           <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 space-y-3">
@@ -232,7 +254,7 @@ export default function CheckoutPage() {
           <Button
             type="submit"
             className="w-full"
-            disabled={submitting || (allergenWarnings.length > 0 && !allergenAcknowledged)}
+            disabled={submitting || (allergenWarnings.length > 0 && !allergenAcknowledged) || (restaurant?.isBusy && !busyAcknowledged)}
           >
             {submitting ? "Placing Order..." : "Place Order"}
           </Button>

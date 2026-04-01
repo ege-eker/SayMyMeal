@@ -31,6 +31,8 @@ export const restaurantService = (app: FastifyInstance) => ({
         city: data.city,
         postcode: data.postcode,
         rating: data.rating,
+        isBusy: data.isBusy,
+        busyExtraMinutes: data.busyExtraMinutes,
         deliveryZones: data.deliveryZones
           ? (data.deliveryZones as unknown as Prisma.InputJsonValue)
           : undefined,

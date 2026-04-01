@@ -2,7 +2,7 @@ export function instructionsTemplate({
   restaurant,
   phone,
 }: {
-  restaurant: { id: string; name: string };
+  restaurant: { id: string; name: string; isBusy?: boolean; busyExtraMinutes?: number };
   phone: string;
 }) {
   return `
@@ -99,6 +99,14 @@ call **get_order_status({ phone: "${phone}", name })**,
 show the current status (e.g. *preparing*, *out for delivery*),  
 then close politely:  
 “Thank you for choosing ${restaurant.name}! Have a lovely day!”
+
+---
+
+### BUSY MODE
+${restaurant.isBusy ? `⚠️ The restaurant is currently BUSY. Estimated delivery times are increased by ${restaurant.busyExtraMinutes ?? 15} minutes.
+Before placing any order, inform the customer:
+"We're currently experiencing high demand. Estimated delivery time will be around [normal ETA + ${restaurant.busyExtraMinutes ?? 15}] minutes. Would you like to proceed?"
+Only create the order after the customer confirms.` : "The restaurant is not busy. No extra delivery time warning needed."}
 
 ---
 

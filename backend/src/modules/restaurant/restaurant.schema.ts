@@ -40,6 +40,8 @@ export const createRestaurantSchema = {
           postcode: { type: "string" },
           deliveryZones: { type: "array", items: { type: "object" } },
           rating: { type: "number", nullable: true },
+          isBusy: { type: "boolean" },
+          busyExtraMinutes: { type: "integer" },
           isActive: { type: "boolean" },
           ownerId: { type: "string", nullable: true },
           createdAt: { type: "string", format: "date-time" },
@@ -61,6 +63,8 @@ const restaurantResponseProperties = {
   postcode: { type: "string" },
   deliveryZones: { type: "array", items: { type: "object" } },
   rating: { type: "number", nullable: true },
+  isBusy: { type: "boolean" },
+  busyExtraMinutes: { type: "integer" },
   isActive: { type: "boolean" },
   ownerId: { type: "string", nullable: true },
   createdAt: { type: "string", format: "date-time" },
@@ -137,6 +141,8 @@ export const updateRestaurantSchema = {
       city: { type: "string" },
       postcode: { type: "string" },
       rating: { type: "number", nullable: true },
+      isBusy: { type: "boolean" },
+      busyExtraMinutes: { type: "integer", minimum: 5, maximum: 120 },
       deliveryZones: {
         type: "array",
         items: {

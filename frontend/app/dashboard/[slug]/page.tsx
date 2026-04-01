@@ -3,14 +3,14 @@
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { useState } from "react";
-import { getRestaurantBySlug, createMenu, deleteMenu, createFood, deleteFood } from "@/lib/api";
+import { getRestaurantBySlug, createMenu, deleteMenu, createFood, deleteFood, updateRestaurant } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import FoodOptionForm from "@/components/FoodOptionForm";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import ImageUpload from "@/components/ImageUpload";
-import { Trash2, ChevronDown } from "lucide-react";
+import { Trash2, ChevronDown, AlertTriangle } from "lucide-react";
 import AllergenTagEditor from "@/components/AllergenTagEditor";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -70,6 +70,57 @@ export default function DashboardRestaurantPage() {
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Busy Mode Toggle */}
+      <div className={`border rounded-lg p-4 shadow-sm ${restaurant.isBusy ? "bg-amber-50 border-amber-300" : "bg-white"}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {restaurant.isBusy && <AlertTriangle className="w-5 h-5 text-amber-600" />}
+            <div>
+              <h3 className="font-semibold text-sm">Busy Mode</h3>
+              <p className="text-xs text-gray-500">
+                {restaurant.isBusy
+                  ? `Active — adding ${restaurant.busyExtraMinutes ?? 15} min to delivery times`
+                  : "Off — normal delivery times"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {restaurant.isBusy && (
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs text-gray-600 whitespace-nowrap">Extra min:</label>
+                <Input
+                  type="number"
+                  min={5}
+                  max={120}
+                  value={restaurant.busyExtraMinutes ?? 15}
+                  onChange={async (e) => {
+                    const val = Math.min(120, Math.max(5, Number(e.target.value)));
+                    await updateRestaurant(restaurant.id, { busyExtraMinutes: val });
+                    mutate();
+                  }}
+                  className="w-20 h-8 text-sm"
+                />
+              </div>
+            )}
+            <button
+              onClick={async () => {
+                await updateRestaurant(restaurant.id, { isBusy: !restaurant.isBusy });
+                mutate();
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                restaurant.isBusy ? "bg-amber-500" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  restaurant.isBusy ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
       </div>
 
       {restaurant.menus.length === 0 ? (

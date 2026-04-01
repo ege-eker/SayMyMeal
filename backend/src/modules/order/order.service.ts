@@ -18,6 +18,11 @@ export const orderService = (app: FastifyInstance) => ({
       );
       if (!matchedZone) throw new Error("Delivery zone error");
 
+      let etaMinutes = matchedZone.etaMinutes;
+      if (restaurant.isBusy && restaurant.busyExtraMinutes > 0) {
+        etaMinutes += restaurant.busyExtraMinutes;
+      }
+
       const allFoods = restaurant.menus.flatMap((m) => m.foods);
       const validFoodIds = allFoods.map((f) => f.id);
 
@@ -51,7 +56,7 @@ export const orderService = (app: FastifyInstance) => ({
           phone: data.phone,
           address: data.address as unknown as Prisma.InputJsonValue,
           status: "pending",
-          etaMinutes: matchedZone.etaMinutes,
+          etaMinutes,
           notes: data.notes || null,
           restaurantId: data.restaurantId,
           userId: userId || null,

@@ -44,6 +44,8 @@ model Restaurant {
   orders        Order[]
   owner         User?    @relation(fields: [ownerId], references: [id])
   ownerId       String?
+  isBusy           Boolean  @default(false)
+  busyExtraMinutes Int      @default(15)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   isActive      Boolean  @default(false)

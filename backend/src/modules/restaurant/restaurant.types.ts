@@ -14,6 +14,8 @@ export interface Restaurant {
   postcode: string;
   deliveryZones: DeliveryZone[];
   rating?: number | null;
+  isBusy: boolean;
+  busyExtraMinutes: number;
   ownerId?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -30,4 +32,7 @@ export interface CreateRestaurantInput {
   rating?: number;
 }
 
-export interface UpdateRestaurantInput extends Partial<CreateRestaurantInput> {}
+export interface UpdateRestaurantInput extends Partial<CreateRestaurantInput> {
+  isBusy?: boolean;
+  busyExtraMinutes?: number;
+}

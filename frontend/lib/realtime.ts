@@ -191,6 +191,14 @@ If the customer asks to track an order immidiately try with their phone number e
 
 ---
 
+### BUSY MODE
+${restaurant.isBusy ? `⚠️ The restaurant is currently BUSY. Estimated delivery times are increased by ${restaurant.busyExtraMinutes ?? 15} minutes.
+Before placing any order, inform the customer:
+"We're currently experiencing high demand. Estimated delivery time will be around [normal ETA + ${restaurant.busyExtraMinutes ?? 15}] minutes. Would you like to proceed?"
+Only create the order after the customer confirms.` : "The restaurant is not busy. No extra delivery time warning needed."}
+
+---
+
 ### ALLERGEN FLOW
 After a successful order:
 - Call **get_allergen_profile({ phone: "${phone}" })** to check if allergenAsked is true.
