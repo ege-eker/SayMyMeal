@@ -120,12 +120,14 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-              <UtensilsCrossed className="w-5 h-5 text-white" />
-            </span>
-            <span className="text-xl font-bold tracking-tight text-slate-800">
-              {APP_NAME}
-            </span>
+            <Image
+              src="/logo.png"
+              alt={APP_NAME}
+              width={180}
+              height={45}
+              className="h-9 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop links */}
@@ -314,35 +316,42 @@ export default function LandingPage() {
         <div className="bg-gradient-to-b from-slate-50 to-slate-100/50 py-16 md:py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center">
-              {/* Left - benefits list */}
+              {/* Left - savings breakdown */}
               <div>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">
-                  Make more money &mdash;<br />without hiring staff
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">
+                  Make an extra{" "}
+                  <span className="text-teal-600">&pound;1,340/month</span>
                 </h2>
-                <p className="text-slate-500 mb-10 max-w-md">
-                  Our AI handles phone calls, WhatsApp messages, and online orders
-                  so you can focus on what matters most.
+                <p className="text-slate-500 mb-8">
+                  &mdash; without hiring staff
                 </p>
 
-                <div className="space-y-4">
-                  {[
-                    { text: "Reduce staff workload", detail: "AI answers calls and takes orders automatically" },
-                    { text: "Never miss an order", detail: "24/7 availability, even when you're closed" },
-                    { text: "AI-powered upselling", detail: "Smart suggestions increase average order value" },
-                    { text: "Fewer order mistakes", detail: "Accurate AI transcription, no miscommunication" },
-                    { text: "Take orders 24/7", detail: "Customers can order any time, day or night" },
-                  ].map((item) => (
-                    <div key={item.text} className="flex items-start gap-3 group">
-                      <div className="mt-0.5 w-6 h-6 rounded-full bg-teal-100 flex-shrink-0 flex items-center justify-center group-hover:bg-teal-200 transition-colors">
-                        <CheckCircle2 className="w-4 h-4 text-teal-600" />
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="divide-y divide-slate-100">
+                    {[
+                      { label: "Staff cost saved", detail: "2 hrs/day \u00d7 \u00a313 \u00d7 30 days", amount: "\u00a3780" },
+                      { label: "Missed orders", detail: "1 customer/day \u00d7 \u00a35 \u00d7 30 days", amount: "\u00a3150" },
+                      { label: "Upsells", detail: "\u00a35 extra/day \u00d7 30 days", amount: "\u00a3150" },
+                      { label: "Fewer mistakes", detail: "3/week \u00d7 \u00a315 \u00d7 4 weeks", amount: "\u00a3180" },
+                      { label: "Orders while closed", detail: "2/week \u00d7 \u00a310 \u00d7 4 weeks", amount: "\u00a380" },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center justify-between px-5 py-3.5 group hover:bg-slate-50 transition-colors">
+                        <div>
+                          <span className="font-semibold text-slate-800 text-sm">{item.label}</span>
+                          <p className="text-xs text-slate-400">{item.detail}</p>
+                        </div>
+                        <span className="font-bold text-teal-600 text-lg">{item.amount}</span>
                       </div>
-                      <div>
-                        <span className="font-semibold text-slate-800">{item.text}</span>
-                        <p className="text-sm text-slate-400">{item.detail}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <div className="border-t-2 border-teal-200 bg-teal-50/50 px-5 py-4 flex items-center justify-between">
+                    <span className="font-bold text-slate-800">Total</span>
+                    <span className="text-2xl font-extrabold text-teal-700">&pound;1,340/month</span>
+                  </div>
                 </div>
+                <p className="text-xs text-slate-400 mt-3 text-center">
+                  Based on average takeaway performance.
+                </p>
               </div>
 
               {/* Right - highlight card */}
@@ -542,12 +551,7 @@ export default function LandingPage() {
       <footer className="border-t border-slate-100 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center">
-                <UtensilsCrossed className="w-3.5 h-3.5 text-white" />
-              </span>
-              <span className="font-bold text-slate-800 text-sm">{APP_NAME}</span>
-            </div>
+            <Image src="/logo.png" alt={APP_NAME} width={120} height={30} className="h-7 w-auto" />
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <button onClick={() => scrollTo("features")} className="hover:text-teal-600 transition-colors">Features</button>
               <button onClick={() => scrollTo("benefits")} className="hover:text-teal-600 transition-colors">Benefits</button>
