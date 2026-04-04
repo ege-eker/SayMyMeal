@@ -17,6 +17,9 @@ import {
   ShoppingBag,
   ArrowRight,
   ChevronDown,
+  Printer,
+  Zap,
+  ShieldCheck,
 } from "lucide-react";
 
 /* ───────── SVG wave dividers ───────── */
@@ -182,9 +185,9 @@ export default function LandingPage() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 px-4 pb-4 pt-2 space-y-2 shadow-lg animate-in slide-in-from-top-2">
-            <button onClick={() => scrollTo("features")} className="block w-full text-left px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50">Features</button>
-            <button onClick={() => scrollTo("benefits")} className="block w-full text-left px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50">Benefits</button>
-            <button onClick={() => scrollTo("how-it-works")} className="block w-full text-left px-3 py-2 text-sm text-slate-600 rounded-lg hover:bg-slate-50">How It Works</button>
+            <button onClick={() => scrollTo("features")} className="block w-full text-left px-3 py-2.5 text-sm text-slate-600 rounded-lg hover:bg-slate-50 active:bg-slate-100">Features</button>
+            <button onClick={() => scrollTo("benefits")} className="block w-full text-left px-3 py-2.5 text-sm text-slate-600 rounded-lg hover:bg-slate-50 active:bg-slate-100">Benefits</button>
+            <button onClick={() => scrollTo("how-it-works")} className="block w-full text-left px-3 py-2.5 text-sm text-slate-600 rounded-lg hover:bg-slate-50 active:bg-slate-100">How It Works</button>
             <hr className="border-slate-100" />
             {user ? (
               <>
@@ -233,7 +236,7 @@ export default function LandingPage() {
                 AI-Powered Restaurant Platform
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold leading-[1.1] tracking-tight text-slate-900 mb-6">
+              <h1 className="text-3xl sm:text-4xl lg:text-[3.5rem] font-extrabold leading-[1.1] tracking-tight text-slate-900 mb-6">
                 Your AI staff that{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600">
                   never misses
@@ -249,7 +252,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/register?role=OWNER"
-                  className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-bold text-white bg-gradient-to-r from-teal-600 to-teal-700 rounded-xl shadow-lg shadow-teal-600/20 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5 transition-all duration-200"
+                  className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 text-sm font-bold text-white bg-gradient-to-r from-teal-600 to-teal-700 rounded-xl shadow-lg shadow-teal-600/20 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5 transition-all duration-200"
                 >
                   Get Started Free
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -257,7 +260,7 @@ export default function LandingPage() {
                 <Link
                   href="#features"
                   onClick={(e) => { e.preventDefault(); scrollTo("features"); }}
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-bold text-teal-700 bg-teal-50 border border-teal-100 rounded-xl hover:bg-teal-100/60 transition-all duration-200"
+                  className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 text-sm font-bold text-teal-700 bg-teal-50 border border-teal-100 rounded-xl hover:bg-teal-100/60 transition-all duration-200"
                 >
                   See How It Works
                   <ChevronDown className="w-4 h-4" />
@@ -460,6 +463,85 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Instant Printing ── */}
+      <section className="relative">
+        <WaveTop />
+        <div className="bg-gradient-to-b from-slate-50 to-slate-100/30 py-16 md:py-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+              {/* Left — Device image */}
+              <div className="flex justify-center">
+                <div className="relative w-full max-w-sm">
+                  {/* Dark backdrop to make the blue device pop */}
+                  <div className="absolute inset-0 -inset-x-6 -inset-y-8 rounded-[2rem] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rotate-1 scale-[0.97] opacity-90" />
+                  {/* Glow ring */}
+                  <div className="absolute inset-0 -inset-x-4 -inset-y-6 rounded-[2rem] bg-gradient-to-br from-teal-500/20 via-cyan-400/10 to-transparent blur-xl" />
+                  {/* Subtle radial pulse */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-teal-400/15 rounded-full blur-3xl animate-pulse" />
+
+                  <div className="relative rounded-[1.5rem] overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 shadow-2xl shadow-slate-900/40 p-6 md:p-8 flex items-center justify-center aspect-[3/4]">
+                    <Image
+                      src="/device.png"
+                      alt="POS terminal receiving orders"
+                      fill
+                      className="object-contain p-4 drop-shadow-[0_10px_30px_rgba(20,184,166,0.25)]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right — Text content */}
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-50 border border-teal-100 rounded-full text-xs font-semibold text-teal-700 mb-6">
+                  <Printer className="w-3.5 h-3.5" />
+                  Kitchen Integration
+                </div>
+
+                <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight text-slate-900 mb-4">
+                  Orders{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600">
+                    printed instantly
+                  </span>
+                </h2>
+
+                <p className="text-base sm:text-lg text-slate-500 leading-relaxed mb-8 max-w-lg">
+                  Every order &mdash; whether from a phone call, WhatsApp message,
+                  or your online menu &mdash; arrives on your Tablet device and
+                  prints automatically. No delays, no manual entry.
+                </p>
+
+                <div className="space-y-4 mb-8">
+                  {[
+                    { icon: Zap, text: "Real-time order delivery", detail: "Orders appear the moment they're placed" },
+                    { icon: Printer, text: "Automatic receipt printing", detail: "Kitchen tickets print hands-free" },
+                    { icon: ShieldCheck, text: "Zero missed orders", detail: "Every channel funnelled to one device" },
+                  ].map(({ icon: Icon, text, detail }) => (
+                    <div key={text} className="flex items-start gap-3 group">
+                      <div className="mt-0.5 w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0 group-hover:bg-teal-200 transition-colors">
+                        <Icon className="w-4 h-4 text-teal-700" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-800 text-sm">{text}</p>
+                        <p className="text-xs text-slate-400">{detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href="/register?role=OWNER"
+                  className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 text-sm font-bold text-white bg-gradient-to-r from-teal-600 to-teal-700 rounded-xl shadow-lg shadow-teal-600/20 hover:shadow-xl hover:shadow-teal-600/30 hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  Get Your Device
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+        <WaveBottom fill="fill-slate-50" />
+      </section>
+
       {/* ── How It Works ── */}
       <section id="how-it-works" className="relative">
         <WaveTop />
@@ -529,7 +611,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   href="/register?role=OWNER"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 text-sm font-bold text-teal-700 bg-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+                  className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-3.5 text-sm font-bold text-teal-700 bg-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
                 >
                   Get Started Free
                   <ArrowRight className="w-4 h-4" />
@@ -537,7 +619,7 @@ export default function LandingPage() {
                 <Link
                   href="#features"
                   onClick={(e) => { e.preventDefault(); scrollTo("features"); }}
-                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 text-sm font-bold text-white border-2 border-white/30 rounded-xl hover:bg-white/10 transition-all duration-200"
+                  className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-3.5 text-sm font-bold text-white border-2 border-white/30 rounded-xl hover:bg-white/10 transition-all duration-200"
                 >
                   Learn More
                 </Link>
