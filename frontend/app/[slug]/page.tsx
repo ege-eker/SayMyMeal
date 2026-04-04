@@ -101,8 +101,14 @@ export default function RestaurantMenuPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Not Accepting Orders Banner */}
+      {restaurant.acceptingOrders === false && (
+        <div className="bg-red-600 text-white text-center py-3 px-4 text-sm font-semibold">
+          This restaurant is currently not accepting orders. Please try again later.
+        </div>
+      )}
       {/* Busy Mode Banner */}
-      {restaurant.isBusy && (
+      {restaurant.acceptingOrders !== false && restaurant.isBusy && (
         <div className="bg-orange-500 text-white text-center py-2 px-4 text-sm font-medium">
           This restaurant is currently busy — delivery times may be longer than usual
         </div>

@@ -145,8 +145,18 @@ export default function CheckoutPage() {
           </div>
         </div>
 
+        {/* Not Accepting Orders */}
+        {restaurant?.acceptingOrders === false && (
+          <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+            <h3 className="font-semibold text-red-800">Not Accepting Orders</h3>
+            <p className="text-sm text-red-700 mt-1">
+              This restaurant is currently not accepting orders. Please try again later.
+            </p>
+          </div>
+        )}
+
         {/* Busy Mode Warning */}
-        {restaurant?.isBusy && (
+        {restaurant?.acceptingOrders !== false && restaurant?.isBusy && (
           <div className="bg-orange-50 border border-orange-300 rounded-lg p-4 space-y-3">
             <h3 className="font-semibold text-orange-800">High Demand</h3>
             <p className="text-sm text-orange-700">
@@ -254,7 +264,7 @@ export default function CheckoutPage() {
           <Button
             type="submit"
             className="w-full"
-            disabled={submitting || (allergenWarnings.length > 0 && !allergenAcknowledged) || (restaurant?.isBusy && !busyAcknowledged)}
+            disabled={submitting || restaurant?.acceptingOrders === false || (allergenWarnings.length > 0 && !allergenAcknowledged) || (restaurant?.isBusy && !busyAcknowledged)}
           >
             {submitting ? "Placing Order..." : "Place Order"}
           </Button>

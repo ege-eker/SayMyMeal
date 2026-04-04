@@ -42,6 +42,7 @@ export const createRestaurantSchema = {
           rating: { type: "number", nullable: true },
           isBusy: { type: "boolean" },
           busyExtraMinutes: { type: "integer" },
+          acceptingOrders: { type: "boolean" },
           isActive: { type: "boolean" },
           ownerId: { type: "string", nullable: true },
           createdAt: { type: "string", format: "date-time" },
@@ -65,6 +66,7 @@ const restaurantResponseProperties = {
   rating: { type: "number", nullable: true },
   isBusy: { type: "boolean" },
   busyExtraMinutes: { type: "integer" },
+  acceptingOrders: { type: "boolean" },
   isActive: { type: "boolean" },
   ownerId: { type: "string", nullable: true },
   createdAt: { type: "string", format: "date-time" },
@@ -143,6 +145,7 @@ export const updateRestaurantSchema = {
       rating: { type: "number", nullable: true },
       isBusy: { type: "boolean" },
       busyExtraMinutes: { type: "integer", minimum: 5, maximum: 120 },
+      acceptingOrders: { type: "boolean" },
       deliveryZones: {
         type: "array",
         items: {

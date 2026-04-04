@@ -16,6 +16,7 @@ export interface Restaurant {
   rating?: number | null;
   isBusy: boolean;
   busyExtraMinutes: number;
+  acceptingOrders: boolean;
   ownerId?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -35,4 +36,5 @@ export interface CreateRestaurantInput {
 export interface UpdateRestaurantInput extends Partial<CreateRestaurantInput> {
   isBusy?: boolean;
   busyExtraMinutes?: number;
+  acceptingOrders?: boolean;
 }

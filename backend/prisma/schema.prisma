@@ -47,6 +47,7 @@ model Restaurant {
   ownerId       String?
   isBusy           Boolean  @default(false)
   busyExtraMinutes Int      @default(15)
+  acceptingOrders  Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   isActive      Boolean  @default(false)

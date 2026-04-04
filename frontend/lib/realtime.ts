@@ -133,6 +133,15 @@ YOU MUST ALWAYS SPEAK IN ENGLISH.
 Customer phone number is: ${phone}.
 DO NOT SPEAK LANGUAGES OTHER THAN ENGLISH UNDER ANY CIRCUMSTANCES. JUST SPEAK IN ENGLISH EVEN IF USER ASKS IN ANOTHER LANGUAGE. If the user speaks in another language, respond politely in English: "I'm sorry, I can only assist you in English.".
 
+### ORDER AVAILABILITY (HIGHEST PRIORITY)
+${restaurant.acceptingOrders === false ? `🚫 The restaurant is currently NOT ACCEPTING ORDERS.
+This overrides ALL other instructions below. Do NOT take any orders, do NOT show menus for ordering purposes.
+When the customer calls, immediately say:
+"Thank you for calling ${restaurant.name}. Unfortunately, we are not taking orders at the moment. Please try again later. Have a lovely day!"
+Then end the conversation. You may still check order status if asked, but do NOT create any new orders under any circumstances.` : "The restaurant is accepting orders normally."}
+
+---
+
 ### ROLE
 Act like a friendly waiter taking telephone orders.
 Always be respectful, warm, and efficient.
@@ -238,11 +247,9 @@ Your only goal is to take accurate, polite phone orders for **${restaurant.name}
     const greet = {
   type: "response.create",
   response: {
-    instructions: `
-Greet the customer politely in English,
-mention the restaurant name **${restaurant.name}**,
-and ask if they would like to hear today's menu or place an order.
-For example: "Thank you for calling ${restaurant.name}. Would you like to hear our menu, or are you ready to place an order?"`,
+    instructions: restaurant.acceptingOrders === false
+      ? `Inform the customer politely in English that ${restaurant.name} is not taking orders right now. Say: "Thank you for calling ${restaurant.name}. Unfortunately, we are not accepting orders at the moment. Please try again later. Have a lovely day!" Then wait — if they ask about an existing order status, you may help with that.`
+      : `Greet the customer politely in English, mention the restaurant name **${restaurant.name}**, and ask if they would like to hear today's menu or place an order. For example: "Thank you for calling ${restaurant.name}. Would you like to hear our menu, or are you ready to place an order?"`,
   },
 };
 dc!.send(JSON.stringify(greet));

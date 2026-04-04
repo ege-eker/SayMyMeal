@@ -17,7 +17,7 @@ async function loadRestaurant(app: FastifyInstance) {
       where: { isActive: true },
   });
   if (!restaurant) throw new Error("No restaurant found in database");
-  return { id: restaurant.id, name: restaurant.name, isBusy: restaurant.isBusy, busyExtraMinutes: restaurant.busyExtraMinutes };
+  return { id: restaurant.id, name: restaurant.name, isBusy: restaurant.isBusy, busyExtraMinutes: restaurant.busyExtraMinutes, acceptingOrders: restaurant.acceptingOrders };
 }
 
 /**
