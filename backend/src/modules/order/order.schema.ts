@@ -421,6 +421,122 @@ export const allergenCheckByPhoneSchema = {
   },
 };
 
+export const getDashboardStatsSchema = {
+  tags: ["orders"],
+  description: "Get real-time dashboard stats for a restaurant (owner only)",
+  querystring: {
+    type: "object",
+    required: ["restaurantId"],
+    properties: {
+      restaurantId: { type: "string" },
+    },
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        activeOrders: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              customer: { type: "string" },
+              phone: { type: "string" },
+              status: { type: "string" },
+              createdAt: { type: "string", format: "date-time" },
+              total: { type: "number" },
+              items: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    quantity: { type: "integer" },
+                    food: {
+                      type: "object",
+                      nullable: true,
+                      properties: {
+                        id: { type: "string" },
+                        name: { type: "string" },
+                        basePrice: { type: "number", nullable: true },
+                      },
+                    },
+                    selected: { type: "array", nullable: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+        completedOrders: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              customer: { type: "string" },
+              phone: { type: "string" },
+              status: { type: "string" },
+              createdAt: { type: "string", format: "date-time" },
+              total: { type: "number" },
+              items: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    quantity: { type: "integer" },
+                    food: {
+                      type: "object",
+                      nullable: true,
+                      properties: {
+                        id: { type: "string" },
+                        name: { type: "string" },
+                        basePrice: { type: "number", nullable: true },
+                      },
+                    },
+                    selected: { type: "array", nullable: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+        statusCounts: {
+          type: "object",
+          properties: {
+            pending: { type: "integer" },
+            preparing: { type: "integer" },
+            delivering: { type: "integer" },
+            completed: { type: "integer" },
+            canceled: { type: "integer" },
+          },
+        },
+        todayRevenue: { type: "number" },
+        todayOrderCount: { type: "integer" },
+        lastHourRevenue: { type: "number" },
+        bestSeller: {
+          type: "object",
+          nullable: true,
+          properties: {
+            name: { type: "string" },
+            quantity: { type: "integer" },
+          },
+        },
+      },
+    },
+    400: {
+      type: "object",
+      properties: { error: { type: "string" } },
+    },
+    403: {
+      type: "object",
+      properties: { error: { type: "string" } },
+    },
+  },
+};
+
 export const getOrderStatusSchema = {
   tags: ["orders"],
   description: "Check order status by phone number or customer name",

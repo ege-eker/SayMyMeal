@@ -232,6 +232,11 @@ export async function getOrders(restaurantId?: string) {
   return res.json();
 }
 
+export async function getDashboardStats(restaurantId: string) {
+  const res = await authFetch(`${API_URL}/orders/dashboard-stats?restaurantId=${restaurantId}`);
+  return res.json();
+}
+
 export async function updateOrderStatus(id: string, status: string) {
   const res = await authFetch(`${API_URL}/orders/${id}/status`, {
     method: "PUT",

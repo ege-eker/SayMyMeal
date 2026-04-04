@@ -98,6 +98,15 @@ export const orderController = (app: any) => {
       return reply.send(updated);
     },
 
+    dashboardStats: async (req: FastifyRequest<{ Querystring: { restaurantId: string } }>, reply: FastifyReply) => {
+      const { restaurantId } = req.query;
+      if (!restaurantId) return reply.code(400).send({ error: "restaurantId required" });
+      const isOwner = await verifyOwnership(app, req.user!.id, restaurantId);
+      if (!isOwner) return reply.code(403).send({ error: "Not your restaurant" });
+      const stats = await service.getDashboardStats(restaurantId);
+      return reply.send(stats);
+    },
+
     statusLookup: async (req: FastifyRequest<{ Querystring: { phone?: string; name?: string } }>, reply: FastifyReply) => {
       const { phone, name } = req.query;
       if (!phone && !name) return reply.code(400).send({ error: "Please provide phone or name" });

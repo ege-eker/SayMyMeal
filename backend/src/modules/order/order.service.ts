@@ -12,6 +12,10 @@ export const orderService = (app: FastifyInstance) => ({
       });
       if (!restaurant) throw new Error("Restaurant not found");
 
+      if (!restaurant.acceptingOrders) {
+        throw new BadRequestError("This restaurant is currently not accepting orders. Please try again later.");
+      }
+
       // Blacklist check
       if (data.phone) {
         const blacklisted = await app.prisma.blacklist.findUnique({
@@ -178,6 +182,104 @@ export const orderService = (app: FastifyInstance) => ({
         return this.checkAllergens(foodIds, wp.allergens);
       }
       return { warnings: [] };
+    },
+
+    async getDashboardStats(restaurantId: string) {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+      const todayOrders = await app.prisma.order.findMany({
+        where: {
+          restaurantId,
+          createdAt: { gte: startOfDay },
+        },
+        include: { items: { include: { food: true } } },
+        orderBy: { createdAt: "asc" },
+      });
+
+      const activeStatuses = ["pending", "preparing", "delivering"];
+      const activeOrders = todayOrders.filter((o) => activeStatuses.includes(o.status));
+      const completedOrders = todayOrders.filter((o) => o.status === "completed");
+
+      const statusCounts = {
+        pending: 0,
+        preparing: 0,
+        delivering: 0,
+        completed: 0,
+        canceled: 0,
+      };
+      for (const o of todayOrders) {
+        if (o.status in statusCounts) {
+          statusCounts[o.status as keyof typeof statusCounts]++;
+        }
+      }
+
+      const calcTotal = (order: any) => {
+        return (order.items || []).reduce((sum: number, item: any) => {
+          const base = item.food?.basePrice ?? 0;
+          const extras = item.selected
+            ? (item.selected as any[]).reduce((s: number, sel: any) => s + (sel.extraPrice || 0), 0)
+            : 0;
+          return sum + (base + extras) * (item.quantity ?? 1);
+        }, 0);
+      };
+
+      let todayRevenue = 0;
+      let lastHourRevenue = 0;
+      const foodSales: Record<string, { name: string; quantity: number }> = {};
+
+      for (const order of todayOrders) {
+        if (order.status === "canceled") continue;
+        const total = calcTotal(order);
+        todayRevenue += total;
+        if (order.createdAt >= oneHourAgo) {
+          lastHourRevenue += total;
+        }
+        for (const item of order.items) {
+          const name = item.food?.name ?? "Unknown";
+          if (!foodSales[name]) foodSales[name] = { name, quantity: 0 };
+          foodSales[name].quantity += item.quantity;
+        }
+      }
+
+      const bestSeller = Object.values(foodSales).sort((a, b) => b.quantity - a.quantity)[0] || null;
+
+      return {
+        activeOrders: activeOrders.map((o) => ({
+          id: o.id,
+          customer: o.customer,
+          phone: o.phone,
+          status: o.status,
+          createdAt: o.createdAt,
+          items: o.items.map((i) => ({
+            id: i.id,
+            quantity: i.quantity,
+            food: i.food ? { id: i.food.id, name: i.food.name, basePrice: i.food.basePrice } : null,
+            selected: i.selected,
+          })),
+          total: calcTotal(o),
+        })),
+        completedOrders: completedOrders.map((o) => ({
+          id: o.id,
+          customer: o.customer,
+          phone: o.phone,
+          status: o.status,
+          createdAt: o.createdAt,
+          items: o.items.map((i) => ({
+            id: i.id,
+            quantity: i.quantity,
+            food: i.food ? { id: i.food.id, name: i.food.name, basePrice: i.food.basePrice } : null,
+            selected: i.selected,
+          })),
+          total: calcTotal(o),
+        })),
+        statusCounts,
+        todayRevenue: Math.round(todayRevenue * 100) / 100,
+        todayOrderCount: todayOrders.filter((o) => o.status !== "canceled").length,
+        lastHourRevenue: Math.round(lastHourRevenue * 100) / 100,
+        bestSeller,
+      };
     },
 
     async findByCustomerOrPhone(name?: string, phone?: string) {

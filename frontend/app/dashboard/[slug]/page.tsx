@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { useState } from "react";
+import Link from "next/link";
 import { getRestaurantBySlug, createMenu, deleteMenu, createFood, deleteFood, updateRestaurant } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import FoodOptionForm from "@/components/FoodOptionForm";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import ImageUpload from "@/components/ImageUpload";
-import { Trash2, ChevronDown, AlertTriangle } from "lucide-react";
+import { Trash2, ChevronDown, AlertTriangle, Ban, ShieldCheck } from "lucide-react";
 import AllergenTagEditor from "@/components/AllergenTagEditor";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -52,10 +53,20 @@ export default function DashboardRestaurantPage() {
             <p className="text-sm text-gray-500">/{restaurant.slug}</p>
           </div>
         </div>
-        <Dialog open={openMenuDialog} onOpenChange={setOpenMenuDialog}>
-          <DialogTrigger asChild>
-            <Button>Add Menu</Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Link href={`/dashboard/${slug}/live`}>
+            <Button variant="outline" className="gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              Live Dashboard
+            </Button>
+          </Link>
+          <Dialog open={openMenuDialog} onOpenChange={setOpenMenuDialog}>
+            <DialogTrigger asChild>
+              <Button>Add Menu</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-sm">
             <div className="space-y-3">
               <h3 className="font-bold">New Menu</h3>
@@ -70,10 +81,55 @@ export default function DashboardRestaurantPage() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
+      </div>
+
+      {/* Accepting Orders Toggle */}
+      <div className={`border rounded-lg p-4 shadow-sm transition-colors ${
+        restaurant.acceptingOrders === false
+          ? "bg-red-50 border-red-300"
+          : "bg-emerald-50/50 border-emerald-200"
+      }`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {restaurant.acceptingOrders === false
+              ? <Ban className="w-5 h-5 text-red-500" />
+              : <ShieldCheck className="w-5 h-5 text-emerald-600" />}
+            <div>
+              <h3 className="font-semibold text-sm">
+                {restaurant.acceptingOrders === false ? "Not Accepting Orders" : "Accepting Orders"}
+              </h3>
+              <p className="text-xs text-gray-500">
+                {restaurant.acceptingOrders === false
+                  ? "All ordering channels are disabled — web, WhatsApp, and phone"
+                  : "Customers can place orders normally"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              await updateRestaurant(restaurant.id, { acceptingOrders: !restaurant.acceptingOrders });
+              mutate();
+            }}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              restaurant.acceptingOrders !== false ? "bg-emerald-500" : "bg-red-400"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                restaurant.acceptingOrders !== false ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Busy Mode Toggle */}
-      <div className={`border rounded-lg p-4 shadow-sm ${restaurant.isBusy ? "bg-amber-50 border-amber-300" : "bg-white"}`}>
+      <div className={`border rounded-lg p-4 shadow-sm transition-colors ${
+        restaurant.acceptingOrders === false
+          ? "opacity-40 pointer-events-none"
+          : restaurant.isBusy ? "bg-amber-50 border-amber-300" : "bg-white"
+      }`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
             {restaurant.isBusy && <AlertTriangle className="w-5 h-5 text-amber-600" />}

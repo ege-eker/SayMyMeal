@@ -10,6 +10,7 @@ import {
     acknowledgeOrderSchema,
     allergenCheckSchema,
     allergenCheckByPhoneSchema,
+    getDashboardStatsSchema,
 } from "./order.schema";
 import { authenticate, optionalAuth, requireRole } from '../../middleware/auth';
 
@@ -31,6 +32,9 @@ async function orderRoutes(app: FastifyInstance) {
 
     // Allergen check: by phone (WhatsApp/Realtime, no auth)
     app.get("/orders/allergen-check-by-phone", { schema: allergenCheckByPhoneSchema }, ctrl.allergenCheckByPhone);
+
+    // Owner: dashboard stats
+    app.get("/orders/dashboard-stats", { schema: getDashboardStatsSchema, preHandler: [ownerAuth] }, ctrl.dashboardStats as any);
 
     // Owner or pollToken: get orders (filtered by restaurantId)
     app.get("/orders", { schema: getOrdersSchema, preHandler: [optionalAuth] }, ctrl.getAll as any);

@@ -193,6 +193,15 @@ export default function DashboardPage() {
                 <Link href={`/dashboard/${r.slug}`}>
                   <Button size="sm">Manage</Button>
                 </Link>
+                <Link href={`/dashboard/${r.slug}/live`}>
+                  <Button size="sm" variant="outline" className="gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                    </span>
+                    Live
+                  </Button>
+                </Link>
                 <Link href={`/dashboard/${r.slug}/orders`}>
                   <Button size="sm" variant="outline">
                     Orders
