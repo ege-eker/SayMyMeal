@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { tools } from "../../shared/tools";
 import { toolHandlers } from "./toolHandlers";
 import { instructionsTemplate } from "./instructions";
+import { normalizePhone } from "../blacklist/blacklist.service";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 interface SessionState {
@@ -71,12 +72,29 @@ export function whatsappService(app: FastifyInstance) {
   const MAX_RETRIES = 2;
 
   async function handleMessage(phone: string, text: string): Promise<string> {
+    const restaurant = await loadRestaurant(app);
+
+    // Blacklist check — before any AI processing
+    const blacklisted = await app.prisma.blacklist.findUnique({
+      where: {
+        phone_restaurantId: {
+          phone: normalizePhone(phone),
+          restaurantId: restaurant.id,
+        },
+      },
+    });
+    if (blacklisted) {
+      await app.prisma.blacklist.update({
+        where: { id: blacklisted.id },
+        data: { attemptCount: { increment: 1 }, lastAttemptAt: new Date() },
+      });
+      return "I am sorry, I can't assist you right now.";
+    }
+
     const session =
       sessions.get(phone) ?? { messages: [], lastUpdated: Date.now() };
     session.lastUpdated = Date.now();
     session.messages.push({ role: "user", content: text });
-
-    const restaurant = await loadRestaurant(app);
 
     // Retry logic for LLM calls
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {

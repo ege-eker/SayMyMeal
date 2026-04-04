@@ -282,6 +282,24 @@ export async function updateFood(id: string, data: { name?: string; basePrice?: 
   return res.json();
 }
 
+// ── Blacklist ──────────────────────────────────────────
+export async function getBlacklist(restaurantId: string) {
+  const res = await authFetch(`${API_URL}/restaurants/${restaurantId}/blacklist`);
+  return res.json();
+}
+
+export async function addToBlacklist(data: { restaurantId: string; phone: string; reason?: string }) {
+  const res = await authFetch(`${API_URL}/restaurants/${data.restaurantId}/blacklist`, {
+    method: "POST",
+    body: JSON.stringify({ phone: data.phone, reason: data.reason }),
+  });
+  return res.json();
+}
+
+export async function removeFromBlacklist(id: string) {
+  await authFetch(`${API_URL}/blacklist/${id}`, { method: "DELETE" });
+}
+
 export async function getOrderStatus(params: { phone?: string; name?: string }) {
   const url = new URL(`${API_URL}/orders/status`);
   if (params.phone) url.searchParams.append("phone", params.phone);

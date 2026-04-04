@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { Prisma } from "@prisma/client";
 import { CreateOrderInput, UpdateOrderStatusInput } from "./order.types";
 import { BadRequestError } from "../../utils/errors";
+import { normalizePhone } from "../blacklist/blacklist.service";
 
 export const orderService = (app: FastifyInstance) => ({
     async create(data: CreateOrderInput, userId?: string) {
@@ -10,6 +11,25 @@ export const orderService = (app: FastifyInstance) => ({
         include: { menus: { include: { foods: true } } },
       });
       if (!restaurant) throw new Error("Restaurant not found");
+
+      // Blacklist check
+      if (data.phone) {
+        const blacklisted = await app.prisma.blacklist.findUnique({
+          where: {
+            phone_restaurantId: {
+              phone: normalizePhone(data.phone),
+              restaurantId: data.restaurantId,
+            },
+          },
+        });
+        if (blacklisted) {
+          await app.prisma.blacklist.update({
+            where: { id: blacklisted.id },
+            data: { attemptCount: { increment: 1 }, lastAttemptAt: new Date() },
+          });
+          throw new BadRequestError("Unable to place order for this restaurant.");
+        }
+      }
 
       const normalizedPostcode = data.address.postcode.replace(/\s/g, "").toUpperCase();
       const zones = (restaurant.deliveryZones as any[]) || [];

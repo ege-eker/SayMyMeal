@@ -7,6 +7,7 @@ import orderRoutes from "./order/order.routes";
 import optionRoutes from "./food-option/option.routes";
 import openaiRoutes from "./openai/openai.routes";
 import whatsappRoutes from "./whatsapp/whatsapp.routes";
+import blacklistRoutes from "./blacklist/blacklist.routes";
 
 async function registerRoutes(app: FastifyInstance) {
   app.register(authRoutes);
@@ -17,6 +18,7 @@ async function registerRoutes(app: FastifyInstance) {
   app.register(optionRoutes);
   app.register(openaiRoutes);
   app.register(whatsappRoutes);
+  app.register(blacklistRoutes);
 }
 
 export default registerRoutes;

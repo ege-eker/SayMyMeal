@@ -198,6 +198,11 @@ export default function DashboardPage() {
                     Orders
                   </Button>
                 </Link>
+                <Link href={`/dashboard/${r.slug}/blacklist`}>
+                  <Button size="sm" variant="outline">
+                    Blacklist
+                  </Button>
+                </Link>
                 <Button
                   size="sm"
                   variant={r.isActive ? "secondary" : "outline"}
@@ -206,7 +211,7 @@ export default function DashboardPage() {
                     mutate();
                   }}
                 >
-                  {r.isActive ? "Active" : "Activate"}
+                  {r.isActive ? "Whatsapp Active" : "Activate"}
                 </Button>
                 <ConfirmDelete
                   title={`Delete "${r.name}"?`}

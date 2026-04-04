@@ -42,6 +42,7 @@ model Restaurant {
   pollToken     String?  @unique
   menus         Menu[]
   orders        Order[]
+  blacklist     Blacklist[]
   owner         User?    @relation(fields: [ownerId], references: [id])
   ownerId       String?
   isBusy           Boolean  @default(false)
@@ -122,6 +123,20 @@ model OrderItem {
   foodId   String
   quantity Int
   selected Json?
+}
+
+model Blacklist {
+  id            String    @id @default(uuid())
+  phone         String
+  reason        String?
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId  String
+  attemptCount  Int       @default(0)
+  lastAttemptAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([phone, restaurantId])
 }
 
 model WhatsAppProfile {
