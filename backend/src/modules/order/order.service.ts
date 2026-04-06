@@ -35,14 +35,23 @@ export const orderService = (app: FastifyInstance) => ({
         }
       }
 
-      const normalizedPostcode = data.address.postcode.replace(/\s/g, "").toUpperCase();
-      const zones = (restaurant.deliveryZones as any[]) || [];
-      const matchedZone = zones.find(
-        (z) => z.postcode.replace(/\s/g, "").toUpperCase() === normalizedPostcode
-      );
-      if (!matchedZone) throw new Error("Delivery zone error");
+      // --- Delivery zone validation temporarily disabled ---
+      // Uncomment this block to re-enable postcode-based delivery zone checks.
+      //
+      // const normalizedPostcode = data.address.postcode.replace(/\s/g, "").toUpperCase();
+      // const zones = (restaurant.deliveryZones as any[]) || [];
+      // const matchedZone = zones.find(
+      //   (z) => z.postcode.replace(/\s/g, "").toUpperCase() === normalizedPostcode
+      // );
+      // if (!matchedZone) throw new Error("Delivery zone error");
+      //
+      // let etaMinutes = matchedZone.etaMinutes;
+      // if (restaurant.isBusy && restaurant.busyExtraMinutes > 0) {
+      //   etaMinutes += restaurant.busyExtraMinutes;
+      // }
+      // --- End delivery zone validation ---
 
-      let etaMinutes = matchedZone.etaMinutes;
+      let etaMinutes = 30;
       if (restaurant.isBusy && restaurant.busyExtraMinutes > 0) {
         etaMinutes += restaurant.busyExtraMinutes;
       }
