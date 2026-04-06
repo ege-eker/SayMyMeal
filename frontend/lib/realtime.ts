@@ -184,14 +184,15 @@ Acknowledge new information naturally and remember it for the call.
    - Ask: "Let me confirm your order: [items]. Is that correct?"
    - Wait for the customer to confirm before proceeding.
 
-6. **One-time add-on prompt** *(ask exactly ONCE per order)*
-   - After the customer confirms the summary, ask:
+6. **MANDATORY: One-time add-on prompt** *(YOU MUST ASK THIS — DO NOT SKIP)*
+   - ⚠️ THIS STEP IS REQUIRED. After the customer confirms their order summary, you MUST ask:
      "Would you like to add anything else — perhaps a drink or a side?"
+   - You MUST NOT skip this step. You MUST NOT go to step 7 without asking this first.
    - If they say **no** → move directly to step 7. Do NOT ask again.
    - If they say **yes** → go back to step 3 to browse menus/foods/options for additional items.
      After add-on items are selected, confirm the FULL updated order summary (original + add-ons).
      Do NOT offer another add-on prompt. Proceed to step 7.
-   - IMPORTANT: Never offer add-ons more than once. Never be pushy. Accept "no" immediately.
+   - Ask add-ons exactly ONCE. Never be pushy. Accept "no" immediately.
 
 7. **Collect delivery address**
    Get house number, street, city, and postcode, then confirm aloud.
@@ -206,8 +207,9 @@ Acknowledge new information naturally and remember it for the call.
 
 ---
 
-### ADD-ON RULES
-- Offer add-ons exactly ONCE per order, at step 6.
+### ADD-ON RULES (CRITICAL)
+- You MUST offer add-ons exactly ONCE per order, at step 6. NEVER skip this step.
+- The flow is ALWAYS: confirm summary (step 5) → ask add-on (step 6) → collect address (step 7).
 - Never suggest or upsell extras during menu browsing or food selection (steps 3–4).
 - If the customer declines, move on immediately. Do not insist or suggest specific items.
 - If the customer adds items, confirm the full updated order and proceed. No second add-on prompt.
@@ -303,6 +305,33 @@ export async function stopRealtime() {
 }
 
 /**
+ * Context-aware follow-up instructions after each function call.
+ * Guides the realtime voice model to the correct next step in the ordering flow.
+ */
+function getFollowUpInstruction(fnName: string): string {
+  switch (fnName) {
+    case "get_menus":
+      return "Menus fetched. List the menu names with brief descriptions and ask the customer which one they'd like to order from.";
+    case "get_foods":
+      return "Foods fetched. List the food items with their prices and ask the customer what they'd like to order.";
+    case "get_food_options":
+      return "Options fetched. Present the available options clearly (required choices first) and ask for their preferences.";
+    case "create_order":
+      return "Order has been placed. Confirm the order to the customer with estimated delivery time. Then check their allergen profile.";
+    case "get_order_status":
+      return "Order status retrieved. Share the status with the customer and close politely.";
+    case "get_allergen_profile":
+      return "Allergen profile retrieved. If allergenAsked is false, ask the customer about their allergies. If true, continue normally.";
+    case "set_allergen_profile":
+      return "Allergen profile saved. Thank the customer and close the call politely.";
+    case "check_food_allergens":
+      return "Allergen check done. If there are warnings, inform the customer and ask if they want to proceed. If no warnings, continue with creating the order.";
+    default:
+      return `Function ${fnName} completed. Continue the conversation naturally.`;
+  }
+}
+
+/**
  * Function Call Handler
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -388,11 +417,12 @@ async function handleFunctionCall(name: string, call_id: string, args: any, dc: 
     console.info(debug)
   dc.send(JSON.stringify(debug));
 
-  // trigger function_call done
+  // trigger function_call done with context-aware instructions
+  const followUp = getFollowUpInstruction(name);
   dc.send(JSON.stringify({
     type: "response.create",
     response: {
-      instructions: `Function done: ${name}.`
+      instructions: followUp
     }
   }));
 }
