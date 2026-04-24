@@ -48,6 +48,9 @@ model Restaurant {
   isBusy           Boolean  @default(false)
   busyExtraMinutes Int      @default(15)
   acceptingOrders  Boolean  @default(true)
+  whatsappPhone    String?  @unique
+  voicePhone       String?  @unique
+  twilioPhoneSid   String?  @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   isActive      Boolean  @default(false)
