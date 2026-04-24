@@ -41,7 +41,6 @@ services:
       context: frontend
       args:
         API_URL: ${API_URL}
-        OPENAI_API_KEY: ${OPENAI_API_KEY}
     container_name: frontend
     ports:
       - "${FRONTEND_PORT}:3000"
