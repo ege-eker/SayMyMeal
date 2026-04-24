@@ -305,6 +305,40 @@ export async function removeFromBlacklist(id: string) {
   await authFetch(`${API_URL}/blacklist/${id}`, { method: "DELETE" });
 }
 
+// ── Voice Provisioning ──────────────────────────────────────
+
+export interface AvailableNumber {
+  phoneNumber: string;
+  friendlyName: string;
+  locality: string | null;
+  region: string | null;
+  isoCountry: string;
+}
+
+export async function searchAvailableNumbers(country: string, areaCode?: number): Promise<{ numbers: AvailableNumber[] }> {
+  const url = new URL(`${API_URL}/voice/available-numbers`);
+  url.searchParams.append("country", country);
+  if (areaCode) url.searchParams.append("areaCode", String(areaCode));
+  const res = await authFetch(url.toString());
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed to search numbers" }));
+    throw new Error(err.error || "Failed to search numbers");
+  }
+  return res.json();
+}
+
+export async function provisionVoiceNumber(restaurantId: string, phoneNumber: string) {
+  const res = await authFetch(`${API_URL}/voice/provision`, {
+    method: "POST",
+    body: JSON.stringify({ restaurantId, phoneNumber }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Provision failed" }));
+    throw new Error(err.error || "Provision failed");
+  }
+  return res.json();
+}
+
 export async function getOrderStatus(params: { phone?: string; name?: string }) {
   const url = new URL(`${API_URL}/orders/status`);
   if (params.phone) url.searchParams.append("phone", params.phone);

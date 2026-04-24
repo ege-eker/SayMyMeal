@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import ConfirmDelete from "@/components/ConfirmDelete";
-import { Trash2 } from "lucide-react";
+import { Trash2, Phone, MessageCircle } from "lucide-react";
 
 export default function DashboardPage() {
   const { data: restaurants, error, mutate } = useSWR("my-restaurants", getMyRestaurants);
@@ -176,13 +176,27 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-400">
                   {r.houseNumber} {r.street}, {r.city}
                 </p>
-                <span
-                  className={`text-xs px-2 py-1 rounded ${
-                    r.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                  }`}
-                >
-                  {r.isActive ? "Active" : "Inactive"}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded ${
+                      r.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {r.isActive ? "WhatsApp Demo Active" : "Inactive"}
+                  </span>
+                  {r.voicePhone && (
+                    <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700 flex items-center gap-1">
+                      <Phone className="w-3 h-3" />
+                      {r.voicePhone}
+                    </span>
+                  )}
+                  {r.whatsappPhone && (
+                    <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700 flex items-center gap-1">
+                      <MessageCircle className="w-3 h-3" />
+                      {r.whatsappPhone}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link href={`/${r.slug}`}>

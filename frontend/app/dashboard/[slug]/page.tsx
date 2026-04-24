@@ -4,14 +4,24 @@ import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { useState } from "react";
 import Link from "next/link";
-import { getRestaurantBySlug, createMenu, deleteMenu, createFood, deleteFood, updateRestaurant } from "@/lib/api";
+import {
+  getRestaurantBySlug,
+  createMenu,
+  deleteMenu,
+  createFood,
+  deleteFood,
+  updateRestaurant,
+  searchAvailableNumbers,
+  provisionVoiceNumber,
+  type AvailableNumber,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import FoodOptionForm from "@/components/FoodOptionForm";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import ImageUpload from "@/components/ImageUpload";
-import { Trash2, ChevronDown, AlertTriangle, Ban, ShieldCheck } from "lucide-react";
+import { Trash2, ChevronDown, AlertTriangle, Ban, ShieldCheck, Phone, MessageCircle, CheckCircle2, Search, Loader2 } from "lucide-react";
 import AllergenTagEditor from "@/components/AllergenTagEditor";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -179,6 +189,9 @@ export default function DashboardRestaurantPage() {
         </div>
       </div>
 
+      {/* Phone Numbers */}
+      <PhoneNumbersCard restaurant={restaurant} onUpdate={() => mutate()} />
+
       {restaurant.menus.length === 0 ? (
         <p className="text-gray-500">No menus yet. Add one above.</p>
       ) : (
@@ -186,6 +199,241 @@ export default function DashboardRestaurantPage() {
           <MenuCard key={menu.id} menu={menu} onRefresh={mutate} />
         ))
       )}
+    </div>
+  );
+}
+
+function PhoneNumbersCard({ restaurant, onUpdate }: { restaurant: any; onUpdate: () => void }) {
+  return (
+    <div className="space-y-4">
+      <VoicePhoneCard restaurant={restaurant} onUpdate={onUpdate} />
+      <WhatsappPhoneCard restaurant={restaurant} onUpdate={onUpdate} />
+    </div>
+  );
+}
+
+function VoicePhoneCard({ restaurant, onUpdate }: { restaurant: any; onUpdate: () => void }) {
+  const hasNumber = Boolean(restaurant.twilioPhoneSid);
+
+  return (
+    <div className="border rounded-lg p-4 shadow-sm bg-white">
+      <div className="flex items-center gap-2 mb-3">
+        <Phone className="w-5 h-5 text-blue-600" />
+        <h3 className="font-semibold text-sm">Voice Phone</h3>
+      </div>
+
+      {hasNumber ? (
+        <ProvisionedVoiceView voicePhone={restaurant.voicePhone} />
+      ) : (
+        <ProvisionVoiceFlow restaurantId={restaurant.id} onProvisioned={onUpdate} />
+      )}
+    </div>
+  );
+}
+
+function ProvisionedVoiceView({ voicePhone }: { voicePhone: string | null }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2">
+        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-emerald-700">Dedicated number active</div>
+          <div className="font-mono text-sm font-semibold text-emerald-900 break-all">{voicePhone}</div>
+        </div>
+      </div>
+
+      <div className="text-xs text-gray-600 space-y-1.5">
+        <p className="font-medium">Forward your restaurant phone to this number:</p>
+        <ul className="list-disc list-inside space-y-0.5 ml-1">
+          <li>
+            Mobile (most UK carriers): dial <code className="bg-gray-100 px-1 rounded font-mono">**21*{voicePhone}#</code> and press call
+          </li>
+          <li>Landline: set unconditional call forwarding through your provider</li>
+        </ul>
+      </div>
+
+      <p className="text-xs text-gray-400 pt-1 border-t">
+        To change or remove this number, contact platform support.
+      </p>
+    </div>
+  );
+}
+
+function ProvisionVoiceFlow({ restaurantId, onProvisioned }: { restaurantId: string; onProvisioned: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [country, setCountry] = useState("GB");
+  const [areaCode, setAreaCode] = useState("");
+  const [numbers, setNumbers] = useState<AvailableNumber[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [provisioning, setProvisioning] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSearch = async () => {
+    setError(null);
+    setNumbers(null);
+    setSearching(true);
+    try {
+      const res = await searchAvailableNumbers(country.trim().toUpperCase(), areaCode ? Number(areaCode) : undefined);
+      setNumbers(res.numbers);
+    } catch (err: any) {
+      setError(err.message || "Failed to search numbers");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleProvision = async (phoneNumber: string) => {
+    if (!confirm(`Provision ${phoneNumber}? This will purchase the number (~$1.15/month) and cannot be easily undone.`)) return;
+    setError(null);
+    setProvisioning(phoneNumber);
+    try {
+      await provisionVoiceNumber(restaurantId, phoneNumber);
+      setOpen(false);
+      onProvisioned();
+    } catch (err: any) {
+      setError(err.message || "Failed to provision number");
+    } finally {
+      setProvisioning(null);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-gray-500">
+        Get a dedicated Twilio number for your restaurant. Customers calling your existing number will be forwarded to the AI assistant.
+      </p>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button size="sm" className="gap-2">
+            <Phone className="w-4 h-4" />
+            Get Dedicated Phone Number
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-bold text-base">Provision a Dedicated Number</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                This costs ~$1.15/month. Once provisioned, contact support to change or release it.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Country (ISO-2)</label>
+                <Input
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value.toUpperCase())}
+                  maxLength={2}
+                  className="font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Area Code (optional)</label>
+                <Input
+                  value={areaCode}
+                  onChange={(e) => setAreaCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="20"
+                  className="font-mono"
+                />
+              </div>
+              <Button size="sm" onClick={handleSearch} disabled={searching || !country.trim()}>
+                {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              </Button>
+            </div>
+
+            {error && <p className="text-xs text-red-500">{error}</p>}
+
+            {numbers !== null && (
+              <div className="border rounded-md max-h-64 overflow-auto divide-y">
+                {numbers.length === 0 ? (
+                  <p className="text-sm text-gray-400 p-3">No numbers available for this search.</p>
+                ) : (
+                  numbers.map((n) => (
+                    <div key={n.phoneNumber} className="flex items-center justify-between p-2.5 hover:bg-gray-50">
+                      <div>
+                        <div className="font-mono text-sm font-medium">{n.phoneNumber}</div>
+                        <div className="text-xs text-gray-500">
+                          {[n.locality, n.region, n.isoCountry].filter(Boolean).join(" · ") || n.friendlyName}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={provisioning !== null}
+                        onClick={() => handleProvision(n.phoneNumber)}
+                      >
+                        {provisioning === n.phoneNumber ? <Loader2 className="w-4 h-4 animate-spin" /> : "Provision"}
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function WhatsappPhoneCard({ restaurant, onUpdate }: { restaurant: any; onUpdate: () => void }) {
+  const [whatsappPhone, setWhatsappPhone] = useState<string>(restaurant.whatsappPhone ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const e164Pattern = /^\+[1-9]\d{1,14}$/;
+
+  const handleSave = async () => {
+    setError(null);
+    const wp = whatsappPhone.trim() || null;
+    if (wp && !e164Pattern.test(wp)) {
+      setError("WhatsApp phone must be E.164 format (e.g. +447700900000)");
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateRestaurant(restaurant.id, { whatsappPhone: wp });
+      onUpdate();
+    } catch (err: any) {
+      setError(err.message || "Failed to save WhatsApp phone");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border rounded-lg p-4 shadow-sm bg-white">
+      <div className="flex items-center gap-2 mb-3">
+        <MessageCircle className="w-5 h-5 text-emerald-600" />
+        <h3 className="font-semibold text-sm">WhatsApp Phone</h3>
+      </div>
+      <p className="text-xs text-gray-500 mb-3">
+        WhatsApp number for this restaurant. Enter the E.164 number registered with your Twilio WhatsApp sender.
+      </p>
+
+      <div className="space-y-1.5">
+        <Input
+          placeholder="+447700900000"
+          value={whatsappPhone}
+          onChange={(e) => setWhatsappPhone(e.target.value)}
+          className="font-mono text-sm"
+        />
+        <div className="flex items-center gap-1.5">
+          <div className={`w-2 h-2 rounded-full ${restaurant.whatsappPhone ? "bg-green-500" : "bg-gray-300"}`} />
+          <span className="text-xs text-gray-400">
+            {restaurant.whatsappPhone ? "Active" : "Not configured"}
+          </span>
+        </div>
+      </div>
+
+      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+
+      <div className="flex gap-2 mt-3">
+        <Button size="sm" onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save"}
+        </Button>
+      </div>
     </div>
   );
 }
