@@ -11,24 +11,24 @@ interface SessionState {
   lastUpdated: number;
 }
 
-async function loadRestaurant(app: FastifyInstance) {
-  // todo findUnique(where:{id:…})
-  const restaurant = await app.prisma.restaurant.findFirst({
-      where: { isActive: true },
+async function loadRestaurantById(app: FastifyInstance, restaurantId: string) {
+  const restaurant = await app.prisma.restaurant.findUnique({
+    where: { id: restaurantId },
+    select: { id: true, name: true, isBusy: true, busyExtraMinutes: true, acceptingOrders: true },
   });
-  if (!restaurant) throw new Error("No restaurant found in database");
-  return { id: restaurant.id, name: restaurant.name, isBusy: restaurant.isBusy, busyExtraMinutes: restaurant.busyExtraMinutes, acceptingOrders: restaurant.acceptingOrders };
+  if (!restaurant) throw new Error(`Restaurant not found: ${restaurantId}`);
+  return restaurant;
 }
 
 /**
  * Downloads audio from Twilio's MediaUrl with Basic Auth
  */
 async function downloadTwilioAudio(mediaUrl: string): Promise<Buffer> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const accountSid = process.env.TWILIO_WA_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_WA_AUTH_TOKEN;
 
   if (!accountSid || !authToken) {
-    throw new Error("TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN must be set");
+    throw new Error("TWILIO_WA_ACCOUNT_SID and TWILIO_WA_AUTH_TOKEN must be set");
   }
 
   const authHeader = "Basic " + Buffer.from(`${accountSid}:${authToken}`).toString("base64");
@@ -53,10 +53,21 @@ export function whatsappService(app: FastifyInstance) {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const sessions = new Map<string, SessionState>();
 
-  function clearSessions() {
-    app.log.warn("🧹 Clearing WhatsApp sessions due to restaurant switch");
-    sessions.clear();
-    app.log.warn(`🧹 Sessions after clear: ${sessions.size}`);
+  function sessionKey(restaurantId: string, phone: string): string {
+    return `${restaurantId}:${phone}`;
+  }
+
+  function clearSessions(restaurantId?: string) {
+    if (restaurantId) {
+      const prefix = `${restaurantId}:`;
+      for (const key of sessions.keys()) {
+        if (key.startsWith(prefix)) sessions.delete(key);
+      }
+      app.log.warn(`🧹 Cleared WhatsApp sessions for restaurant ${restaurantId}`);
+    } else {
+      sessions.clear();
+      app.log.warn("🧹 Cleared all WhatsApp sessions");
+    }
   }
 
   // Clear old sessions every 15mins
@@ -71,8 +82,8 @@ export function whatsappService(app: FastifyInstance) {
 
   const MAX_RETRIES = 2;
 
-  async function handleMessage(phone: string, text: string): Promise<string> {
-    const restaurant = await loadRestaurant(app);
+  async function handleMessage(phone: string, text: string, restaurantId: string): Promise<string> {
+    const restaurant = await loadRestaurantById(app, restaurantId);
 
     // Blacklist check — before any AI processing
     const blacklisted = await app.prisma.blacklist.findUnique({
@@ -91,8 +102,9 @@ export function whatsappService(app: FastifyInstance) {
       return "I am sorry, I can't assist you right now.";
     }
 
+    const key = sessionKey(restaurantId, phone);
     const session =
-      sessions.get(phone) ?? { messages: [], lastUpdated: Date.now() };
+      sessions.get(key) ?? { messages: [], lastUpdated: Date.now() };
     session.lastUpdated = Date.now();
     session.messages.push({ role: "user", content: text });
 
@@ -102,7 +114,7 @@ export function whatsappService(app: FastifyInstance) {
         app.log.info(`🔄 Retrying LLM call (attempt ${attempt + 1}/${MAX_RETRIES + 1})`);
       }
 
-      const result = await processWithLLM(phone, session, restaurant);
+      const result = await processWithLLM(key, session, restaurant, phone);
       
       if (result && result.trim() !== "") {
         return result;
@@ -117,9 +129,10 @@ export function whatsappService(app: FastifyInstance) {
   }
 
   async function processWithLLM(
-    phone: string,
+    sKey: string,
     session: SessionState,
-    restaurant: { id: string; name: string }
+    restaurant: { id: string; name: string },
+    phone: string
   ): Promise<string> {
     let finalText = "";
     let running = true;
@@ -186,7 +199,7 @@ export function whatsappService(app: FastifyInstance) {
     }
 
     session.lastUpdated = Date.now();
-    sessions.set(phone, session);
+    sessions.set(sKey, session);
 
     return finalText;
   }
@@ -195,7 +208,7 @@ export function whatsappService(app: FastifyInstance) {
    * Handle voice messages by transcribing them with OpenAI Whisper
    * and then processing as a regular text message
    */
-  async function handleVoiceMessage(phone: string, mediaUrl: string): Promise<string> {
+  async function handleVoiceMessage(phone: string, mediaUrl: string, restaurantId: string): Promise<string> {
     app.log.info(`🎤 Downloading voice message from ${mediaUrl}`);
 
     // Download the audio file from Twilio
@@ -226,7 +239,7 @@ export function whatsappService(app: FastifyInstance) {
     }
 
     // Process the transcribed text as a regular message
-    return handleMessage(phone, transcribedText);
+    return handleMessage(phone, transcribedText, restaurantId);
   }
 
   return { handleMessage, handleVoiceMessage, clearSessions };
