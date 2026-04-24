@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { Prisma } from "@prisma/client";
 import { CreateRestaurantInput, UpdateRestaurantInput } from "./restaurant.types";
 import { deleteUploadedFile } from "../../utils/upload";
+import { releaseNumber } from "../../shared/twilioClient";
 
 export const restaurantService = (app: FastifyInstance) => ({
   async create(data: CreateRestaurantInput, ownerId?: string) {
@@ -34,6 +35,8 @@ export const restaurantService = (app: FastifyInstance) => ({
         isBusy: data.isBusy,
         busyExtraMinutes: data.busyExtraMinutes,
         acceptingOrders: data.acceptingOrders,
+        whatsappPhone: data.whatsappPhone !== undefined ? data.whatsappPhone : undefined,
+        voicePhone: data.voicePhone !== undefined ? data.voicePhone : undefined,
         deliveryZones: data.deliveryZones
           ? (data.deliveryZones as unknown as Prisma.InputJsonValue)
           : undefined,
@@ -70,6 +73,20 @@ export const restaurantService = (app: FastifyInstance) => ({
           },
         },
       },
+    });
+  },
+
+  async findByVoicePhone(phone: string) {
+    return app.prisma.restaurant.findUnique({
+      where: { voicePhone: phone },
+      select: { id: true, name: true, isBusy: true, busyExtraMinutes: true, acceptingOrders: true },
+    });
+  },
+
+  async findByWhatsappPhone(phone: string) {
+    return app.prisma.restaurant.findUnique({
+      where: { whatsappPhone: phone },
+      select: { id: true, name: true, isBusy: true, busyExtraMinutes: true, acceptingOrders: true },
     });
   },
 
@@ -115,8 +132,21 @@ export const restaurantService = (app: FastifyInstance) => ({
   },
 
   async remove(id: string) {
-    const existing = await app.prisma.restaurant.findUnique({ where: { id }, select: { imageUrl: true } });
+    const existing = await app.prisma.restaurant.findUnique({
+      where: { id },
+      select: { imageUrl: true, twilioPhoneSid: true },
+    });
     await deleteUploadedFile(existing?.imageUrl);
+
+    if (existing?.twilioPhoneSid) {
+      try {
+        await releaseNumber(existing.twilioPhoneSid);
+        app.log.info(`🔓 Released Twilio number ${existing.twilioPhoneSid} for restaurant ${id}`);
+      } catch (err) {
+        app.log.error(`❌ Failed to release Twilio number ${existing.twilioPhoneSid}: ${(err as Error).message}`);
+      }
+    }
+
     return app.prisma.restaurant.delete({ where: { id } });
   },
 });

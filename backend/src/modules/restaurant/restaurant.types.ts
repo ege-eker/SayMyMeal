@@ -17,6 +17,9 @@ export interface Restaurant {
   isBusy: boolean;
   busyExtraMinutes: number;
   acceptingOrders: boolean;
+  whatsappPhone?: string | null;
+  voicePhone?: string | null;
+  twilioPhoneSid?: string | null;
   ownerId?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -37,4 +40,6 @@ export interface UpdateRestaurantInput extends Partial<CreateRestaurantInput> {
   isBusy?: boolean;
   busyExtraMinutes?: number;
   acceptingOrders?: boolean;
+  whatsappPhone?: string | null;
+  voicePhone?: string | null;
 }

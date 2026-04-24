@@ -44,6 +44,9 @@ export const createRestaurantSchema = {
           busyExtraMinutes: { type: "integer" },
           acceptingOrders: { type: "boolean" },
           isActive: { type: "boolean" },
+          whatsappPhone: { type: "string", nullable: true },
+          voicePhone: { type: "string", nullable: true },
+          twilioPhoneSid: { type: "string", nullable: true },
           ownerId: { type: "string", nullable: true },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
@@ -68,6 +71,9 @@ const restaurantResponseProperties = {
   busyExtraMinutes: { type: "integer" },
   acceptingOrders: { type: "boolean" },
   isActive: { type: "boolean" },
+  whatsappPhone: { type: "string", nullable: true },
+  voicePhone: { type: "string", nullable: true },
+  twilioPhoneSid: { type: "string", nullable: true },
   ownerId: { type: "string", nullable: true },
   createdAt: { type: "string", format: "date-time" },
   updatedAt: { type: "string", format: "date-time" },
@@ -146,6 +152,8 @@ export const updateRestaurantSchema = {
       isBusy: { type: "boolean" },
       busyExtraMinutes: { type: "integer", minimum: 5, maximum: 120 },
       acceptingOrders: { type: "boolean" },
+      whatsappPhone: { type: "string", pattern: "^\\+[1-9]\\d{1,14}$", nullable: true },
+      voicePhone: { type: "string", pattern: "^\\+[1-9]\\d{1,14}$", nullable: true },
       deliveryZones: {
         type: "array",
         items: {
