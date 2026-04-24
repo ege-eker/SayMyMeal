@@ -323,13 +323,12 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            {/* WhatsApp Card */}
+          <div className="max-w-sm mx-auto">
             <a
               href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? ""}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-xl hover:shadow-teal-100/60 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+              className="group relative rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-xl hover:shadow-teal-100/60 hover:-translate-y-1 transition-all duration-300 overflow-hidden block"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-50 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative">
@@ -346,27 +345,6 @@ export default function LandingPage() {
                 </span>
               </div>
             </a>
-
-            {/* Phone AI Card */}
-            <Link
-              href="/restaurants"
-              className="group relative rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-xl hover:shadow-teal-100/60 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-teal-50 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center mb-4 shadow-lg shadow-teal-500/20 group-hover:scale-110 transition-transform duration-300">
-                  <Phone className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Phone AI Assistant</h3>
-                <p className="text-sm text-slate-500 leading-relaxed mb-4">
-                  Call our AI assistant and place an order using your voice.
-                </p>
-                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-600 group-hover:gap-2.5 transition-all duration-200">
-                  Try Phone Order
-                  <ArrowRight className="w-4 h-4" />
-                </span>
-              </div>
-            </Link>
           </div>
         </div>
       </section>

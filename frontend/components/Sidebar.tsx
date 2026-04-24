@@ -9,7 +9,7 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false);
 
   const links = [
-    { href: "/restaurants", label: "Restaurants" },
+    { href: "/admin/restaurants", label: "Restaurants" },
     { href: "/admin/orders", label: "Orders" },
     { href: "/", label: "Main Page" },
   ];
