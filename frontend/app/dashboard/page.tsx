@@ -61,7 +61,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">My Restaurants</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
+        {restaurants.length === 0 && <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>Add Restaurant</Button>
           </DialogTrigger>
@@ -161,7 +161,7 @@ export default function DashboardPage() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </div>
 
       {restaurants.length === 0 ? (

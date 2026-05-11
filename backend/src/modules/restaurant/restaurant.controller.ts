@@ -16,6 +16,9 @@ export const restaurantController = (app: any) => {
         if (err.code === 'P2002') {
           return reply.code(400).send({ error: 'Slug already taken' });
         }
+        if (err.statusCode) {
+          return reply.code(err.statusCode).send({ error: err.message });
+        }
         reply.code(500).send({ error: err.message });
       }
     },
