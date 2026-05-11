@@ -28,8 +28,15 @@ function RegisterForm() {
     phone: "",
     role: defaultRole,
   });
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const validations = {
+    name: form.name.length >= 2,
+    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email),
+    password: form.password.length >= 8,
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,8 +75,12 @@ function RegisterForm() {
               id="name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onBlur={() => setTouched((t) => ({ ...t, name: true }))}
               required
             />
+            {touched.name && !validations.name && (
+              <p className="text-xs text-red-500">Minimum 2 characters</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -78,8 +89,12 @@ function RegisterForm() {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onBlur={() => setTouched((t) => ({ ...t, email: true }))}
               required
             />
+            {touched.email && !validations.email && (
+              <p className="text-xs text-red-500">Enter a valid email address</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
@@ -88,9 +103,12 @@ function RegisterForm() {
               type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onBlur={() => setTouched((t) => ({ ...t, password: true }))}
               required
-              minLength={8}
             />
+            <p className={`text-xs ${form.password.length === 0 ? "text-gray-400" : validations.password ? "text-green-600" : "text-red-500"}`}>
+              Minimum 8 characters{validations.password ? " ✓" : ""}
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">Phone (optional)</Label>
@@ -125,7 +143,7 @@ function RegisterForm() {
               </label>
             </div>
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || !validations.name || !validations.email || !validations.password}>
             {loading ? "Creating account..." : "Register"}
           </Button>
           <p className="text-center text-sm text-gray-600">
