@@ -6,6 +6,14 @@ import { releaseNumber } from "../../shared/twilioClient";
 
 export const restaurantService = (app: FastifyInstance) => ({
   async create(data: CreateRestaurantInput, ownerId?: string) {
+    if (ownerId) {
+      const existing = await app.prisma.restaurant.findFirst({ where: { ownerId } });
+      if (existing) {
+        const err: any = new Error("You already have a restaurant");
+        err.statusCode = 400;
+        throw err;
+      }
+    }
     return app.prisma.restaurant.create({
       data: {
         name: data.name,
@@ -56,7 +64,7 @@ export const restaurantService = (app: FastifyInstance) => ({
   },
 
   async findBySlug(slug: string) {
-    return app.prisma.restaurant.findUnique({
+    const restaurant = await app.prisma.restaurant.findUnique({
       where: { slug },
       include: {
         menus: {
@@ -74,6 +82,9 @@ export const restaurantService = (app: FastifyInstance) => ({
         },
       },
     });
+    if (!restaurant) return null;
+    const { pollToken, twilioPhoneSid, ownerId, ...publicData } = restaurant;
+    return publicData;
   },
 
   async findByVoicePhone(phone: string) {
@@ -93,7 +104,21 @@ export const restaurantService = (app: FastifyInstance) => ({
   async findByOwner(ownerId: string) {
     return app.prisma.restaurant.findMany({
       where: { ownerId },
-      include: { menus: { orderBy: { createdAt: "asc" } } },
+      include: {
+        menus: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            foods: {
+              orderBy: { createdAt: "asc" },
+              include: {
+                options: {
+                  include: { choices: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
   },
 

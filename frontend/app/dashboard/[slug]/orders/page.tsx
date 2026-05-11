@@ -3,25 +3,22 @@
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { useState, useMemo } from "react";
-import { getRestaurantBySlug, getOrders, updateOrderStatus } from "@/lib/api";
+import { getMyRestaurants, getOrders, updateOrderStatus } from "@/lib/api";
 
 const statusOptions = ["pending", "preparing", "delivering", "completed", "canceled"];
 
 export default function DashboardOrdersPage() {
   const { slug } = useParams();
-  const { data: restaurant } = useSWR(
-    slug ? `dashboard-restaurant-${slug}` : null,
-    () => getRestaurantBySlug(slug as string)
-  );
-
-  const restaurantId = restaurant?.id;
+  const { data: restaurants } = useSWR("my-restaurants", getMyRestaurants);
+  const restaurant = restaurants?.find((r: any) => r.slug === slug);
   const { data: orders, error, mutate } = useSWR(
-    restaurantId ? `orders-${restaurantId}` : null,
-    () => getOrders(restaurantId)
+    restaurant?.id ? `orders-${restaurant.id}` : null,
+    () => getOrders(restaurant!.id)
   );
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  if (!restaurant) return <div>Loading restaurant...</div>;
+  if (!restaurants) return <div>Loading restaurant...</div>;
+  if (!restaurant) return <div className="text-red-500 p-4">You do not have access to this restaurant.</div>;
   if (error) return <div className="text-red-500">Error loading orders</div>;
   if (!orders) return <div>Loading orders...</div>;
 

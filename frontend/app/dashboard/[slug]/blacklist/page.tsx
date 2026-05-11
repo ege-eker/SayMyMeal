@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { useState } from "react";
-import { getRestaurantBySlug, getBlacklist, addToBlacklist, removeFromBlacklist } from "@/lib/api";
+import { getMyRestaurants, getBlacklist, addToBlacklist, removeFromBlacklist } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,13 +23,11 @@ interface BlacklistEntry {
 
 export default function BlacklistPage() {
   const { slug } = useParams();
-  const { data: restaurant } = useSWR(
-    slug ? `dashboard-restaurant-${slug}` : null,
-    () => getRestaurantBySlug(slug as string)
-  );
+  const { data: restaurants } = useSWR("my-restaurants", getMyRestaurants);
+  const restaurant = restaurants?.find((r: any) => r.slug === slug);
   const { data: blacklist, mutate } = useSWR<BlacklistEntry[]>(
     restaurant?.id ? `blacklist-${restaurant.id}` : null,
-    () => getBlacklist(restaurant.id)
+    () => getBlacklist(restaurant!.id)
   );
 
   const [phone, setPhone] = useState("");
@@ -66,7 +64,8 @@ export default function BlacklistPage() {
     mutate();
   };
 
-  if (!restaurant) return <div>Loading...</div>;
+  if (!restaurants) return <div>Loading...</div>;
+  if (!restaurant) return <div className="text-red-500 p-4">You do not have access to this restaurant.</div>;
 
   return (
     <div className="space-y-6">

@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { useState } from "react";
 import Link from "next/link";
 import {
-  getRestaurantBySlug,
+  getMyRestaurants,
   createMenu,
   deleteMenu,
   createFood,
@@ -29,15 +29,14 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function DashboardRestaurantPage() {
   const { slug } = useParams();
-  const { data: restaurant, error, mutate } = useSWR(
-    slug ? `dashboard-restaurant-${slug}` : null,
-    () => getRestaurantBySlug(slug as string)
-  );
+  const { data: restaurants, error, mutate } = useSWR("my-restaurants", getMyRestaurants);
+  const restaurant = restaurants?.find((r: any) => r.slug === slug);
   const [openMenuDialog, setOpenMenuDialog] = useState(false);
   const [menuName, setMenuName] = useState("");
 
   if (error) return <div className="text-red-500">Error loading restaurant</div>;
-  if (!restaurant) return <div>Loading...</div>;
+  if (!restaurants) return <div>Loading...</div>;
+  if (!restaurant) return <div className="text-red-500 p-4">You do not have access to this restaurant.</div>;
 
   const handleCreateMenu = async () => {
     if (!menuName.trim()) return;

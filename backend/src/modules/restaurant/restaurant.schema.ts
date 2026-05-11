@@ -38,7 +38,7 @@ export const createRestaurantSchema = {
           street: { type: "string" },
           city: { type: "string" },
           postcode: { type: "string" },
-          deliveryZones: { type: "array", items: { type: "object" } },
+          deliveryZones: { type: "array", items: { type: "object", additionalProperties: true } },
           rating: { type: "number", nullable: true },
           isBusy: { type: "boolean" },
           busyExtraMinutes: { type: "integer" },
@@ -65,7 +65,7 @@ const restaurantResponseProperties = {
   street: { type: "string" },
   city: { type: "string" },
   postcode: { type: "string" },
-  deliveryZones: { type: "array", items: { type: "object" } },
+  deliveryZones: { type: "array", items: { type: "object", additionalProperties: true } },
   rating: { type: "number", nullable: true },
   isBusy: { type: "boolean" },
   busyExtraMinutes: { type: "integer" },
@@ -118,11 +118,35 @@ export const getRestaurantByIdSchema = {
 
 export const getRestaurantBySlugSchema = {
   tags: ["restaurants"],
-  description: "Get restaurant by slug with full menu tree",
+  description: "Get restaurant by slug with full menu tree (public — no sensitive fields)",
   params: {
     type: "object",
     properties: { slug: { type: "string" } },
     required: ["slug"],
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        name: { type: "string" },
+        slug: { type: "string" },
+        imageUrl: { type: "string", nullable: true },
+        houseNumber: { type: "string" },
+        street: { type: "string" },
+        city: { type: "string" },
+        postcode: { type: "string" },
+        deliveryZones: { type: "array", items: { type: "object", additionalProperties: true } },
+        rating: { type: "number", nullable: true },
+        isBusy: { type: "boolean" },
+        busyExtraMinutes: { type: "integer" },
+        acceptingOrders: { type: "boolean" },
+        whatsappPhone: { type: "string", nullable: true },
+        voicePhone: { type: "string", nullable: true },
+        menus: { type: "array", items: { type: "object", additionalProperties: true } },
+      },
+    },
+    404: { type: "object", properties: { message: { type: "string" } } },
   },
 };
 

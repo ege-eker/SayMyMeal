@@ -5,7 +5,7 @@ import Link from "next/link";
 import useSWR from "swr";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import {
-  getRestaurantBySlug,
+  getMyRestaurants,
   getDashboardStats,
   updateOrderStatus,
   updateRestaurant,
@@ -257,10 +257,8 @@ export default function LiveDashboardPage() {
   const [secondsAgo, setSecondsAgo] = useState(0);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const { data: restaurant, mutate: mutateRestaurant } = useSWR(
-    slug ? `dashboard-restaurant-${slug}` : null,
-    () => getRestaurantBySlug(slug as string)
-  );
+  const { data: restaurants, mutate: mutateRestaurant } = useSWR("my-restaurants", getMyRestaurants);
+  const restaurant = restaurants?.find((r: any) => r.slug === slug);
   const [completedExpanded, setCompletedExpanded] = useState(false);
 
   const restaurantId = restaurant?.id;
@@ -310,12 +308,16 @@ export default function LiveDashboardPage() {
       stats.statusCounts.delivering
     : 0;
 
-  if (!restaurant) {
+  if (!restaurants) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-amber-500" />
       </div>
     );
+  }
+
+  if (!restaurant) {
+    return <div className="text-red-500 p-4">You do not have access to this restaurant.</div>;
   }
 
   return (
