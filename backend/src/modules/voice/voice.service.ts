@@ -87,7 +87,9 @@ Acknowledge new information naturally and remember it for the call.
 4. **Handle food selection**
    - After fetching foods, mention names and prices.
    - When the customer chooses, fetch options with \`get_food_options\`.
-   - Discuss required options, quantity, and confirm the item.
+   - Ask about each option group **one at a time** — ask the first group, wait for the answer, then ask the next. Never list all option groups at once.
+     Example: "What size would you like — Small or Large?" → (wait) → "And which sauce would you like — Ranch or Olive Oil?"
+   - Once all option groups are answered, confirm the item and ask about quantity.
    - Repeat if adding more items.
 
 5. **Confirm order summary**
@@ -377,6 +379,10 @@ export function voiceService(app: FastifyInstance) {
     const pendingArgs: Record<string, string> = {};
     const pendingCalls: Record<string, string> = {};
 
+    // Barge-in tracking
+    let lastAssistantItemId: string | null = null;
+    let audioChunkCount = 0;
+
     twilioWs.on("message", async (data: WebSocket.Data) => {
       let event: TwilioStreamEvent;
       try {
@@ -458,8 +464,30 @@ export function voiceService(app: FastifyInstance) {
             return;
           }
 
+          // User started speaking — cancel AI response and clear Twilio buffer (barge-in)
+          if (msg.type === "input_audio_buffer.speech_started") {
+            app.log.info("🎤 Barge-in detected — cancelling AI response");
+            if (openaiWs?.readyState === WebSocket.OPEN) {
+              openaiWs.send(JSON.stringify({ type: "response.cancel" }));
+              if (lastAssistantItemId) {
+                openaiWs.send(JSON.stringify({
+                  type: "conversation.item.truncate",
+                  item_id: lastAssistantItemId,
+                  content_index: 0,
+                  audio_end_ms: audioChunkCount * 20,
+                }));
+              }
+            }
+            if (twilioWs.readyState === WebSocket.OPEN && streamSid) {
+              twilioWs.send(JSON.stringify({ event: "clear", streamSid }));
+            }
+            lastAssistantItemId = null;
+            audioChunkCount = 0;
+          }
+
           // Audio output from OpenAI → Twilio
           if (msg.type === "response.audio.delta" && msg.delta) {
+            audioChunkCount++;
             const mulawAudio = pcm16ToMulawBase64(msg.delta as string);
             if (twilioWs.readyState === WebSocket.OPEN && streamSid) {
               twilioWs.send(
@@ -474,7 +502,11 @@ export function voiceService(app: FastifyInstance) {
 
           // Function call started
           if (msg.type === "response.output_item.added") {
-            const item = msg.item as { type: string; call_id?: string; name?: string };
+            const item = msg.item as { type: string; id?: string; call_id?: string; name?: string };
+            if (item.type === "message" && item.id) {
+              lastAssistantItemId = item.id;
+              audioChunkCount = 0;
+            }
             if (item.type === "function_call" && item.call_id) {
               pendingCalls[item.call_id] = item.name || "";
               pendingArgs[item.call_id] = "";

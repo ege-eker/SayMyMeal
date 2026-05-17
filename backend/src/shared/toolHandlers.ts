@@ -181,9 +181,9 @@ export function getFollowUpInstruction(fnName: string): string {
     case "get_foods":
       return "Foods fetched. List the food items with their prices and ask the customer what they'd like to order.";
     case "get_food_options":
-      return "Options fetched. Present the available options clearly (required choices first) and ask for their preferences.";
+      return "Options fetched. Ask about the FIRST option group only — one question at a time. Wait for the customer's answer before moving to the next group. Do not list all groups at once.";
     case "create_order":
-      return "Order has been placed. Confirm the order to the customer with estimated delivery time. Then check their allergen profile.";
+      return "Check the tool result. If it contains an 'error' field, inform the customer clearly what went wrong and ask them to correct it (e.g. missing option selection, address issue). Do NOT say the order was placed if there is an error. If successful (no error field), confirm the order to the customer with estimated delivery time.";
     case "get_order_status":
       return "Order status retrieved. Share the status with the customer and close politely.";
     case "get_allergen_profile":
