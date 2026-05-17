@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import CartDrawer from "@/components/CartDrawer";
 import AllergenBadges from "@/components/AllergenBadges";
+import CartToast from "@/components/ui/cart-toast";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 
@@ -28,6 +29,9 @@ export default function RestaurantMenuPage() {
   const [addQuantity, setAddQuantity] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (name: string) => setToastMessage(name);
 
   useEffect(() => {
     if (restaurant) {
@@ -56,6 +60,7 @@ export default function RestaurantMenuPage() {
         basePrice: food.basePrice,
         selectedOptions: [],
       });
+      showToast(food.name);
     }
   };
 
@@ -70,6 +75,7 @@ export default function RestaurantMenuPage() {
       },
       addQuantity
     );
+    showToast(optionModal.name);
     setOptionModal(null);
   };
 
@@ -432,6 +438,7 @@ export default function RestaurantMenuPage() {
 
       {/* Cart Drawer */}
       <CartDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <CartToast message={toastMessage} onDone={() => setToastMessage(null)} />
     </div>
   );
 }
