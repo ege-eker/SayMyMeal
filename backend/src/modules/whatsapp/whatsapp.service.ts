@@ -4,11 +4,13 @@ import { tools } from "../../shared/tools";
 import { toolHandlers } from "./toolHandlers";
 import { instructionsTemplate } from "./instructions";
 import { normalizePhone } from "../blacklist/blacklist.service";
+import { resolveCaller, ResolvedCaller } from "../../shared/identityResolver";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 interface SessionState {
   messages: ChatCompletionMessageParam[];
   lastUpdated: number;
+  caller?: ResolvedCaller;
 }
 
 async function loadRestaurantById(app: FastifyInstance, restaurantId: string) {
@@ -106,6 +108,11 @@ export function whatsappService(app: FastifyInstance) {
     const session =
       sessions.get(key) ?? { messages: [], lastUpdated: Date.now() };
     session.lastUpdated = Date.now();
+
+    if (!session.caller) {
+      session.caller = await resolveCaller(app, normalizePhone(phone));
+    }
+
     session.messages.push({ role: "user", content: text });
 
     // Retry logic for LLM calls
@@ -137,9 +144,8 @@ export function whatsappService(app: FastifyInstance) {
     let finalText = "";
     let running = true;
 
-    // memory
     const messages: ChatCompletionMessageParam[] = [
-      { role: "system", content: instructionsTemplate({ restaurant, phone }) },
+      { role: "system", content: instructionsTemplate({ restaurant, phone, caller: session.caller }) },
       ...session.messages,
     ];
 

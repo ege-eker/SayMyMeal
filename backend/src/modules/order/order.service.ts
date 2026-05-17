@@ -181,12 +181,12 @@ export const orderService = (app: FastifyInstance) => ({
     },
 
     async checkAllergensByPhone(phone: string, foodIds: string[]) {
-      // Try User first, then WhatsAppProfile
-      const user = await app.prisma.user.findFirst({ where: { phone } });
+      const normalized = normalizePhone(phone);
+      const user = await app.prisma.user.findUnique({ where: { phone: normalized } });
       if (user && user.allergens.length > 0) {
         return this.checkAllergens(foodIds, user.allergens);
       }
-      const wp = await app.prisma.whatsAppProfile.findUnique({ where: { phone } });
+      const wp = await app.prisma.whatsAppProfile.findUnique({ where: { phone: normalized } });
       if (wp && wp.allergens.length > 0) {
         return this.checkAllergens(foodIds, wp.allergens);
       }

@@ -9,6 +9,9 @@ import {
   releaseNumber,
   AvailableNumber,
 } from "../../shared/twilioClient";
+import { resolveCaller, ResolvedCaller } from "../../shared/identityResolver";
+import { normalizePhone } from "../../shared/phone";
+import { renderCallerProfileBlock } from "../../shared/callerProfilePrompt";
 
 const OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
 
@@ -23,10 +26,17 @@ function buildInstructions(params: {
   acceptingOrders: boolean;
   isBusy: boolean;
   busyExtraMinutes: number;
+  caller?: ResolvedCaller;
 }): string {
-  const { restaurantName, restaurantId, callerPhone, acceptingOrders, isBusy, busyExtraMinutes } = params;
+  const { restaurantName, restaurantId, callerPhone, acceptingOrders, isBusy, busyExtraMinutes, caller } = params;
+  const callerProfileBlock = renderCallerProfileBlock(caller);
 
   return `
+### CALLER PROFILE (personalise based on this)
+${callerProfileBlock}
+
+---
+
 You are the polite phone ordering assistant for **${restaurantName}**, located in the United Kingdom.
 You know the restaurants id: ${restaurantId}.
 YOU MUST ALWAYS SPEAK IN ENGLISH.
@@ -67,7 +77,8 @@ Acknowledge new information naturally and remember it for the call.
    "Thank you for calling **${restaurantName}**. How can I help you today?"
 
 2. **Get customer name**
-   "And your full name please?"
+   - If the CALLER PROFILE above already includes a name, skip this step — you already know it. Use it directly in create_order.
+   - If no name is known: "And your full name please?"
 
 3. **Offer menus or respond to interest**
    - If asked what's served, fetch menus with \`get_menus\`.
@@ -95,7 +106,8 @@ Acknowledge new information naturally and remember it for the call.
    - Ask add-ons exactly ONCE. Never be pushy. Accept "no" immediately.
 
 7. **Collect delivery address**
-   Get house number, street, city, and postcode, then confirm aloud.
+   - If the CALLER PROFILE lists saved addresses, offer the first one: "Shall I deliver to your usual address at [address]?" — if they say yes, use it directly. Only ask for full address details if they want a new one or no saved address exists.
+   - If no saved address: ask for house number, street, city, and postcode, then confirm aloud.
 
 8. **Allergen check & create the order**
    - If the customer has an existing allergen profile with allergens,
@@ -382,6 +394,13 @@ export function voiceService(app: FastifyInstance) {
         const acceptingOrders = params.acceptingOrders === "true";
         const isBusy = params.isBusy === "true";
         const busyExtraMinutes = parseInt(params.busyExtraMinutes) || 15;
+        const normalizedPhone = normalizePhone(params.callerPhone);
+        const caller = await resolveCaller(app, normalizedPhone);
+
+        const callerName =
+          caller.type === "user" ? caller.user.name :
+          caller.type === "whatsapp" ? caller.profile.name ?? null :
+          null;
 
         // Connect to OpenAI Realtime API
         openaiWs = new WebSocket(OPENAI_REALTIME_URL, {
@@ -401,10 +420,11 @@ export function voiceService(app: FastifyInstance) {
               instructions: buildInstructions({
                 restaurantName: params.restaurantName,
                 restaurantId: params.restaurantId,
-                callerPhone: params.callerPhone,
+                callerPhone: normalizedPhone,
                 acceptingOrders,
                 isBusy,
                 busyExtraMinutes,
+                caller,
               }),
               tools: toRealtimeTools(tools),
               input_audio_format: "pcm16",
@@ -422,6 +442,8 @@ export function voiceService(app: FastifyInstance) {
             response: {
               instructions: !acceptingOrders
                 ? `Inform the customer politely in English that ${params.restaurantName} is not taking orders right now. Say: "Thank you for calling ${params.restaurantName}. Unfortunately, we are not accepting orders at the moment. Please try again later. Have a lovely day!"`
+                : callerName
+                ? `Greet the customer by name. Say something like: "Thank you for calling ${params.restaurantName}, ${callerName}! How can I help you today?"`
                 : `Greet the customer politely in English, mention the restaurant name **${params.restaurantName}**, and ask how you can help them today. For example: "Thank you for calling ${params.restaurantName}. How can I help you today?"`,
             },
           };

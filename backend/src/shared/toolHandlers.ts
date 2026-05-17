@@ -2,28 +2,79 @@ import { FastifyInstance } from "fastify";
 import { menuService } from "../modules/menu/menu.service";
 import { optionService } from "../modules/food-option/option.service";
 import { orderService } from "../modules/order/order.service";
-import { CreateOrderInput } from "../modules/order/order.types";
-
-function cleanPhone(phone: string): string {
-  return phone.replace(/^whatsapp:/, "");
-}
+import { CreateOrderInput, UKAddress } from "../modules/order/order.types";
+import { normalizePhone } from "./phone";
+import { resolveCaller, ResolvedCaller } from "./identityResolver";
 
 export function toolHandlers(app: FastifyInstance) {
   const menu = menuService(app);
   const option = optionService(app);
   const order = orderService(app);
 
-  async function findAllergenProfile(phone: string) {
-    const clean = cleanPhone(phone);
-    const user = await app.prisma.user.findFirst({ where: { phone: clean } });
-    if (user) {
-      return { source: "user", id: user.id, allergens: user.allergens, dietaryPreferences: user.dietaryPreferences, allergenAsked: user.allergenAsked };
+  async function persistCallerAddress(
+    caller: ResolvedCaller,
+    phone: string,
+    customerName: string,
+    addr: UKAddress
+  ) {
+    if (!addr.houseNumber || !addr.postcode) return;
+
+    if (caller.type === "user") {
+      const exists = caller.user.addresses.some(
+        (a) => a.houseNumber === addr.houseNumber && a.postcode === addr.postcode
+      );
+      if (!exists) {
+        await app.prisma.address.create({
+          data: {
+            userId: caller.user.id,
+            houseNumber: addr.houseNumber,
+            street: addr.street,
+            city: addr.city,
+            postcode: addr.postcode,
+            isDefault: caller.user.addresses.length === 0,
+          },
+        });
+      }
+      if (!caller.user.name) {
+        await app.prisma.user.update({ where: { id: caller.user.id }, data: { name: customerName } });
+      }
+    } else if (caller.type === "whatsapp") {
+      const exists = caller.profile.addresses.some(
+        (a) => a.houseNumber === addr.houseNumber && a.postcode === addr.postcode
+      );
+      if (!exists) {
+        await app.prisma.address.create({
+          data: {
+            whatsappProfileId: caller.profile.id,
+            houseNumber: addr.houseNumber,
+            street: addr.street,
+            city: addr.city,
+            postcode: addr.postcode,
+            isDefault: caller.profile.addresses.length === 0,
+          },
+        });
+      }
+      if (!caller.profile.name) {
+        await app.prisma.whatsAppProfile.update({
+          where: { id: caller.profile.id },
+          data: { name: customerName },
+        });
+      }
+    } else {
+      const wp = await app.prisma.whatsAppProfile.create({
+        data: { phone, name: customerName },
+      });
+      await app.prisma.address.create({
+        data: {
+          whatsappProfileId: wp.id,
+          houseNumber: addr.houseNumber,
+          street: addr.street,
+          city: addr.city,
+          postcode: addr.postcode,
+          isDefault: true,
+        },
+      });
     }
-    const wp = await app.prisma.whatsAppProfile.findUnique({ where: { phone: clean } });
-    if (wp) {
-      return { source: "whatsapp", id: wp.id, allergens: wp.allergens, dietaryPreferences: wp.dietaryPreferences, allergenAsked: wp.allergenAsked };
-    }
-    return null;
   }
 
   return {
@@ -49,10 +100,17 @@ export function toolHandlers(app: FastifyInstance) {
     },
 
     async create_order(args: CreateOrderInput) {
-      if (args.phone) {
-        args.phone = cleanPhone(args.phone);
-      }
-      return await order.create(args);
+      const normalized = normalizePhone(args.phone ?? "");
+      args.phone = normalized;
+
+      const caller = await resolveCaller(app, normalized);
+      const userId = caller.type === "user" ? caller.user.id : undefined;
+
+      const result = await order.create(args, userId);
+
+      await persistCallerAddress(caller, normalized, args.customer, args.address);
+
+      return result;
     },
 
     async get_order_status({
@@ -62,13 +120,20 @@ export function toolHandlers(app: FastifyInstance) {
       phone?: string;
       name?: string;
     }) {
-      return await order.findByCustomerOrPhone(name, phone ? cleanPhone(phone) : phone);
+      return await order.findByCustomerOrPhone(name, phone ? normalizePhone(phone) : phone);
     },
 
     async get_allergen_profile({ phone }: { phone: string }) {
-      const profile = await findAllergenProfile(phone);
-      if (!profile) return { allergenAsked: false, allergens: [], dietaryPreferences: [] };
-      return profile;
+      const caller = await resolveCaller(app, phone);
+      if (caller.type === "user") {
+        const u = caller.user;
+        return { source: "user", id: u.id, allergens: u.allergens, dietaryPreferences: u.dietaryPreferences, allergenAsked: u.allergenAsked };
+      }
+      if (caller.type === "whatsapp") {
+        const p = caller.profile;
+        return { source: "whatsapp", id: p.id, allergens: p.allergens, dietaryPreferences: p.dietaryPreferences, allergenAsked: p.allergenAsked };
+      }
+      return { allergenAsked: false, allergens: [], dietaryPreferences: [] };
     },
 
     async set_allergen_profile({
@@ -82,8 +147,8 @@ export function toolHandlers(app: FastifyInstance) {
       allergens: string[];
       dietaryPreferences: string[];
     }) {
-      const clean = cleanPhone(phone);
-      const user = await app.prisma.user.findFirst({ where: { phone: clean } });
+      const normalized = normalizePhone(phone);
+      const user = await app.prisma.user.findUnique({ where: { phone: normalized } });
       if (user) {
         return app.prisma.user.update({
           where: { id: user.id },
@@ -92,15 +157,15 @@ export function toolHandlers(app: FastifyInstance) {
         });
       }
       return app.prisma.whatsAppProfile.upsert({
-        where: { phone: clean },
-        create: { phone: clean, name: name || null, allergens, dietaryPreferences, allergenAsked: true },
+        where: { phone: normalized },
+        create: { phone: normalized, name: name || null, allergens, dietaryPreferences, allergenAsked: true },
         update: { allergens, dietaryPreferences, allergenAsked: true, ...(name ? { name } : {}) },
       });
     },
 
     async check_food_allergens({ foodIds, phone }: { foodIds: string[]; phone: string }) {
-      const clean = cleanPhone(phone);
-      return order.checkAllergensByPhone(clean, foodIds);
+      const normalized = normalizePhone(phone);
+      return order.checkAllergensByPhone(normalized, foodIds);
     },
   };
 }
