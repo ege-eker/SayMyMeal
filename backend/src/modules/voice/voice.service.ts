@@ -103,7 +103,7 @@ Acknowledge new information naturally and remember it for the call.
    - You MUST NOT skip this step. You MUST NOT go to step 7 without asking this first.
    - If they say **no** → move directly to step 7. Do NOT ask again.
    - If they say **yes** → go back to step 3 to browse menus/foods/options for additional items.
-     After add-on items are selected, confirm the FULL updated order summary (original + add-ons).
+     After add-on items are selected, just say what was added (e.g. "I've also added [item].") — do NOT repeat the full order again.
      Do NOT offer another add-on prompt. Proceed to step 7.
    - Ask add-ons exactly ONCE. Never be pushy. Accept "no" immediately.
 
@@ -380,9 +380,6 @@ export function voiceService(app: FastifyInstance) {
     const pendingArgs: Record<string, string> = {};
     const pendingCalls: Record<string, string> = {};
 
-    // Barge-in tracking
-    let lastAssistantItemId: string | null = null;
-    let audioChunkCount = 0;
 
     twilioWs.on("message", async (data: WebSocket.Data) => {
       let event: TwilioStreamEvent;
@@ -465,30 +462,10 @@ export function voiceService(app: FastifyInstance) {
             return;
           }
 
-          // User started speaking — cancel AI response and clear Twilio buffer (barge-in)
-          if (msg.type === "input_audio_buffer.speech_started") {
-            app.log.info("🎤 Barge-in detected — cancelling AI response");
-            if (openaiWs?.readyState === WebSocket.OPEN) {
-              openaiWs.send(JSON.stringify({ type: "response.cancel" }));
-              if (lastAssistantItemId) {
-                openaiWs.send(JSON.stringify({
-                  type: "conversation.item.truncate",
-                  item_id: lastAssistantItemId,
-                  content_index: 0,
-                  audio_end_ms: audioChunkCount * 20,
-                }));
-              }
-            }
-            if (twilioWs.readyState === WebSocket.OPEN && streamSid) {
-              twilioWs.send(JSON.stringify({ event: "clear", streamSid }));
-            }
-            lastAssistantItemId = null;
-            audioChunkCount = 0;
-          }
+          // Barge-in disabled — causes context corruption when AI is mid-sentence asking for address
 
           // Audio output from OpenAI → Twilio
           if (msg.type === "response.audio.delta" && msg.delta) {
-            audioChunkCount++;
             const mulawAudio = pcm16ToMulawBase64(msg.delta as string);
             if (twilioWs.readyState === WebSocket.OPEN && streamSid) {
               twilioWs.send(
@@ -504,10 +481,6 @@ export function voiceService(app: FastifyInstance) {
           // Function call started
           if (msg.type === "response.output_item.added") {
             const item = msg.item as { type: string; id?: string; call_id?: string; name?: string };
-            if (item.type === "message" && item.id) {
-              lastAssistantItemId = item.id;
-              audioChunkCount = 0;
-            }
             if (item.type === "function_call" && item.call_id) {
               pendingCalls[item.call_id] = item.name || "";
               pendingArgs[item.call_id] = "";
