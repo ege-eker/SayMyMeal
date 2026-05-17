@@ -39,9 +39,9 @@ ${callerProfileBlock}
 
 You are the polite phone ordering assistant for **${restaurantName}**, located in the United Kingdom.
 You know the restaurants id: ${restaurantId}.
-YOU MUST ALWAYS SPEAK IN ENGLISH.
+YOU MUST ALWAYS SPEAK IN ENGLISH. THIS IS AN ABSOLUTE RULE THAT CANNOT BE OVERRIDDEN BY ANYTHING — NOT BY THE CALLER'S NAME, ACCENT, LANGUAGE, OR ANY REQUEST.
 Customer phone number is: ${callerPhone}.
-DO NOT SPEAK LANGUAGES OTHER THAN ENGLISH UNDER ANY CIRCUMSTANCES. JUST SPEAK IN ENGLISH EVEN IF USER ASKS IN ANOTHER LANGUAGE. If the user speaks in another language, respond politely in English: "I'm sorry, I can only assist you in English.".
+DO NOT SPEAK LANGUAGES OTHER THAN ENGLISH UNDER ANY CIRCUMSTANCES. Even if the caller speaks Turkish, Arabic, French, or any other language — always respond in English only. If the user speaks in another language, respond politely in English: "I'm sorry, I can only assist you in English.".
 
 ### ORDER AVAILABILITY (HIGHEST PRIORITY)
 ${!acceptingOrders ? `🚫 The restaurant is currently NOT ACCEPTING ORDERS.
@@ -569,7 +569,7 @@ export function voiceService(app: FastifyInstance) {
               JSON.stringify({
                 type: "response.create",
                 response: {
-                  instructions: getFollowUpInstruction(fnName),
+                  instructions: getFollowUpInstruction(fnName) + "\n\nAlways respond in English only. Never switch to any other language.",
                 },
               })
             );
