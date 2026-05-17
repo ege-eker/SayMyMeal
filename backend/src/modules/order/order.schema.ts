@@ -270,7 +270,17 @@ export const getMyOrdersSchema = {
           status: { type: "string" },
           etaMinutes: { type: "integer", nullable: true },
           notes: { type: "string", nullable: true },
-          address: { type: "object", nullable: true },
+          address: {
+            type: "object",
+            nullable: true,
+            additionalProperties: true,
+            properties: {
+              houseNumber: { type: "string" },
+              street: { type: "string" },
+              city: { type: "string" },
+              postcode: { type: "string" },
+            },
+          },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
           items: {
