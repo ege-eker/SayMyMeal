@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import { getRestaurantBySlug, createOrder, checkAllergens, getMyAddresses, createAddress, type SavedAddress } from "@/lib/api";
+import { getRestaurantBySlug, createOrder, checkAllergens, getMyAddresses, createAddress, updateAddress, deleteAddress, type SavedAddress } from "@/lib/api";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ export default function CheckoutPage() {
   const [allergenWarnings, setAllergenWarnings] = useState<{ foodId: string; foodName: string; matchedAllergens: string[] }[]>([]);
   const [allergenAcknowledged, setAllergenAcknowledged] = useState(false);
   const [busyAcknowledged, setBusyAcknowledged] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
 
   useEffect(() => {
     if (restaurant) cart.setRestaurant(restaurant.id, restaurant.slug);
@@ -103,6 +105,27 @@ export default function CheckoutPage() {
       newAddress.street.trim().length > 0 &&
       newAddress.city.trim().length > 0 &&
       newAddress.postcode.trim().length > 0);
+
+  const handleDeleteAddress = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteAddress(id);
+      await mutateAddresses();
+      if (selectedAddressId === id) setSelectedAddressId(null);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    setSettingDefaultId(id);
+    try {
+      await updateAddress(id, { isDefault: true });
+      await mutateAddresses();
+    } finally {
+      setSettingDefaultId(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -254,14 +277,7 @@ export default function CheckoutPage() {
 
         {/* Delivery Address */}
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Delivery Address</h2>
-            {(savedAddresses?.length ?? 0) > 0 && (
-              <Link href="/addresses" className="text-xs text-amber-600 hover:underline">
-                Manage addresses
-              </Link>
-            )}
-          </div>
+          <h2 className="font-semibold">Delivery Address</h2>
 
           {error && (
             <div className="bg-red-50 text-red-600 p-3 rounded text-sm">{error}</div>
@@ -271,29 +287,56 @@ export default function CheckoutPage() {
           {(savedAddresses?.length ?? 0) > 0 && (
             <div className="space-y-2">
               {savedAddresses!.map((addr) => (
-                <label
+                <div
                   key={addr.id}
-                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
                     selectedAddressId === addr.id
                       ? "border-amber-500 bg-amber-50"
-                      : "border-gray-200 hover:border-gray-300"
+                      : "border-gray-200"
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name="address"
-                    value={addr.id}
-                    checked={selectedAddressId === addr.id}
-                    onChange={() => setSelectedAddressId(addr.id)}
-                    className="mt-0.5 accent-amber-600"
-                  />
-                  <div className="text-sm">
-                    <p className="font-medium">{addr.label}</p>
-                    <p className="text-gray-600">
-                      {addr.houseNumber} {addr.street}, {addr.city}, {addr.postcode}
-                    </p>
+                  <label className="flex items-start gap-3 flex-1 cursor-pointer min-w-0">
+                    <input
+                      type="radio"
+                      name="address"
+                      value={addr.id}
+                      checked={selectedAddressId === addr.id}
+                      onChange={() => setSelectedAddressId(addr.id)}
+                      className="mt-0.5 accent-amber-600 shrink-0"
+                    />
+                    <div className="text-sm min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-medium">{addr.label}</p>
+                        {addr.isDefault && (
+                          <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Default</span>
+                        )}
+                      </div>
+                      <p className="text-gray-600 truncate">
+                        {addr.houseNumber} {addr.street}, {addr.city}, {addr.postcode}
+                      </p>
+                    </div>
+                  </label>
+                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                    {!addr.isDefault && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetDefault(addr.id)}
+                        disabled={settingDefaultId === addr.id}
+                        className="text-xs text-amber-600 hover:underline disabled:opacity-40"
+                      >
+                        {settingDefaultId === addr.id ? "..." : "Default"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAddress(addr.id)}
+                      disabled={deletingId === addr.id}
+                      className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40"
+                    >
+                      {deletingId === addr.id ? "..." : "✕"}
+                    </button>
                   </div>
-                </label>
+                </div>
               ))}
 
               {/* New address option */}
