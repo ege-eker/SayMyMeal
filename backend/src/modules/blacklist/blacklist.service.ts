@@ -1,9 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { CreateBlacklistInput } from "./blacklist.types";
-
-export function normalizePhone(phone: string): string {
-  return phone.replace(/^whatsapp:/i, "").replace(/[\s\-\(\)]/g, "");
-}
+import { normalizePhone } from "../../shared/phone";
+export { normalizePhone } from "../../shared/phone";
 
 export const blacklistService = (app: FastifyInstance) => ({
   async getByRestaurant(restaurantId: string) {
