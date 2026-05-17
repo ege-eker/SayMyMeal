@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { RegisterInput, LoginInput, UpdateAllergenProfileInput } from './auth.types';
+import { normalizePhone } from '../../shared/phone';
 
 export const authService = (app: FastifyInstance) => ({
   async register(data: RegisterInput) {
@@ -8,33 +9,47 @@ export const authService = (app: FastifyInstance) => ({
       throw { statusCode: 400, message: 'Email already registered' };
     }
 
-    // Check for WhatsAppProfile merge: if phone matches, migrate allergen data
-    let migratedAllergens: string[] = [];
-    let migratedDietaryPreferences: string[] = [];
-    let migratedAllergenAsked = false;
+    const normalizedPhone = data.phone ? normalizePhone(data.phone) : undefined;
 
-    if (data.phone) {
-      const wpProfile = await app.prisma.whatsAppProfile.findUnique({ where: { phone: data.phone } });
-      if (wpProfile) {
-        migratedAllergens = wpProfile.allergens;
-        migratedDietaryPreferences = wpProfile.dietaryPreferences;
-        migratedAllergenAsked = wpProfile.allergenAsked;
-        await app.prisma.whatsAppProfile.delete({ where: { id: wpProfile.id } });
+    if (normalizedPhone) {
+      const phoneConflict = await app.prisma.user.findUnique({ where: { phone: normalizedPhone } });
+      if (phoneConflict) {
+        throw { statusCode: 400, message: 'Phone number already registered' };
       }
     }
 
+    const wpProfile = normalizedPhone
+      ? await app.prisma.whatsAppProfile.findUnique({
+          where: { phone: normalizedPhone },
+          include: { addresses: true },
+        })
+      : null;
+
     const passwordHash = await Bun.password.hash(data.password);
-    const user = await app.prisma.user.create({
-      data: {
-        email: data.email,
-        passwordHash,
-        name: data.name,
-        phone: data.phone,
-        role: data.role || 'CUSTOMER',
-        allergens: migratedAllergens,
-        dietaryPreferences: migratedDietaryPreferences,
-        allergenAsked: migratedAllergenAsked,
-      },
+
+    const user = await app.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email: data.email,
+          passwordHash,
+          name: data.name,
+          phone: normalizedPhone,
+          role: data.role || 'CUSTOMER',
+          allergens: wpProfile?.allergens ?? [],
+          dietaryPreferences: wpProfile?.dietaryPreferences ?? [],
+          allergenAsked: wpProfile?.allergenAsked ?? false,
+        },
+      });
+
+      if (wpProfile) {
+        await tx.address.updateMany({
+          where: { whatsappProfileId: wpProfile.id },
+          data: { whatsappProfileId: null, userId: created.id },
+        });
+        await tx.whatsAppProfile.delete({ where: { id: wpProfile.id } });
+      }
+
+      return created;
     });
 
     const token = app.jwt.sign({ id: user.id, email: user.email, role: user.role });
@@ -77,11 +92,12 @@ export const authService = (app: FastifyInstance) => ({
   },
 
   async getAllergenProfileByPhone(phone: string) {
-    const user = await app.prisma.user.findFirst({ where: { phone } });
+    const normalized = normalizePhone(phone);
+    const user = await app.prisma.user.findUnique({ where: { phone: normalized } });
     if (user) {
       return { allergens: user.allergens, dietaryPreferences: user.dietaryPreferences, allergenAsked: user.allergenAsked };
     }
-    const wp = await app.prisma.whatsAppProfile.findUnique({ where: { phone } });
+    const wp = await app.prisma.whatsAppProfile.findUnique({ where: { phone: normalized } });
     if (wp) {
       return { allergens: wp.allergens, dietaryPreferences: wp.dietaryPreferences, allergenAsked: wp.allergenAsked };
     }
@@ -89,7 +105,8 @@ export const authService = (app: FastifyInstance) => ({
   },
 
   async updateAllergenProfileByPhone(phone: string, data: UpdateAllergenProfileInput) {
-    const user = await app.prisma.user.findFirst({ where: { phone } });
+    const normalized = normalizePhone(phone);
+    const user = await app.prisma.user.findUnique({ where: { phone: normalized } });
     if (user) {
       return app.prisma.user.update({
         where: { id: user.id },
@@ -98,8 +115,8 @@ export const authService = (app: FastifyInstance) => ({
       });
     }
     return app.prisma.whatsAppProfile.upsert({
-      where: { phone },
-      create: { phone, allergens: data.allergens, dietaryPreferences: data.dietaryPreferences, allergenAsked: true },
+      where: { phone: normalized },
+      create: { phone: normalized, allergens: data.allergens, dietaryPreferences: data.dietaryPreferences, allergenAsked: true },
       update: { allergens: data.allergens, dietaryPreferences: data.dietaryPreferences, allergenAsked: true },
     });
   },

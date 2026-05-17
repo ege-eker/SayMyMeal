@@ -3,12 +3,12 @@ export const registerSchema = {
   description: 'Register a new user',
   body: {
     type: 'object',
-    required: ['email', 'password', 'name'],
+    required: ['email', 'password', 'name', 'phone'],
     properties: {
       email: { type: 'string', format: 'email' },
       password: { type: 'string', minLength: 8 },
       name: { type: 'string', minLength: 2 },
-      phone: { type: 'string', nullable: true },
+      phone: { type: 'string', pattern: '^\\+[0-9]{7,15}$' },
       role: { type: 'string', enum: ['CUSTOMER', 'OWNER'], default: 'CUSTOMER' },
     },
   },

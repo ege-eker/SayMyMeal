@@ -36,6 +36,7 @@ function RegisterForm() {
     name: form.name.length >= 2,
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email),
     password: form.password.length >= 8,
+    phone: /^\+[0-9]{7,15}$/.test(form.phone),
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,10 +44,7 @@ function RegisterForm() {
     setError("");
     setLoading(true);
     try {
-      const user = await register({
-        ...form,
-        phone: form.phone || undefined,
-      });
+      const user = await register(form);
       if (user.role === "OWNER") {
         router.push("/dashboard");
       } else {
@@ -111,12 +109,19 @@ function RegisterForm() {
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone (optional)</Label>
+            <Label htmlFor="phone">Phone</Label>
             <Input
               id="phone"
+              type="tel"
+              placeholder="+447700900123"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
+              required
             />
+            {touched.phone && !validations.phone && (
+              <p className="text-xs text-red-500">Include country code, e.g. +447700900123</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Account Type</Label>
@@ -143,7 +148,7 @@ function RegisterForm() {
               </label>
             </div>
           </div>
-          <Button type="submit" className="w-full" disabled={loading || !validations.name || !validations.email || !validations.password}>
+          <Button type="submit" className="w-full" disabled={loading || !validations.name || !validations.email || !validations.password || !validations.phone}>
             {loading ? "Creating account..." : "Register"}
           </Button>
           <p className="text-center text-sm text-gray-600">
