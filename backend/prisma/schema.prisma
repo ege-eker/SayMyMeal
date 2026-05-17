@@ -17,13 +17,14 @@ model User {
   email              String   @unique
   passwordHash       String
   name               String
-  phone              String?
+  phone              String?  @unique
   role               UserRole @default(CUSTOMER)
   allergens          String[] @default([])
   dietaryPreferences String[] @default([])
   allergenAsked      Boolean  @default(false)
   restaurants        Restaurant[]
   orders             Order[]
+  addresses          Address[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
@@ -150,6 +151,27 @@ model WhatsAppProfile {
   allergens          String[] @default([])
   dietaryPreferences String[] @default([])
   allergenAsked      Boolean  @default(false)
+  addresses          Address[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+model Address {
+  id                String   @id @default(uuid())
+  userId            String?
+  whatsappProfileId String?
+  label             String?
+  houseNumber       String
+  street            String
+  city              String
+  postcode          String
+  notes             String?
+  isDefault         Boolean  @default(false)
+  user              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  whatsappProfile   WhatsAppProfile? @relation(fields: [whatsappProfileId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([whatsappProfileId])
 }
