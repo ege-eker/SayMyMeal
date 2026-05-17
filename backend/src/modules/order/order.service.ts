@@ -64,12 +64,28 @@ export const orderService = (app: FastifyInstance) => ({
           throw new BadRequestError(`Invalid foodId: ${item.foodId}, please check the menu and try again.`);
         }
 
+        const foodOptions = await app.prisma.foodOption.findMany({
+          where: { foodId: item.foodId },
+          include: { choices: true },
+        });
+
+        // Validate that every option group has at least one selection
+        for (const optionGroup of foodOptions) {
+          const hasSelection = item.selectedOptions?.some(
+            (sel) => sel.optionId === optionGroup.id
+          );
+          if (!hasSelection) {
+            const choiceList = optionGroup.choices.map((c) => c.label).join(", ");
+            const food = allFoods.find((f) => f.id === item.foodId);
+            throw new BadRequestError(
+              `Missing required selection for "${optionGroup.title}" on "${food?.name ?? item.foodId}". Please choose one of: ${choiceList}.`
+            );
+          }
+        }
+
         if (item.selectedOptions && item.selectedOptions.length > 0) {
           for (const opt of item.selectedOptions) {
-            const existingOption = await app.prisma.foodOption.findUnique({
-              where: { id: opt.optionId },
-              include: { choices: true }
-            });
+            const existingOption = foodOptions.find((o) => o.id === opt.optionId);
 
             if (!existingOption) {
               throw new BadRequestError(`Invalid optionId: ${opt.optionId}. Please check the menu and try again.`);

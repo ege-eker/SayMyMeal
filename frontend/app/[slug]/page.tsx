@@ -349,10 +349,15 @@ export default function RestaurantMenuPage() {
               <DialogTitle className="text-lg font-bold">{optionModal.name}</DialogTitle>
               <p className="text-gray-600">£{optionModal.basePrice.toFixed(2)}</p>
 
-              {optionModal.options.map((option: any) => (
+              {optionModal.options.map((option: any) => {
+                const groupSelected = selectedOptions.some((o) => o.optionId === option.id);
+                return (
                 <div key={option.id} className="space-y-2">
-                  <h4 className="font-medium text-sm text-gray-700">
-                    {option.title} {option.multiple ? "(multiple)" : "(pick one)"}
+                  <h4 className="font-medium text-sm text-gray-700 flex items-center gap-1">
+                    {option.title}
+                    <span className="text-red-500">*</span>
+                    {groupSelected && <span className="text-green-500 text-xs ml-1">✓</span>}
+                    <span className="text-gray-400 font-normal">{option.multiple ? "(multiple)" : "(pick one)"}</span>
                   </h4>
                   <div className="space-y-1">
                     {option.choices.map((choice: any) => {
@@ -386,7 +391,8 @@ export default function RestaurantMenuPage() {
                     })}
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               <div className="flex items-center gap-3">
                 <label className="text-sm font-medium">Quantity:</label>
@@ -409,9 +415,16 @@ export default function RestaurantMenuPage() {
                 </div>
               </div>
 
-              <Button className="w-full" onClick={handleConfirmOptions}>
-                Add to Cart
-              </Button>
+              {(() => {
+                const allSelected = optionModal.options.every((option: any) =>
+                  selectedOptions.some((o) => o.optionId === option.id)
+                );
+                return (
+                  <Button className="w-full" onClick={handleConfirmOptions} disabled={!allSelected}>
+                    {allSelected ? "Add to Cart" : "Please select all options"}
+                  </Button>
+                );
+              })()}
             </div>
           )}
         </DialogContent>
