@@ -13,7 +13,7 @@ import { resolveCaller, ResolvedCaller } from "../../shared/identityResolver";
 import { normalizePhone } from "../../shared/phone";
 import { renderCallerProfileBlock } from "../../shared/callerProfilePrompt";
 
-const OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
+const OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-realtime";
 
 /**
  * Build the system prompt for the voice assistant.
@@ -380,6 +380,10 @@ export function voiceService(app: FastifyInstance) {
     const pendingArgs: Record<string, string> = {};
     const pendingCalls: Record<string, string> = {};
 
+    // Barge-in tracking
+    let lastAssistantItemId: string | null = null;
+    let totalAudioMs = 0;
+
 
     twilioWs.on("message", async (data: WebSocket.Data) => {
       let event: TwilioStreamEvent;
@@ -410,7 +414,6 @@ export function voiceService(app: FastifyInstance) {
         openaiWs = new WebSocket(OPENAI_REALTIME_URL, {
           headers: {
             Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-            "OpenAI-Beta": "realtime=v1",
           },
         });
 
@@ -421,6 +424,7 @@ export function voiceService(app: FastifyInstance) {
           const sessionUpdate = {
             type: "session.update",
             session: {
+              type: "realtime",
               instructions: buildInstructions({
                 restaurantName: params.restaurantName,
                 restaurantId: params.restaurantId,
@@ -435,7 +439,7 @@ export function voiceService(app: FastifyInstance) {
               output_audio_format: "pcm16",
               modalities: ["audio", "text"],
               voice: "ballad",
-              turn_detection: { type: "server_vad", threshold: 0.5 },
+              turn_detection: { type: "server_vad", threshold: 0.5, interrupt_response: true },
             },
           };
           openaiWs!.send(JSON.stringify(sessionUpdate));
@@ -462,11 +466,30 @@ export function voiceService(app: FastifyInstance) {
             return;
           }
 
-          // Barge-in disabled — causes context corruption when AI is mid-sentence asking for address
+          // Barge-in: user started speaking — clear Twilio buffer and truncate AI context
+          if (msg.type === "input_audio_buffer.speech_started") {
+            app.log.info(`🎤 Barge-in at ${totalAudioMs}ms`);
+            if (twilioWs.readyState === WebSocket.OPEN && streamSid) {
+              twilioWs.send(JSON.stringify({ event: "clear", streamSid }));
+            }
+            if (lastAssistantItemId && openaiWs?.readyState === WebSocket.OPEN) {
+              openaiWs.send(JSON.stringify({
+                type: "conversation.item.truncate",
+                item_id: lastAssistantItemId,
+                content_index: 0,
+                audio_end_ms: Math.round(totalAudioMs),
+              }));
+            }
+            lastAssistantItemId = null;
+            totalAudioMs = 0;
+          }
 
           // Audio output from OpenAI → Twilio
-          if (msg.type === "response.audio.delta" && msg.delta) {
-            const mulawAudio = pcm16ToMulawBase64(msg.delta as string);
+          if (msg.type === "response.output_audio.delta" && msg.delta) {
+            const audioBase64 = msg.delta as string;
+            const audioBuffer = Buffer.from(audioBase64, "base64");
+            totalAudioMs += (audioBuffer.length / 2 / 24000) * 1000;
+            const mulawAudio = pcm16ToMulawBase64(audioBase64);
             if (twilioWs.readyState === WebSocket.OPEN && streamSid) {
               twilioWs.send(
                 JSON.stringify({
@@ -478,9 +501,13 @@ export function voiceService(app: FastifyInstance) {
             }
           }
 
-          // Function call started
+          // Function call started — track assistant item id and reset audio counter
           if (msg.type === "response.output_item.added") {
-            const item = msg.item as { type: string; id?: string; call_id?: string; name?: string };
+            const item = msg.item as { type: string; id?: string; role?: string; call_id?: string; name?: string };
+            if (item.type === "message" && item.role === "assistant" && item.id) {
+              lastAssistantItemId = item.id;
+              totalAudioMs = 0;
+            }
             if (item.type === "function_call" && item.call_id) {
               pendingCalls[item.call_id] = item.name || "";
               pendingArgs[item.call_id] = "";
