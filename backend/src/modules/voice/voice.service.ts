@@ -116,7 +116,8 @@ Acknowledge new information naturally and remember it for the call.
    - If the customer has an existing allergen profile with allergens,
      call \`check_food_allergens\` with ALL foodIds being ordered and the customer's phone.
    - If warnings are returned, inform the customer and wait for confirmation.
-   - Call \`create_order\` with confirmed name, phone, address, and the complete items list.
+   - Before calling \`create_order\`, read back the name and delivery address you have on record — for example: "I'll place the order for [name], delivering to [house number] [street], [city], [postcode]. Shall I confirm?" Wait for the customer to say yes. Do NOT ask them to provide these details again — just read back what you already have and wait for confirmation.
+   - Only call \`create_order\` after the customer confirms. Use the name and address exactly as confirmed — do not alter any field.
    - After success, confirm naturally:
      "Your order has been placed. Delivery in about 30 minutes."
 
@@ -450,7 +451,7 @@ export function voiceService(app: FastifyInstance) {
               instructions: !acceptingOrders
                 ? `Inform the customer politely in English that ${params.restaurantName} is not taking orders right now. Say: "Thank you for calling ${params.restaurantName}. Unfortunately, we are not accepting orders at the moment. Please try again later. Have a lovely day!"`
                 : callerName
-                ? `Greet the customer by name. Say something like: "Thank you for calling ${params.restaurantName}, ${callerName}! How can I help you today?"`
+                ? `Greet the customer by name. Speak in English only. Say something like: "Thank you for calling ${params.restaurantName}, ${callerName}! How can I help you today?"`
                 : `Greet the customer politely in English, mention the restaurant name **${params.restaurantName}**, and ask how you can help them today. For example: "Thank you for calling ${params.restaurantName}. How can I help you today?"`,
             },
           };
