@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import { getRestaurantBySlug, createOrder, checkAllergens } from "@/lib/api";
+import { getRestaurantBySlug, createOrder, checkAllergens, getMyAddresses, createAddress, type SavedAddress } from "@/lib/api";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,14 @@ export default function CheckoutPage() {
     slug ? `restaurant-${slug}` : null,
     () => getRestaurantBySlug(slug as string)
   );
+  const { data: savedAddresses, mutate: mutateAddresses } = useSWR(
+    user ? "my-addresses" : null,
+    getMyAddresses,
+    { fallbackData: [] }
+  );
 
-  const [address, setAddress] = useState({
-    houseNumber: "",
-    street: "",
-    city: "",
-    postcode: "",
-  });
+  const [selectedAddressId, setSelectedAddressId] = useState<string | "new" | null>(null);
+  const [newAddress, setNewAddress] = useState({ label: "", houseNumber: "", street: "", city: "", postcode: "" });
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -37,24 +38,29 @@ export default function CheckoutPage() {
   const [busyAcknowledged, setBusyAcknowledged] = useState(false);
 
   useEffect(() => {
-    if (restaurant) {
-      cart.setRestaurant(restaurant.id, restaurant.slug);
-    }
+    if (restaurant) cart.setRestaurant(restaurant.id, restaurant.slug);
   }, [restaurant]);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push(`/login?returnUrl=/${slug}/checkout`);
-    }
+    if (!authLoading && !user) router.push(`/login?returnUrl=/${slug}/checkout`);
   }, [authLoading, user, router, slug]);
+
+  // Pre-select default address when addresses load
+  useEffect(() => {
+    if (savedAddresses && savedAddresses.length > 0 && selectedAddressId === null) {
+      const def = savedAddresses.find((a) => a.isDefault) ?? savedAddresses[0];
+      setSelectedAddressId(def.id);
+    }
+    if (savedAddresses && savedAddresses.length === 0 && selectedAddressId === null) {
+      setSelectedAddressId("new");
+    }
+  }, [savedAddresses]);
 
   useEffect(() => {
     if (user?.allergens && user.allergens.length > 0 && cart.items.length > 0) {
-      const foodIds = [...new Set(cart.items.map(i => i.foodId))];
-      checkAllergens(foodIds).then(res => {
-        if (res.warnings?.length > 0) {
-          setAllergenWarnings(res.warnings);
-        }
+      const foodIds = [...new Set(cart.items.map((i) => i.foodId))];
+      checkAllergens(foodIds).then((res) => {
+        if (res.warnings?.length > 0) setAllergenWarnings(res.warnings);
       }).catch(() => {});
     }
   }, [user, cart.items]);
@@ -65,24 +71,69 @@ export default function CheckoutPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 mb-4">Your cart is empty</p>
-          <Link href={`/${slug}`}>
-            <Button>Browse Menu</Button>
-          </Link>
+          <Link href={`/${slug}`}><Button>Browse Menu</Button></Link>
         </div>
       </div>
     );
   }
+
+  const selectedSaved = savedAddresses?.find((a) => a.id === selectedAddressId);
+
+  const getDeliveryAddress = () => {
+    if (selectedSaved) {
+      return {
+        houseNumber: selectedSaved.houseNumber,
+        street: selectedSaved.street,
+        city: selectedSaved.city,
+        postcode: selectedSaved.postcode,
+      };
+    }
+    return {
+      houseNumber: newAddress.houseNumber,
+      street: newAddress.street,
+      city: newAddress.city,
+      postcode: newAddress.postcode,
+    };
+  };
+
+  const newAddressValid =
+    selectedAddressId !== "new" ||
+    (newAddress.label.trim().length > 0 &&
+      newAddress.houseNumber.trim().length > 0 &&
+      newAddress.street.trim().length > 0 &&
+      newAddress.city.trim().length > 0 &&
+      newAddress.postcode.trim().length > 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
     try {
+      let deliveryAddress = getDeliveryAddress();
+
+      if (selectedAddressId === "new") {
+        const saved = await createAddress({
+          label: newAddress.label,
+          houseNumber: newAddress.houseNumber,
+          street: newAddress.street,
+          city: newAddress.city,
+          postcode: newAddress.postcode,
+          isDefault: (savedAddresses?.length ?? 0) === 0,
+        });
+        mutateAddresses();
+        deliveryAddress = {
+          houseNumber: saved.houseNumber,
+          street: saved.street,
+          city: saved.city,
+          postcode: saved.postcode,
+        };
+      }
+
       const orderData = {
         customer: user.name,
         phone: user.phone || "",
         restaurantId: cart.restaurantId!,
-        address,
+        address: deliveryAddress,
         notes: notes.trim() || undefined,
         items: cart.items.map((item) => ({
           foodId: item.foodId,
@@ -90,6 +141,7 @@ export default function CheckoutPage() {
           selectedOptions: item.selectedOptions.length > 0 ? item.selectedOptions : undefined,
         })),
       };
+
       const result = await createOrder(orderData);
       if (result.error) {
         setError(result.error);
@@ -168,7 +220,7 @@ export default function CheckoutPage() {
               <input
                 type="checkbox"
                 checked={busyAcknowledged}
-                onChange={e => setBusyAcknowledged(e.target.checked)}
+                onChange={(e) => setBusyAcknowledged(e.target.checked)}
                 className="accent-orange-600"
               />
               I understand delivery will take longer and wish to proceed
@@ -181,10 +233,10 @@ export default function CheckoutPage() {
           <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 space-y-3">
             <h3 className="font-semibold text-amber-800">Allergen Warning</h3>
             <ul className="text-sm text-amber-700 space-y-1">
-              {allergenWarnings.map(w => (
+              {allergenWarnings.map((w) => (
                 <li key={w.foodId}>
                   <strong>{w.foodName}</strong> contains{" "}
-                  {w.matchedAllergens.map(a => ALLERGEN_LABELS[a as Allergen] ?? a).join(", ")}
+                  {w.matchedAllergens.map((a) => ALLERGEN_LABELS[a as Allergen] ?? a).join(", ")}
                 </li>
               ))}
             </ul>
@@ -192,7 +244,7 @@ export default function CheckoutPage() {
               <input
                 type="checkbox"
                 checked={allergenAcknowledged}
-                onChange={e => setAllergenAcknowledged(e.target.checked)}
+                onChange={(e) => setAllergenAcknowledged(e.target.checked)}
                 className="accent-amber-600"
               />
               I acknowledge the allergen risks and wish to proceed
@@ -202,52 +254,124 @@ export default function CheckoutPage() {
 
         {/* Delivery Address */}
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-4 space-y-4">
-          <h2 className="font-semibold">Delivery Address</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Delivery Address</h2>
+            {(savedAddresses?.length ?? 0) > 0 && (
+              <Link href="/addresses" className="text-xs text-amber-600 hover:underline">
+                Manage addresses
+              </Link>
+            )}
+          </div>
 
           {error && (
             <div className="bg-red-50 text-red-600 p-3 rounded text-sm">{error}</div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="houseNumber">House Number</Label>
-              <Input
-                id="houseNumber"
-                value={address.houseNumber}
-                onChange={(e) => setAddress({ ...address, houseNumber: e.target.value })}
-                required
-              />
+          {/* Saved address cards */}
+          {(savedAddresses?.length ?? 0) > 0 && (
+            <div className="space-y-2">
+              {savedAddresses!.map((addr) => (
+                <label
+                  key={addr.id}
+                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedAddressId === addr.id
+                      ? "border-amber-500 bg-amber-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="address"
+                    value={addr.id}
+                    checked={selectedAddressId === addr.id}
+                    onChange={() => setSelectedAddressId(addr.id)}
+                    className="mt-0.5 accent-amber-600"
+                  />
+                  <div className="text-sm">
+                    <p className="font-medium">{addr.label}</p>
+                    <p className="text-gray-600">
+                      {addr.houseNumber} {addr.street}, {addr.city}, {addr.postcode}
+                    </p>
+                  </div>
+                </label>
+              ))}
+
+              {/* New address option */}
+              <label
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selectedAddressId === "new"
+                    ? "border-amber-500 bg-amber-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="address"
+                  value="new"
+                  checked={selectedAddressId === "new"}
+                  onChange={() => setSelectedAddressId("new")}
+                  className="accent-amber-600"
+                />
+                <span className="text-sm font-medium">Add a new address</span>
+              </label>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="street">Street</Label>
-              <Input
-                id="street"
-                value={address.street}
-                onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                required
-              />
+          )}
+
+          {/* New address form */}
+          {selectedAddressId === "new" && (
+            <div className="space-y-3 pt-1">
+              <div className="space-y-1">
+                <Label htmlFor="label">Address Label</Label>
+                <Input
+                  id="label"
+                  placeholder="e.g. Home, Work"
+                  value={newAddress.label}
+                  onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="houseNumber">House Number</Label>
+                  <Input
+                    id="houseNumber"
+                    value={newAddress.houseNumber}
+                    onChange={(e) => setNewAddress({ ...newAddress, houseNumber: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="street">Street</Label>
+                  <Input
+                    id="street"
+                    value={newAddress.street}
+                    onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={newAddress.city}
+                    onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="postcode">Postcode</Label>
+                  <Input
+                    id="postcode"
+                    value={newAddress.postcode}
+                    onChange={(e) => setNewAddress({ ...newAddress, postcode: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                value={address.city}
-                onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="postcode">Postcode</Label>
-              <Input
-                id="postcode"
-                value={address.postcode}
-                onChange={(e) => setAddress({ ...address, postcode: e.target.value })}
-                required
-              />
-            </div>
-          </div>
+          )}
 
           <div className="space-y-1">
             <Label htmlFor="notes">Order Notes</Label>
@@ -264,7 +388,14 @@ export default function CheckoutPage() {
           <Button
             type="submit"
             className="w-full"
-            disabled={submitting || restaurant?.acceptingOrders === false || (allergenWarnings.length > 0 && !allergenAcknowledged) || (restaurant?.isBusy && !busyAcknowledged)}
+            disabled={
+              submitting ||
+              !selectedAddressId ||
+              !newAddressValid ||
+              restaurant?.acceptingOrders === false ||
+              (allergenWarnings.length > 0 && !allergenAcknowledged) ||
+              (restaurant?.isBusy && !busyAcknowledged)
+            }
           >
             {submitting ? "Placing Order..." : "Place Order"}
           </Button>

@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import authRoutes from "./auth/auth.routes";
+import addressRoutes from "./address/address.routes";
 import restaurantRoutes from "./restaurant/restaurant.routes";
 import menuRoutes from "./menu/menu.routes";
 import foodRoutes from "./food/food.routes";
@@ -12,6 +13,7 @@ import voiceRoutes from "./voice/voice.routes";
 
 async function registerRoutes(app: FastifyInstance) {
   app.register(authRoutes);
+  app.register(addressRoutes);
   app.register(restaurantRoutes);
   app.register(menuRoutes);
   app.register(foodRoutes);

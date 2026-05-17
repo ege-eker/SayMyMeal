@@ -348,3 +348,59 @@ export async function getOrderStatus(params: { phone?: string; name?: string }) 
   if (!res.ok) throw new Error(`Failed to get order status (${res.status})`);
   return res.json();
 }
+
+// ---- Addresses ----
+
+export interface SavedAddress {
+  id: string;
+  label: string;
+  houseNumber: string;
+  street: string;
+  city: string;
+  postcode: string;
+  notes?: string | null;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export async function getMyAddresses(): Promise<SavedAddress[]> {
+  const res = await authFetch(`${API_URL}/addresses`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function createAddress(data: {
+  label: string;
+  houseNumber: string;
+  street: string;
+  city: string;
+  postcode: string;
+  notes?: string;
+  isDefault?: boolean;
+}): Promise<SavedAddress> {
+  const res = await authFetch(`${API_URL}/addresses`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed to save address" }));
+    throw new Error(err.error || "Failed to save address");
+  }
+  return res.json();
+}
+
+export async function updateAddress(id: string, data: { label?: string; isDefault?: boolean }): Promise<SavedAddress> {
+  const res = await authFetch(`${API_URL}/addresses/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed to update address" }));
+    throw new Error(err.error || "Failed to update address");
+  }
+  return res.json();
+}
+
+export async function deleteAddress(id: string): Promise<void> {
+  await authFetch(`${API_URL}/addresses/${id}`, { method: "DELETE" });
+}
