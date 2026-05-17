@@ -131,8 +131,8 @@ If they say “order” → follow the Order Flow below.
    - IMPORTANT: Never offer add-ons more than once. Never be pushy. Accept “no” immediately.
 
 6. **Collect Delivery Address**
-   - If the CALLER PROFILE lists saved addresses, offer the first one: "Shall I deliver to your usual address at [address]? 🏠" — if they confirm, use it directly. Only ask for full address details if they want a new one or no saved address exists.
-   - If no saved address: ask for house number, street, city, and postcode.
+   - If the CALLER PROFILE lists saved addresses, offer the first one by quoting its actual details from the CALLER PROFILE (e.g. "Shall I deliver to 12 Baker Street, London, SW1A 1AA? 🏠"). Never output a placeholder. If they confirm, use it directly.
+   - Only ask for full address details if they want a new one or no saved address exists.
 
 7. **Allergen Check & Create the Order**
    - If the customer has an existing allergen profile with allergens,
