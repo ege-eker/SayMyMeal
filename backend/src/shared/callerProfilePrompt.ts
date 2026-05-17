@@ -25,7 +25,7 @@ export function renderCallerProfileBlock(caller?: ResolvedCaller): string {
       ? `- Saved addresses: ${callerAddresses.map((a) => `${a.label ?? "address"}: ${a.houseNumber} ${a.street}, ${a.postcode}`).join(" | ")}`
       : null,
     callerAddresses.length
-      ? "When asking for delivery address, FIRST offer the first saved address listed above by quoting its actual details. Only ask for a new one if they decline."
+      ? "When asking for delivery address, FIRST offer the first saved address listed above — read its exact details from this CALLER PROFILE, do not invent one. Only ask for a new one if they decline."
       : null,
     callerName ? "Greet the customer by name." : null,
   ]
