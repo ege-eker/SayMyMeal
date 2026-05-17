@@ -8,6 +8,6 @@ export default fp(async (fastify) => {
 
   fastify.register(cors, {
     origin: origins,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
 });
