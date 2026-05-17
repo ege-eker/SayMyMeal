@@ -106,6 +106,13 @@ export function toolHandlers(app: FastifyInstance) {
       const caller = await resolveCaller(app, normalized);
       const userId = caller.type === "user" ? caller.user.id : undefined;
 
+      // For known callers, override the name the AI sent with the verified profile name
+      if (caller.type === "user" && caller.user.name) {
+        args.customer = caller.user.name;
+      } else if (caller.type === "whatsapp" && caller.profile.name) {
+        args.customer = caller.profile.name;
+      }
+
       const result = await order.create(args, userId);
 
       await persistCallerAddress(caller, normalized, args.customer, args.address);
