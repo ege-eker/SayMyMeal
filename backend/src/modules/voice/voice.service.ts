@@ -483,6 +483,12 @@ export function voiceService(app: FastifyInstance) {
             app.log.info(`🔧 OpenAI session event: ${msg.type}`);
           }
 
+          // Response finished naturally — clear barge-in tracking so we don't truncate a completed item
+          if (msg.type === "response.done" || msg.type === "response.cancelled") {
+            lastAssistantItemId = null;
+            totalAudioMs = 0;
+          }
+
           // Barge-in: user started speaking — clear Twilio buffer and truncate AI context
           if (msg.type === "input_audio_buffer.speech_started") {
             app.log.info(`🎤 Barge-in at ${totalAudioMs}ms`);
