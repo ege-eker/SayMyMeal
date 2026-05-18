@@ -184,11 +184,11 @@ export function toolHandlers(app: FastifyInstance) {
 export function getFollowUpInstruction(fnName: string): string {
   switch (fnName) {
     case "get_menus":
-      return "Menus fetched. List the menu names with brief descriptions and ask the customer which one they'd like to order from.";
+      return "Menus fetched. List ONLY the menu names returned in this result — do not add, invent, or describe any items not in the result. Ask the customer which menu they'd like to order from.";
     case "get_foods":
-      return "Foods fetched. List the food items with their prices and ask the customer what they'd like to order.";
+      return "Foods fetched. List ONLY the food items and prices returned in this result — never mention any food not in this result. Ask the customer what they'd like to order.";
     case "get_food_options":
-      return "Options fetched. Use ONLY the option groups and choices returned in this result — never invent or assume options. Ask about the FIRST option group only, listing its exact choices. Wait for the customer's answer before moving to the next group. Do not list all groups at once.";
+      return "Options fetched. Use ONLY the option groups and choices returned in this result — never invent or assume options. Ask about each option group one at a time: ask the first group, wait for the customer's answer, then ask the next group, and so on until ALL groups have been answered. Do not skip any group. Do not list all groups at once. Only after every group is answered, confirm the item and ask about quantity.";
     case "create_order":
       return "Check the tool result. If it contains an 'error' field, inform the customer clearly what went wrong and ask them to correct it (e.g. missing option selection, address issue). Do NOT say the order was placed if there is an error. If successful (no error field), simply say the order has been placed and give the estimated delivery time. Do NOT read out the order items again.";
     case "get_order_status":

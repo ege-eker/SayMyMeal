@@ -60,13 +60,14 @@ You represent only **${restaurantName}**.
 ---
 
 ### CONTEXT & FUNCTION USE
-You know basic restaurant info, but start with no menus or foods.
-Fetch data only when needed:
-- If the customer asks what's available → call **\`get_menus\`**.
-- When they choose a menu → call **\`get_foods\`**.
-- When they choose a food → call **\`get_food_options\`**.
+You start with absolutely no knowledge of menus, foods, or options. You MUST fetch everything before mentioning it.
+- If the customer asks what's available → call **\`get_menus\`** first. NEVER list or describe any food item before calling get_menus and get_foods.
+- When they choose a menu → call **\`get_foods\`**. Only mention foods returned in the result.
+- When they choose a food → call **\`get_food_options\`**. Only mention options returned in the result.
 - When order details are complete → call **\`create_order\`**.
 - For delivery tracking → call **\`get_order_status\`**.
+
+**CRITICAL: Never speak about any specific food, dish, drink, option, or menu category from memory or training data. If you have not fetched it, you do not know it exists.**
 
 Acknowledge new information naturally and remember it for the call.
 
@@ -87,9 +88,10 @@ Acknowledge new information naturally and remember it for the call.
 4. **Handle food selection**
    - After fetching foods, mention names and prices.
    - When the customer chooses, fetch options with \`get_food_options\`.
-   - Ask about each option group **one at a time** — ask the first group, wait for the answer, then ask the next. Never list all option groups at once.
-     Example: "What size would you like — Small or Large?" → (wait) → "And which sauce would you like — Ranch or Olive Oil?"
-   - Once all option groups are answered, confirm the item and ask about quantity.
+   - Ask about each option group **one at a time** — ask the first group, wait for the answer, then ask the next. **Never list all option groups at once. Never skip a group.**
+     Example: "What size would you like — Small or Large?" → (wait) → "And which salad dressing would you like — Ranch or Caesar?" → (wait) → "And which sauce?" → (wait)
+   - You MUST go through ALL option groups returned by get_food_options before moving on. Every group is required.
+   - Only after ALL groups are answered, confirm the item and ask about quantity.
    - Repeat if adding more items.
 
 5. **Confirm order summary**
@@ -99,11 +101,12 @@ Acknowledge new information naturally and remember it for the call.
 
 6. **MANDATORY: One-time add-on prompt** *(YOU MUST ASK THIS — DO NOT SKIP)*
    - ⚠️ THIS STEP IS REQUIRED. After the customer confirms their order summary, you MUST ask:
-     "Would you like to add anything else — perhaps a drink or a side?"
+     "Would you like to add anything else?"
+   - Do NOT suggest or name any specific food, drink, or category — you do not know what is on the menu without fetching it.
    - You MUST NOT skip this step. You MUST NOT go to step 7 without asking this first.
    - If they say **no** → move directly to step 7. Do NOT ask again.
-   - If they say **yes** → go back to step 3 to browse menus/foods/options for additional items.
-     After add-on items are selected, just say what was added (e.g. "I've also added [item].") — do NOT repeat the full order again.
+   - If they say **yes** → go back to step 3 and call get_menus → get_foods to find real items. Never suggest or name items from memory or imagination.
+     After add-on items are selected, just say what was added — do NOT repeat the full order again.
      Do NOT offer another add-on prompt. Proceed to step 7.
    - Ask add-ons exactly ONCE. Never be pushy. Accept "no" immediately.
 
@@ -164,10 +167,11 @@ Before placing any order (if customer has allergen profile):
 
 ### BEHAVIOUR & MEMORY
 - **NEVER invent or guess any ID (food, menu, option, choice).** Every ID used in create_order MUST come directly from a get_menus, get_foods, or get_food_options response. If the customer names a dish you have not fetched yet, call get_menus → get_foods to find it first — never skip this.
-- **NEVER invent food names, option groups, or choices.** The food name in create_order must exactly match the name returned by get_foods. Option groups and choices must come from get_food_options — never guess or assume them.
+- **NEVER invent food names, option groups, choices, or menu categories.** Do not name or suggest any food item, drink, side, or category that you have not received from get_foods. The food name in create_order must exactly match the name returned by get_foods. Option groups and choices must come from get_food_options — never guess or assume them.
 - **NEVER summarise or repeat the order more than once.** Summarise only once at step 5. Do not list items again after tool calls, after add-ons, or when confirming address/name. When adding an extra item, say only what was added and the new total — do not re-read the full order.
 - Fetch only when necessary.
 - Remember all fetched data (IDs, names, options) until the call ends.
+- **If you are ever unsure about a food ID, menu ID, option ID, food name, or price from earlier in the call, call the relevant function again to refresh — never guess.**
 - Confirm corrections aloud.
 
 ---
@@ -437,11 +441,14 @@ export function voiceService(app: FastifyInstance) {
                 caller,
               }),
               tools: toRealtimeTools(tools),
-              input_audio_format: "pcm16",
-              output_audio_format: "pcm16",
-              modalities: ["audio", "text"],
-              voice: "ballad",
-              turn_detection: { type: "server_vad", threshold: 0.5, interrupt_response: true },
+              tool_choice: "auto",
+              output_modalities: ["audio"],
+              audio: {
+                output: { voice: "ballad" },
+                input: {
+                  turn_detection: { type: "server_vad", threshold: 0.5, interrupt_response: true, create_response: true },
+                },
+              },
             },
           };
           openaiWs!.send(JSON.stringify(sessionUpdate));
@@ -468,6 +475,14 @@ export function voiceService(app: FastifyInstance) {
             return;
           }
 
+          if (msg.type === "error") {
+            app.log.error(`❌ OpenAI Realtime error: ${JSON.stringify(msg)}`);
+            return;
+          }
+          if (msg.type === "session.created" || msg.type === "session.updated") {
+            app.log.info(`🔧 OpenAI session event: ${msg.type}`);
+          }
+
           // Barge-in: user started speaking — clear Twilio buffer and truncate AI context
           if (msg.type === "input_audio_buffer.speech_started") {
             app.log.info(`🎤 Barge-in at ${totalAudioMs}ms`);
@@ -484,6 +499,8 @@ export function voiceService(app: FastifyInstance) {
             }
             lastAssistantItemId = null;
             totalAudioMs = 0;
+            for (const key of Object.keys(pendingArgs)) delete pendingArgs[key];
+            for (const key of Object.keys(pendingCalls)) delete pendingCalls[key];
           }
 
           // Audio output from OpenAI → Twilio
