@@ -496,12 +496,9 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
       </div>
 
       <div
-        className={`transition-all duration-300 ease-in-out ${open ? "overflow-visible" : "overflow-hidden"}`}
-        style={{
-          maxHeight: open ? "5000px" : "0px",
-          opacity: open ? 1 : 0,
-        }}
+            className={`grid transition-all duration-300 ease-in-out ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
       >
+        <div className="overflow-hidden min-h-0">
           {menuDetail.foods?.length > 0 ? (
             <ul className="space-y-2 mb-3">
               {menuDetail.foods.map((food: any) => (
@@ -579,6 +576,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
               Add Food
             </Button>
           </div>
+        </div>
       </div>
     </div>
   );
