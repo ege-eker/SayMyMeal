@@ -98,13 +98,18 @@ export default function CheckoutPage() {
     };
   };
 
+  const postcodeClean = newAddress.postcode.replace(/\s+/g, "").toUpperCase();
+  const postcodeNormalized = postcodeClean.length >= 3 ? postcodeClean.slice(0, -3) + " " + postcodeClean.slice(-3) : "";
+  const postcodeValid = /^[A-Z]{1,2}[0-9][0-9A-Z]? [0-9][A-Z]{2}$/.test(postcodeNormalized);
+
   const newAddressValid =
     selectedAddressId !== "new" ||
     (newAddress.label.trim().length > 0 &&
       newAddress.houseNumber.trim().length > 0 &&
       newAddress.street.trim().length > 0 &&
       newAddress.city.trim().length > 0 &&
-      newAddress.postcode.trim().length > 0);
+      newAddress.postcode.trim().length > 0 &&
+      postcodeValid);
 
   const handleDeleteAddress = async (id: string) => {
     setDeletingId(id);
@@ -411,6 +416,9 @@ export default function CheckoutPage() {
                     onChange={(e) => setNewAddress({ ...newAddress, postcode: e.target.value })}
                     required
                   />
+                  {newAddress.postcode.trim().length > 0 && !postcodeValid && (
+                    <p className="text-xs text-red-500">Invalid postcode format (e.g. SW1A 2BC)</p>
+                  )}
                 </div>
               </div>
             </div>

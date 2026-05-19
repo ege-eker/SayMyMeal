@@ -190,7 +190,7 @@ export function getFollowUpInstruction(fnName: string): string {
     case "get_food_options":
       return "Options fetched. Use ONLY the option groups and choices returned in this result — never invent or assume options. Ask about each option group one at a time: ask the first group, wait for the customer's answer, then ask the next group, and so on until ALL groups have been answered. Do not skip any group. Do not list all groups at once. Only after every group is answered, confirm the item and ask about quantity.";
     case "create_order":
-      return "Check the tool result. If it contains an 'error' field, inform the customer clearly what went wrong and ask them to correct it (e.g. missing option selection, address issue). Do NOT say the order was placed if there is an error. If successful (no error field), simply say the order has been placed and give the estimated delivery time. Do NOT read out the order items again.";
+      return "Check the tool result. If it contains an 'error' field, understand what went wrong and explain it to the customer naturally in your own words — never read the error message verbatim. Ask them to correct it. Do NOT say the order was placed if there is an error. If successful (no error field), simply say the order has been placed and give the estimated delivery time. Do NOT read out the order items again.";
     case "get_order_status":
       return "Order status retrieved. Share the status with the customer and close politely.";
     case "get_allergen_profile":

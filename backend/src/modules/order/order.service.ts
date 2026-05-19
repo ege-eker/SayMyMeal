@@ -35,6 +35,19 @@ export const orderService = (app: FastifyInstance) => ({
         }
       }
 
+      // Postcode normalization + validation
+      if (data.address?.postcode) {
+        const clean = data.address.postcode.replace(/\s+/g, "").toUpperCase();
+        const normalized = clean.slice(0, -3) + " " + clean.slice(-3);
+        const UK_POSTCODE = /^[A-Z]{1,2}[0-9][0-9A-Z]? [0-9][A-Z]{2}$/;
+        if (!UK_POSTCODE.test(normalized)) {
+          throw new BadRequestError(
+            "Invalid postcode format (expected e.g. SW1A 2BC or M1 1AE). Ask the customer to repeat it letter by letter."
+          );
+        }
+        data.address.postcode = normalized;
+      }
+
       // --- Delivery zone validation temporarily disabled ---
       // Uncomment this block to re-enable postcode-based delivery zone checks.
       //
