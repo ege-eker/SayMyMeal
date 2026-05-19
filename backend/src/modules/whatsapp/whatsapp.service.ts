@@ -191,7 +191,10 @@ export function whatsappService(app: FastifyInstance) {
           result = await handler(args);
         } catch (err: any) {
           app.log.error({ err }, `Tool execution failed: ${fn}`);
-          result = { error: err.message ?? "Tool execution failed" };
+          result = {
+            error: err.message ?? "Tool execution failed",
+            _instruction: "This tool call failed. Do NOT invent or guess any data. Retry the tool call once. If it fails again, apologize and tell the customer there was a technical issue.",
+          };
         }
 
         const toolMessage = {

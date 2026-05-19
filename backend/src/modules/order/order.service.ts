@@ -88,10 +88,14 @@ export const orderService = (app: FastifyInstance) => ({
             (sel) => sel.optionId === optionGroup.id
           );
           if (!hasSelection) {
-            const choiceList = optionGroup.choices.map((c) => c.label).join(", ");
             const food = allFoods.find((f) => f.id === item.foodId);
+            const choiceList = optionGroup.choices
+              .map((c) => `${c.label} [choiceId: ${c.id}, extraPrice: ${c.extraPrice}]`)
+              .join(", ");
             throw new BadRequestError(
-              `Missing required selection for "${optionGroup.title}" on "${food?.name ?? item.foodId}". Please choose one of: ${choiceList}.`
+              `Missing required selection for "${optionGroup.title}" [optionId: ${optionGroup.id}] on "${food?.name ?? item.foodId}". ` +
+              `Add { optionId: "${optionGroup.id}", choiceId: "<id>", choiceLabel: "<label>", extraPrice: <price> } to selectedOptions. ` +
+              `Available choices: ${choiceList}.`
             );
           }
         }
@@ -101,12 +105,22 @@ export const orderService = (app: FastifyInstance) => ({
             const existingOption = foodOptions.find((o) => o.id === opt.optionId);
 
             if (!existingOption) {
-              throw new BadRequestError(`Invalid optionId: ${opt.optionId}. Please check the menu and try again.`);
+              const validGroups = foodOptions
+                .map((o) => `"${o.title}" [optionId: ${o.id}]`)
+                .join(", ");
+              throw new BadRequestError(
+                `Invalid optionId "${opt.optionId}" for food "${item.foodId}". Valid option groups: ${validGroups}.`
+              );
             }
 
             const validChoiceIds = existingOption.choices.map((c) => c.id);
             if (opt.choiceId && !validChoiceIds.includes(opt.choiceId)) {
-              throw new BadRequestError(`Invalid choiceId: ${opt.choiceId}. Please check the menu and try again.`);
+              const validChoices = existingOption.choices
+                .map((c) => `${c.label} [choiceId: ${c.id}]`)
+                .join(", ");
+              throw new BadRequestError(
+                `Invalid choiceId "${opt.choiceId}" for "${existingOption.title}" [optionId: ${existingOption.id}]. Valid choices: ${validChoices}.`
+              );
             }
           }
         }
