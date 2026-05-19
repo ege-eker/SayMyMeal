@@ -118,10 +118,9 @@ export default function FoodOptionForm({
               <button
                 type="button"
                 onClick={async () => { await updateFoodOption(opt.id, { isAvailable: !opt.isAvailable }); fetchOptions(); }}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${opt.isAvailable !== false ? "bg-emerald-500" : "bg-gray-300"}`}
-                title={opt.isAvailable !== false ? "Available — click to disable" : "Unavailable — click to enable"}
+                className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${opt.isAvailable !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-600 hover:bg-red-200"}`}
               >
-                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${opt.isAvailable !== false ? "translate-x-4" : "translate-x-0.5"}`} />
+                {opt.isAvailable !== false ? "✓ Available" : "✗ Out of stock"}
               </button>
             <ConfirmDelete
               title={`Delete option "${opt.title}"?`}
@@ -152,10 +151,9 @@ export default function FoodOptionForm({
                   <button
                     type="button"
                     onClick={async () => { await updateFoodOptionChoice(ch.id, { isAvailable: !ch.isAvailable }); fetchOptions(); }}
-                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${ch.isAvailable !== false ? "bg-emerald-500" : "bg-gray-300"}`}
-                    title={ch.isAvailable !== false ? "Available" : "Unavailable"}
+                    className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${ch.isAvailable !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-600 hover:bg-red-200"}`}
                   >
-                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${ch.isAvailable !== false ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                    {ch.isAvailable !== false ? "✓ Available" : "✗ Out of stock"}
                   </button>
                 <ConfirmDelete
                   title={`Delete choice "${ch.label}"?`}

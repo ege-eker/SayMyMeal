@@ -496,7 +496,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
       </div>
 
       <div
-        className="overflow-hidden transition-all duration-300 ease-in-out"
+        className={`transition-all duration-300 ease-in-out ${open ? "overflow-visible" : "overflow-hidden"}`}
         style={{
           maxHeight: open ? "5000px" : "0px",
           opacity: open ? 1 : 0,
@@ -523,10 +523,9 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
                       <button
                         type="button"
                         onClick={async () => { await updateFood(food.id, { isAvailable: !food.isAvailable }); mutate(); }}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${food.isAvailable !== false ? "bg-emerald-500" : "bg-gray-300"}`}
-                        title={food.isAvailable !== false ? "Available — click to disable" : "Unavailable — click to enable"}
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${food.isAvailable !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-600 hover:bg-red-200"}`}
                       >
-                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${food.isAvailable !== false ? "translate-x-4" : "translate-x-0.5"}`} />
+                        {food.isAvailable !== false ? "✓ Available" : "✗ Out of stock"}
                       </button>
                       <ConfirmDelete
                         title={`Delete "${food.name}"?`}
