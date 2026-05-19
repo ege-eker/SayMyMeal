@@ -23,6 +23,7 @@ export const createFoodSchema = {
         basePrice: { type: "number" },
         allergens: { type: "array", items: { type: "string" } },
         dietTags: { type: "array", items: { type: "string" } },
+        isAvailable: { type: "boolean" },
         menuId: { type: "string" },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" }
@@ -46,6 +47,7 @@ export const getFoodsSchema = {
           basePrice: { type: "number" },
           allergens: { type: "array", items: { type: "string" } },
           dietTags: { type: "array", items: { type: "string" } },
+          isAvailable: { type: "boolean" },
           menuId: { type: "string" },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" }
@@ -76,6 +78,7 @@ export const getFoodByIdSchema = {
         allergens: { type: "array", items: { type: "string" } },
         dietTags: { type: "array", items: { type: "string" } },
         menuId: { type: "string" },
+        isAvailable: { type: "boolean" },
         options: {
             type: "array",
             items: {
@@ -84,6 +87,7 @@ export const getFoodByIdSchema = {
                     id: { type: "string" },
                     title: { type: "string" },
                     multiple: { type: "boolean" },
+                    isAvailable: { type: "boolean" },
                 },
             },
         },
@@ -112,7 +116,8 @@ export const updateFoodSchema = {
       name: { type: "string" },
       basePrice: { type: "number", minimum: 0 },
       allergens: { type: "array", items: { type: "string" } },
-      dietTags: { type: "array", items: { type: "string" } }
+      dietTags: { type: "array", items: { type: "string" } },
+      isAvailable: { type: "boolean" }
     }
   },
   response: {
@@ -125,6 +130,7 @@ export const updateFoodSchema = {
         basePrice: { type: "number" },
         allergens: { type: "array", items: { type: "string" } },
         dietTags: { type: "array", items: { type: "string" } },
+        isAvailable: { type: "boolean" },
         menuId: { type: "string" },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" }

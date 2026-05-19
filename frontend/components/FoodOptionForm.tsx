@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { authFetch, deleteChoice as deleteChoiceApi } from "@/lib/api";
+import { authFetch, deleteChoice as deleteChoiceApi, updateFoodOption, updateFoodOptionChoice } from "@/lib/api";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import { Trash2 } from "lucide-react";
 
@@ -13,12 +13,14 @@ interface OptionChoice {
   id: string;
   label: string;
   extraPrice: number;
+  isAvailable: boolean;
 }
 
 interface FoodOption {
   id: string;
   title: string;
   multiple: boolean;
+  isAvailable: boolean;
   choices: OptionChoice[];
 }
 
@@ -106,12 +108,21 @@ export default function FoodOptionForm({
       {options.map((opt) => (
         <div key={opt.id} className="border-t pt-2 mt-2">
           <div className="flex justify-between items-center">
-            <h4 className="text-amber-700 text-sm font-medium">
+            <h4 className={`text-sm font-medium ${opt.isAvailable !== false ? "text-amber-700" : "text-gray-400 line-through"}`}>
               {opt.title}{" "}
               <span className="text-gray-500 text-xs">
                 ({opt.multiple ? "multiple" : "single"})
               </span>
             </h4>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={async () => { await updateFoodOption(opt.id, { isAvailable: !opt.isAvailable }); fetchOptions(); }}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${opt.isAvailable !== false ? "bg-emerald-500" : "bg-gray-300"}`}
+                title={opt.isAvailable !== false ? "Available — click to disable" : "Unavailable — click to enable"}
+              >
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${opt.isAvailable !== false ? "translate-x-4" : "translate-x-0.5"}`} />
+              </button>
             <ConfirmDelete
               title={`Delete option "${opt.title}"?`}
               description="This will delete the option group and all its choices. This action cannot be undone."
@@ -123,12 +134,13 @@ export default function FoodOptionForm({
                 </Button>
               }
             />
+            </div>
           </div>
 
           <ul className="ml-4 text-sm mt-1">
             {opt.choices.map((ch) => (
               <li key={ch.id} className="flex items-center justify-between py-0.5">
-                <span>
+                <span className={ch.isAvailable !== false ? "" : "text-gray-400 line-through"}>
                   {ch.label}{" "}
                   {ch.extraPrice > 0 && (
                     <span className="text-gray-400">
@@ -136,6 +148,15 @@ export default function FoodOptionForm({
                     </span>
                   )}
                 </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={async () => { await updateFoodOptionChoice(ch.id, { isAvailable: !ch.isAvailable }); fetchOptions(); }}
+                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${ch.isAvailable !== false ? "bg-emerald-500" : "bg-gray-300"}`}
+                    title={ch.isAvailable !== false ? "Available" : "Unavailable"}
+                  >
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${ch.isAvailable !== false ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                  </button>
                 <ConfirmDelete
                   title={`Delete choice "${ch.label}"?`}
                   description="This action cannot be undone."
@@ -149,6 +170,7 @@ export default function FoodOptionForm({
                     </button>
                   }
                 />
+                </div>
               </li>
             ))}
             {opt.choices.length === 0 && (

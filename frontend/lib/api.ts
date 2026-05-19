@@ -279,9 +279,25 @@ export async function checkFoodAllergensByPhone(phone: string, foodIds: string[]
   return res.json();
 }
 
-export async function updateFood(id: string, data: { name?: string; basePrice?: number; allergens?: string[]; dietTags?: string[] }) {
+export async function updateFood(id: string, data: { name?: string; basePrice?: number; allergens?: string[]; dietTags?: string[]; isAvailable?: boolean }) {
   const res = await authFetch(`${API_URL}/foods/${id}`, {
     method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function updateFoodOption(id: string, data: { isAvailable?: boolean }) {
+  const res = await authFetch(`${API_URL}/foods/options/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function updateFoodOptionChoice(id: string, data: { isAvailable?: boolean }) {
+  const res = await authFetch(`${API_URL}/foods/options/choice/${id}`, {
+    method: "PATCH",
     body: JSON.stringify(data),
   });
   return res.json();

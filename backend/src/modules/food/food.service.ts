@@ -39,6 +39,7 @@ export const foodService = (app: FastifyInstance) => ({
         basePrice: data.basePrice,
         allergens: data.allergens,
         dietTags: data.dietTags,
+        isAvailable: data.isAvailable,
       }
     });
   },

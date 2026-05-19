@@ -48,7 +48,8 @@ export const getMenusSchema = {
                 imageUrl: { type: "string", nullable: true },
                 basePrice: { type: "number" },
                 allergens: { type: "array", items: { type: "string" } },
-                dietTags: { type: "array", items: { type: "string" } }
+                dietTags: { type: "array", items: { type: "string" } },
+                isAvailable: { type: "boolean" }
               }
             }
           },
@@ -90,6 +91,7 @@ export const getMenuByIdSchema = {
                     basePrice: { type: "number" },
                     allergens: { type: "array", items: { type: "string" } },
                     dietTags: { type: "array", items: { type: "string" } },
+                    isAvailable: { type: "boolean" },
                 }
             }
         },

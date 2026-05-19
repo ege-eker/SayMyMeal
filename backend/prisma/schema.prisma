@@ -77,6 +77,7 @@ model Food {
   basePrice   Float
   allergens   String[]     @default([])
   dietTags    String[]     @default([])
+  isAvailable Boolean      @default(true)
   menu        Menu         @relation(fields: [menuId], references: [id], onDelete: Cascade)
   menuId      String
   options     FoodOption[]
@@ -86,20 +87,22 @@ model Food {
 }
 
 model FoodOption {
-  id       String         @id @default(uuid())
-  title    String
-  multiple Boolean        @default(false)
-  food     Food           @relation(fields: [foodId], references: [id], onDelete: Cascade)
-  foodId   String
-  choices  OptionChoice[]
+  id          String         @id @default(uuid())
+  title       String
+  multiple    Boolean        @default(false)
+  isAvailable Boolean        @default(true)
+  food        Food           @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  foodId      String
+  choices     OptionChoice[]
 }
 
 model OptionChoice {
-  id         String     @id @default(uuid())
-  label      String
-  extraPrice Float      @default(0)
-  option     FoodOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
-  optionId   String
+  id          String     @id @default(uuid())
+  label       String
+  extraPrice  Float      @default(0)
+  isAvailable Boolean    @default(true)
+  option      FoodOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  optionId    String
 }
 
 model Order {

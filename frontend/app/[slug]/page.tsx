@@ -282,10 +282,10 @@ export default function RestaurantMenuPage() {
                   {filteredFoods?.map((food: any) => (
                     <div
                       key={food.id}
-                      className={`bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${
-                        !food.imageUrl ? "sm:col-span-1" : ""
-                      }`}
-                      onClick={() => handleAddToCart(food)}
+                      className={`bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow relative ${
+                        food.isAvailable === false ? "pointer-events-none" : "cursor-pointer"
+                      } ${!food.imageUrl ? "sm:col-span-1" : ""}`}
+                      onClick={() => food.isAvailable !== false && handleAddToCart(food)}
                     >
                       {/* Food Image — full width on top */}
                       {food.imageUrl && (
@@ -319,15 +319,23 @@ export default function RestaurantMenuPage() {
                           </span>
                           <Button
                             size="sm"
+                            disabled={food.isAvailable === false}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleAddToCart(food);
+                              if (food.isAvailable !== false) handleAddToCart(food);
                             }}
                           >
                             Add
                           </Button>
                         </div>
                       </div>
+                      {food.isAvailable === false && (
+                        <div className="absolute inset-0 bg-white/75 flex items-center justify-center rounded-xl">
+                          <span className="bg-gray-800 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
+                            Currently unavailable
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -356,25 +364,34 @@ export default function RestaurantMenuPage() {
               <p className="text-gray-600">£{optionModal.basePrice.toFixed(2)}</p>
 
               {optionModal.options.map((option: any) => {
+                const groupUnavailable = option.isAvailable === false;
                 const groupSelected = selectedOptions.some((o) => o.optionId === option.id);
                 return (
-                <div key={option.id} className="space-y-2">
+                <div key={option.id} className={`space-y-2 ${groupUnavailable ? "opacity-50" : ""}`}>
                   <h4 className="font-medium text-sm text-gray-700 flex items-center gap-1">
-                    {option.title}
-                    <span className="text-red-500">*</span>
-                    {groupSelected && <span className="text-green-500 text-xs ml-1">✓</span>}
-                    <span className="text-gray-400 font-normal">{option.multiple ? "(multiple)" : "(pick one)"}</span>
+                    <span className={groupUnavailable ? "line-through text-gray-400" : ""}>{option.title}</span>
+                    {!groupUnavailable && <span className="text-red-500">*</span>}
+                    {groupSelected && !groupUnavailable && <span className="text-green-500 text-xs ml-1">✓</span>}
+                    {groupUnavailable
+                      ? <span className="text-xs font-normal text-gray-400 ml-1">— out of stock</span>
+                      : <span className="text-gray-400 font-normal">{option.multiple ? "(multiple)" : "(pick one)"}</span>
+                    }
                   </h4>
                   <div className="space-y-1">
                     {option.choices.map((choice: any) => {
+                      const choiceUnavailable = groupUnavailable || choice.isAvailable === false;
                       const isSelected = selectedOptions.some(
                         (o) => o.optionId === option.id && o.choiceId === choice.id
                       );
                       return (
                         <label
                           key={choice.id}
-                          className={`flex items-center justify-between p-2 rounded cursor-pointer border ${
-                            isSelected ? "border-amber-500 bg-amber-50" : "border-gray-200"
+                          className={`flex items-center justify-between p-2 rounded border ${
+                            choiceUnavailable
+                              ? "border-gray-100 bg-gray-50 cursor-not-allowed"
+                              : isSelected
+                              ? "border-amber-500 bg-amber-50 cursor-pointer"
+                              : "border-gray-200 cursor-pointer"
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -382,13 +399,17 @@ export default function RestaurantMenuPage() {
                               type={option.multiple ? "checkbox" : "radio"}
                               name={option.id}
                               checked={isSelected}
-                              onChange={() => handleOptionSelect(option, choice)}
+                              disabled={choiceUnavailable}
+                              onChange={() => !choiceUnavailable && handleOptionSelect(option, choice)}
                               className="accent-amber-600"
                             />
-                            <span>{choice.label}</span>
+                            <span className={choiceUnavailable ? "line-through text-gray-400" : ""}>{choice.label}</span>
+                            {choice.isAvailable === false && !groupUnavailable && (
+                              <span className="text-xs text-gray-400">— out of stock</span>
+                            )}
                           </div>
                           {choice.extraPrice > 0 && (
-                            <span className="text-sm text-gray-500">
+                            <span className={`text-sm ${choiceUnavailable ? "text-gray-300" : "text-gray-500"}`}>
                               +£{choice.extraPrice.toFixed(2)}
                             </span>
                           )}
@@ -422,9 +443,11 @@ export default function RestaurantMenuPage() {
               </div>
 
               {(() => {
-                const allSelected = optionModal.options.every((option: any) =>
-                  selectedOptions.some((o) => o.optionId === option.id)
-                );
+                const allSelected = optionModal.options
+                  .filter((option: any) => option.isAvailable !== false)
+                  .every((option: any) =>
+                    selectedOptions.some((o) => o.optionId === option.id)
+                  );
                 return (
                   <Button className="w-full" onClick={handleConfirmOptions} disabled={!allSelected}>
                     {allSelected ? "Add to Cart" : "Please select all options"}

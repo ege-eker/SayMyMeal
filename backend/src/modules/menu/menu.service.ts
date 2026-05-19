@@ -25,6 +25,13 @@ export const menuService = (app: FastifyInstance) => ({
     });
   },
 
+  async findByIdAvailable(id: string) {
+    return app.prisma.menu.findUnique({
+      where: { id },
+      include: { foods: { where: { isAvailable: true }, orderBy: { createdAt: "asc" } } }
+    });
+  },
+
   async update(id: string, data: UpdateMenuInput) {
     return app.prisma.menu.update({
       where: { id },

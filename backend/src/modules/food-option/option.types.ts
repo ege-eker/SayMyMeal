@@ -2,6 +2,7 @@ export interface OptionChoice {
   id: string;
   label: string;
   extraPrice: number;
+  isAvailable: boolean;
   optionId: string;
 }
 
@@ -9,6 +10,7 @@ export interface FoodOption {
   id: string;
   title: string;
   multiple: boolean;
+  isAvailable: boolean;
   foodId: string;
   choices: OptionChoice[];
 }
@@ -23,4 +25,12 @@ export interface AddChoiceInput {
   optionId: string;
   label: string;
   extraPrice?: number;
+}
+
+export interface UpdateOptionInput {
+  isAvailable?: boolean;
+}
+
+export interface UpdateChoiceInput {
+  isAvailable?: boolean;
 }

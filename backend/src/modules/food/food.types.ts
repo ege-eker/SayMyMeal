@@ -23,4 +23,5 @@ export interface UpdateFoodInput {
   basePrice?: number;
   allergens?: string[];
   dietTags?: string[];
+  isAvailable?: boolean;
 }

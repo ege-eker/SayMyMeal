@@ -83,6 +83,7 @@ export function toolHandlers(app: FastifyInstance) {
         where: { restaurantId },
         include: {
           foods: {
+            where: { isAvailable: true },
             select: { id: true, name: true, basePrice: true },
           },
         },
@@ -92,11 +93,11 @@ export function toolHandlers(app: FastifyInstance) {
     },
 
     async get_foods({ menuId }: { menuId: string }) {
-      return await menu.findById(menuId);
+      return await menu.findByIdAvailable(menuId);
     },
 
     async get_food_options({ foodId }: { foodId: string }) {
-      return await option.findByFood(foodId);
+      return await option.findByFoodAvailable(foodId);
     },
 
     async create_order(args: CreateOrderInput) {

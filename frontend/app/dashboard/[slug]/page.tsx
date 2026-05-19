@@ -10,6 +10,7 @@ import {
   deleteMenu,
   createFood,
   deleteFood,
+  updateFood,
   updateRestaurant,
   searchAvailableNumbers,
   provisionVoiceNumber,
@@ -518,20 +519,30 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
                         {food.name} — £{(food.basePrice ?? 0).toFixed(2)}
                       </span>
                     </div>
-                    <ConfirmDelete
-                      title={`Delete "${food.name}"?`}
-                      description="This will delete the food and all its options. This action cannot be undone."
-                      onConfirm={async () => {
-                        await deleteFood(food.id);
-                        mutate();
-                      }}
-                      trigger={
-                        <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Delete
-                        </Button>
-                      }
-                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => { await updateFood(food.id, { isAvailable: !food.isAvailable }); mutate(); }}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${food.isAvailable !== false ? "bg-emerald-500" : "bg-gray-300"}`}
+                        title={food.isAvailable !== false ? "Available — click to disable" : "Unavailable — click to enable"}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${food.isAvailable !== false ? "translate-x-4" : "translate-x-0.5"}`} />
+                      </button>
+                      <ConfirmDelete
+                        title={`Delete "${food.name}"?`}
+                        description="This will delete the food and all its options. This action cannot be undone."
+                        onConfirm={async () => {
+                          await deleteFood(food.id);
+                          mutate();
+                        }}
+                        trigger={
+                          <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </Button>
+                        }
+                      />
+                    </div>
                   </div>
                   <div className="ml-4 border-l-2 border-amber-200 pl-3 mt-2 space-y-2">
                     <AllergenTagEditor

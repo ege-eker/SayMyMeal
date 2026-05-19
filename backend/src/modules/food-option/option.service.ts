@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { CreateOptionInput, OptionChoice, AddChoiceInput } from "./option.types";
+import { CreateOptionInput, OptionChoice, AddChoiceInput, UpdateOptionInput, UpdateChoiceInput } from "./option.types";
 
 export const optionService = (app: FastifyInstance) => ({
   async createOption(data: CreateOptionInput) {
@@ -27,6 +27,28 @@ export const optionService = (app: FastifyInstance) => ({
     return app.prisma.foodOption.findMany({
       where: { foodId },
       include: { choices: true },
+    });
+  },
+
+  async findByFoodAvailable(foodId: string) {
+    return app.prisma.foodOption.findMany({
+      where: { foodId, isAvailable: true },
+      include: { choices: { where: { isAvailable: true } } },
+    });
+  },
+
+  async updateOption(optionId: string, data: UpdateOptionInput) {
+    return app.prisma.foodOption.update({
+      where: { id: optionId },
+      data: { isAvailable: data.isAvailable },
+      include: { choices: true },
+    });
+  },
+
+  async updateChoice(choiceId: string, data: UpdateChoiceInput) {
+    return app.prisma.optionChoice.update({
+      where: { id: choiceId },
+      data: { isAvailable: data.isAvailable },
     });
   },
 

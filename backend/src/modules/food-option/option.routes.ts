@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { optionController } from "./option.controller";
-import { createOptionSchema, addChoiceSchema, getOptionsByFoodSchema, deleteOptionSchema, deleteChoiceSchema } from "./option.schema";
+import { createOptionSchema, addChoiceSchema, getOptionsByFoodSchema, deleteOptionSchema, deleteChoiceSchema, updateOptionSchema, updateChoiceSchema } from "./option.schema";
 import { requireRole } from "../../middleware/auth";
 
 async function optionRoutes(app: FastifyInstance) {
@@ -13,6 +13,8 @@ async function optionRoutes(app: FastifyInstance) {
   // Owner-only writes
   app.post("/foods/options", { schema: createOptionSchema, preHandler: [ownerAuth] }, ctrl.createOption as any);
   app.post("/foods/options/choice", { schema: addChoiceSchema, preHandler: [ownerAuth] }, ctrl.addChoice as any);
+  app.patch("/foods/options/:id", { schema: updateOptionSchema, preHandler: [ownerAuth] }, ctrl.updateOption as any);
+  app.patch("/foods/options/choice/:id", { schema: updateChoiceSchema, preHandler: [ownerAuth] }, ctrl.updateChoice as any);
   app.delete("/foods/options/:id", { schema: deleteOptionSchema, preHandler: [ownerAuth] }, ctrl.removeOption as any);
   app.delete("/foods/options/choice/:id", { schema: deleteChoiceSchema, preHandler: [ownerAuth] }, ctrl.removeChoice as any);
 }

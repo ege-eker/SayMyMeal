@@ -70,7 +70,7 @@ export const orderService = (app: FastifyInstance) => ({
       }
 
       const allFoods = restaurant.menus.flatMap((m) => m.foods);
-      const validFoodIds = allFoods.map((f) => f.id);
+      const validFoodIds = allFoods.filter((f) => f.isAvailable).map((f) => f.id);
 
       for (const item of data.items) {
         if (!validFoodIds.includes(item.foodId)) {
@@ -78,8 +78,8 @@ export const orderService = (app: FastifyInstance) => ({
         }
 
         const foodOptions = await app.prisma.foodOption.findMany({
-          where: { foodId: item.foodId },
-          include: { choices: true },
+          where: { foodId: item.foodId, isAvailable: true },
+          include: { choices: { where: { isAvailable: true } } },
         });
 
         // Validate that every option group has at least one selection
