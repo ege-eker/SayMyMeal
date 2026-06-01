@@ -71,12 +71,54 @@ export const tools: ChatCompletionTool[] = [
   {
     type: "function",
     function: {
-      name: "create_order",
+      name: "confirm_item",
       description:
-        "Create a new customer order for a restaurant, including selected food items and their chosen options.",
+        "Confirm and add a food item with its selected options to the order cart. Call this after the customer has answered ALL option groups for a food item and confirmed the selection. Do NOT call create_order until all desired items have been confirmed with this tool.",
       parameters: {
         type: "object",
-        required: ["customer", "phone", "restaurantId", "address", "items"],
+        required: ["restaurantId", "foodId", "quantity"],
+        properties: {
+          restaurantId: {
+            type: "string",
+            description: "Unique identifier of the restaurant.",
+          },
+          foodId: {
+            type: "string",
+            description: "Unique identifier of the food item being added.",
+          },
+          quantity: {
+            type: "integer",
+            minimum: 1,
+            description: "Quantity of this food item.",
+          },
+          selectedOptions: {
+            type: "array",
+            description: "All selected options for this item.",
+            items: {
+              type: "object",
+              required: ["optionId", "choiceId", "choiceLabel", "extraPrice"],
+              properties: {
+                optionId: { type: "string", description: "Unique ID of the option group." },
+                optionTitle: { type: "string", description: "Display title of the option group." },
+                choiceId: { type: "string", description: "Unique ID of the chosen option value." },
+                choiceLabel: { type: "string", description: "Display label of the chosen option." },
+                extraPrice: { type: "number", default: 0, description: "Extra cost for this selection." },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_order",
+      description:
+        "Place the final order using all items previously confirmed with confirm_item. Do NOT include items — they are automatically taken from the cart. Only provide customer details and delivery address.",
+      parameters: {
+        type: "object",
+        required: ["customer", "phone", "restaurantId", "address"],
         properties: {
           customer: {
             type: "string",
@@ -86,93 +128,22 @@ export const tools: ChatCompletionTool[] = [
           phone: {
             type: "string",
             minLength: 5,
-            description:
-              "Customer phone number for contact and order tracking.",
+            description: "Customer phone number for contact and order tracking.",
           },
           restaurantId: {
             type: "string",
-            description:
-              "Unique identifier of the restaurant where the order is placed.",
+            description: "Unique identifier of the restaurant where the order is placed.",
           },
           address: {
             type: "object",
             description: "UK delivery address for the order.",
             required: ["houseNumber", "street", "city", "postcode"],
             properties: {
-              houseNumber: {
-                type: "string",
-                description: "House or building number.",
-              },
+              houseNumber: { type: "string", description: "House or building number." },
               street: { type: "string", description: "Street name." },
               city: { type: "string", description: "City name." },
-              postcode: {
-                type: "string",
-                description: "Postal code (postcode) for UK addresses.",
-              },
-              country: {
-                type: "string",
-                default: "UK",
-                description: "Country name, defaults to UK.",
-              },
-            },
-          },
-          items: {
-            type: "array",
-            minItems: 1,
-            description:
-              "List of ordered food items, each with quantity and optional selected options.",
-            items: {
-              type: "object",
-              required: ["foodId", "quantity"],
-              properties: {
-                foodId: {
-                  type: "string",
-                  description:
-                    "Unique identifier of the ordered food item.",
-                },
-                quantity: {
-                  type: "integer",
-                  minimum: 1,
-                  description:
-                    "Quantity of the food item being ordered.",
-                },
-                selectedOptions: {
-                  type: "array",
-                  description:
-                    "List of selected options for this item (e.g., size or extras).",
-                  items: {
-                    type: "object",
-                    required: ["optionId", "choiceId", "choiceLabel", "extraPrice"],
-                    properties: {
-                      optionId: {
-                        type: "string",
-                        description:
-                          "Unique ID of the option group (e.g. 'size').",
-                      },
-                      optionTitle: {
-                        type: "string",
-                        description: "Display title of the option group.",
-                      },
-                      choiceId: {
-                        type: "string",
-                        description:
-                          "Unique ID of the chosen option value.",
-                      },
-                      choiceLabel: {
-                        type: "string",
-                        description:
-                          "Display label of the chosen option value.",
-                      },
-                      extraPrice: {
-                        type: "number",
-                        default: 0,
-                        description:
-                          "Any additional cost for this selection.",
-                      },
-                    },
-                  },
-                },
-              },
+              postcode: { type: "string", description: "Postal code (postcode) for UK addresses." },
+              country: { type: "string", default: "UK", description: "Country name, defaults to UK." },
             },
           },
         },

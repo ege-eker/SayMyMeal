@@ -1,17 +1,19 @@
 import { FastifyInstance } from "fastify";
 import OpenAI from "openai";
 import { tools } from "../../shared/tools";
-import { toolHandlers } from "./toolHandlers";
+import { toolHandlers, getFollowUpInstruction } from "./toolHandlers";
 import { instructionsTemplate } from "./instructions";
 import { normalizePhone } from "../blacklist/blacklist.service";
 import { resolveCaller, ResolvedCaller } from "../../shared/identityResolver";
 import { MenuSnapshot } from "../../shared/menuSnapshot";
+import { ValidatedCartItem } from "../../modules/order/order.types";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 interface SessionState {
   messages: ChatCompletionMessageParam[];
   lastUpdated: number;
   caller?: ResolvedCaller;
+  cart: ValidatedCartItem[];
 }
 
 async function loadRestaurantById(app: FastifyInstance, restaurantId: string) {
@@ -123,7 +125,7 @@ export function whatsappService(app: FastifyInstance) {
 
     const key = sessionKey(restaurantId, phone);
     const session =
-      sessions.get(key) ?? { messages: [], lastUpdated: Date.now() };
+      sessions.get(key) ?? { messages: [], lastUpdated: Date.now(), cart: [] };
     session.lastUpdated = Date.now();
 
     if (!session.caller) {
@@ -205,12 +207,36 @@ export function whatsappService(app: FastifyInstance) {
 
         let result: unknown;
         try {
-          result = await handler(args);
+          if (fn === "confirm_item") {
+            const itemResult = await handler(args) as Awaited<ReturnType<ReturnType<typeof toolHandlers>["confirm_item"]>>;
+            session.cart.push(itemResult.confirmedItem);
+            itemResult.cartSize = session.cart.length;
+            result = itemResult;
+          } else if (fn === "create_order") {
+            if (session.cart.length === 0) {
+              result = {
+                error: "Cart is empty.",
+                _instruction: "No items have been confirmed yet. Use confirm_item for each food item before calling create_order.",
+              };
+            } else {
+              (args as any).items = session.cart;
+              result = await handler(args);
+              if (!(result as any)?.error) {
+                session.cart = [];
+              }
+            }
+          } else {
+            result = await handler(args);
+          }
         } catch (err: any) {
           app.log.error({ err }, `Tool execution failed: ${fn}`);
+          const instruction =
+            fn === "create_order" || fn === "confirm_item"
+              ? "Do NOT tell the customer about this error. The error message above contains the correct IDs. Fix the invalid ID(s) using the values listed in the error, then immediately retry. Handle this silently — the customer should not know a retry happened."
+              : "This tool call failed. Do NOT invent or guess any data. Retry the tool call once. If it fails again, apologize and tell the customer there was a technical issue.";
           result = {
             error: err.message ?? "Tool execution failed",
-            _instruction: "This tool call failed. Do NOT invent or guess any data. Retry the tool call once. If it fails again, apologize and tell the customer there was a technical issue.",
+            _instruction: instruction,
           };
         }
 
@@ -221,6 +247,13 @@ export function whatsappService(app: FastifyInstance) {
         };
         messages.push(toolMessage);
         session.messages.push(toolMessage);
+
+        const followUp = getFollowUpInstruction(fn);
+        if (followUp && !(result as any)?.error) {
+          const guidance = { role: "system" as const, content: followUp };
+          messages.push(guidance);
+          session.messages.push(guidance);
+        }
       }
     }
 

@@ -1,2 +1,2 @@
 // Re-export from shared module for backward compatibility
-export { toolHandlers } from "../../shared/toolHandlers";
+export { toolHandlers, getFollowUpInstruction } from "../../shared/toolHandlers";

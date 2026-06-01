@@ -25,16 +25,25 @@ export interface OrderItem {
 
 export type OrderStatus = | "pending" | "preparing" | "delivering" | "completed" | "canceled";
 
+export interface SelectedOption {
+  optionId: string;
+  optionTitle?: string;
+  choiceId: string;
+  choiceLabel?: string;
+  extraPrice?: number;
+}
+
 export interface CreateOrderItemInput {
   foodId: string;
   quantity: number;
-  selectedOptions?: {
-    optionId: string;
-    optionTitle?: string;
-    choiceId: string;
-    choiceLabel?: string;
-    extraPrice?: number;
-  }[];
+  selectedOptions?: SelectedOption[];
+}
+
+export interface ValidatedCartItem {
+  foodId: string;
+  foodName: string;
+  quantity: number;
+  selectedOptions: SelectedOption[];
 }
 
 export interface CreateOrderInput {

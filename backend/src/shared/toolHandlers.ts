@@ -2,7 +2,8 @@ import { FastifyInstance } from "fastify";
 import { menuService } from "../modules/menu/menu.service";
 import { optionService } from "../modules/food-option/option.service";
 import { orderService } from "../modules/order/order.service";
-import { CreateOrderInput, UKAddress } from "../modules/order/order.types";
+import { CreateOrderInput, UKAddress, ValidatedCartItem, SelectedOption } from "../modules/order/order.types";
+import { BadRequestError } from "../utils/errors";
 import { normalizePhone } from "./phone";
 import { resolveCaller, ResolvedCaller } from "./identityResolver";
 
@@ -100,6 +101,72 @@ export function toolHandlers(app: FastifyInstance) {
       return await option.findByFoodAvailable(foodId);
     },
 
+    async confirm_item({ restaurantId, foodId, quantity, selectedOptions }: {
+      restaurantId: string;
+      foodId: string;
+      quantity: number;
+      selectedOptions?: SelectedOption[];
+    }): Promise<{ confirmedItem: ValidatedCartItem; itemSummary: string; cartSize: number }> {
+      const food = await app.prisma.food.findFirst({
+        where: { id: foodId, isAvailable: true, menu: { restaurantId } },
+        select: { id: true, name: true, basePrice: true },
+      });
+
+      if (!food) {
+        const allFoods = await app.prisma.food.findMany({
+          where: { menu: { restaurantId }, isAvailable: true },
+          select: { id: true, name: true },
+        });
+        const foodList = allFoods.map((f) => `"${f.name}" [foodId: ${f.id}]`).join(", ");
+        throw new BadRequestError(`Invalid foodId: "${foodId}". Valid foods: ${foodList}.`);
+      }
+
+      const foodOptions = await app.prisma.foodOption.findMany({
+        where: { foodId, isAvailable: true },
+        include: { choices: { where: { isAvailable: true } } },
+      });
+
+      for (const optionGroup of foodOptions) {
+        const hasSelection = selectedOptions?.some((sel) => sel.optionId === optionGroup.id);
+        if (!hasSelection) {
+          const choiceList = optionGroup.choices
+            .map((c) => `${c.label} [choiceId: ${c.id}, extraPrice: ${c.extraPrice}]`)
+            .join(", ");
+          throw new BadRequestError(
+            `Missing required selection for "${optionGroup.title}" [optionId: ${optionGroup.id}] on "${food.name}". ` +
+            `Available choices: ${choiceList}.`
+          );
+        }
+      }
+
+      if (selectedOptions) {
+        for (const sel of selectedOptions) {
+          const existingOption = foodOptions.find((o) => o.id === sel.optionId);
+          if (!existingOption) {
+            const validGroups = foodOptions.map((o) => `"${o.title}" [optionId: ${o.id}]`).join(", ");
+            throw new BadRequestError(`Invalid optionId "${sel.optionId}". Valid groups: ${validGroups}.`);
+          }
+          if (sel.choiceId && !existingOption.choices.find((c) => c.id === sel.choiceId)) {
+            const validChoices = existingOption.choices.map((c) => `${c.label} [choiceId: ${c.id}]`).join(", ");
+            throw new BadRequestError(`Invalid choiceId "${sel.choiceId}". Valid choices: ${validChoices}.`);
+          }
+        }
+      }
+
+      const extraPrice = (selectedOptions ?? []).reduce((sum, sel) => sum + (sel.extraPrice ?? 0), 0);
+      const itemTotal = (food.basePrice + extraPrice) * quantity;
+      const optionsSummary = (selectedOptions ?? [])
+        .map((s) => s.choiceLabel ?? s.choiceId)
+        .join(", ");
+      const itemSummary = `${quantity}x ${food.name}${optionsSummary ? ` (${optionsSummary})` : ""} — £${itemTotal.toFixed(2)}`;
+
+      return {
+        confirmedItem: { foodId, foodName: food.name, quantity, selectedOptions: selectedOptions ?? [] },
+        itemSummary,
+        cartSize: 0, // updated by the caller (WhatsApp/voice service) after adding to cart
+      };
+    },
+
     async create_order(args: CreateOrderInput) {
       const normalized = normalizePhone(args.phone ?? "");
       args.phone = normalized;
@@ -187,9 +254,11 @@ export function getFollowUpInstruction(fnName: string): string {
     case "get_menus":
       return "Menus fetched. List ONLY the menu names returned in this result — do not add, invent, or describe any items not in the result. Ask the customer which menu they'd like to order from.";
     case "get_foods":
-      return "Foods fetched. List ONLY the food items and prices returned in this result — never mention any food not in this result. Ask the customer what they'd like to order.";
+      return "Foods fetched. List ONLY the food items and prices returned in this result — never mention any food not in this result. Ask the customer what they'd like to order. When the customer picks a food, you MUST call get_food_options with that food's ID before discussing any customisation — even if you fetched options for a different item earlier in this conversation.";
     case "get_food_options":
-      return "Options fetched. Use ONLY the option groups and choices returned in this result — never invent or assume options. Ask about each option group one at a time: ask the first group, wait for the customer's answer, then ask the next group, and so on until ALL groups have been answered. Do not skip any group. Do not list all groups at once. Only after every group is answered, confirm the item and ask about quantity.";
+      return "Options fetched. Use ONLY the option groups and choices returned in this result — never invent or assume options. Ask about each option group one at a time: ask the first group, wait for the customer's answer, then ask the next group, and so on until ALL groups have been answered. Do not skip any group. Do not list all groups at once. Only after every group is answered and the customer confirms the item, call confirm_item with the foodId, quantity, and all selectedOptions. These options are specific to this food item only — never reuse them for a different food.";
+    case "confirm_item":
+      return "Item confirmed and added to cart. Show the customer a summary of this item and the current cart total. Then ask ONCE: 'Would you like to add anything else?' If yes — go back to get_menus to start fresh for the new item. If no — collect the delivery address, then call create_order (items are automatically taken from the cart — do NOT include them).";
     case "create_order":
       return "Check the tool result. If it contains an 'error' field, understand what went wrong and explain it to the customer naturally in your own words — never read the error message verbatim. Ask them to correct it. Do NOT say the order was placed if there is an error. If successful (no error field), simply say the order has been placed and give the estimated delivery time. Do NOT read out the order items again.";
     case "get_order_status":

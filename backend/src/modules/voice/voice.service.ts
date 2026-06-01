@@ -13,6 +13,7 @@ import { resolveCaller, ResolvedCaller } from "../../shared/identityResolver";
 import { normalizePhone } from "../../shared/phone";
 import { renderCallerProfileBlock } from "../../shared/callerProfilePrompt";
 import { menuSnapshotBlock, MenuSnapshot } from "../../shared/menuSnapshot";
+import { ValidatedCartItem } from "../../modules/order/order.types";
 
 const OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-realtime";
 
@@ -104,24 +105,20 @@ Acknowledge new information naturally and remember it for the call.
    - Ask about each option group **one at a time** — ask the first group, wait for the answer, then ask the next. **Never list all option groups at once. Never skip a group.**
      Example: "What size would you like — Small or Large?" → (wait) → "And which salad dressing would you like — Ranch or Caesar?" → (wait) → "And which sauce?" → (wait)
    - You MUST go through ALL option groups returned by get_food_options before moving on. Every group is required.
-   - Only after ALL groups are answered, confirm the item and ask about quantity.
-   - Repeat if adding more items.
+   - Only after ALL groups are answered, confirm the item with the customer and ask about quantity.
+   - Then call **confirm_item({ restaurantId, foodId, quantity, selectedOptions })** to save the item to the cart.
+   - These option groups are for this food only — when adding a new item, call get_food_options again for that item's foodId.
 
-5. **Confirm order summary**
-   - Summarize all selected items, quantities, options, and estimated total.
-   - Ask: "Let me confirm your order: [items]. Is that correct?"
-   - Wait for the customer to confirm before proceeding.
-
-6. **MANDATORY: One-time add-on prompt** *(YOU MUST ASK THIS — DO NOT SKIP)*
-   - ⚠️ THIS STEP IS REQUIRED. After the customer confirms their order summary, you MUST ask:
-     "Would you like to add anything else?"
-   - Do NOT suggest or name any specific food, drink, or category — you do not know what is on the menu without fetching it.
-   - You MUST NOT skip this step. You MUST NOT go to step 7 without asking this first.
-   - If they say **no** → move directly to step 7. Do NOT ask again.
-   - If they say **yes** → go back to step 3 and call get_menus → get_foods to find real items. Never suggest or name items from memory or imagination.
-     After add-on items are selected, just say what was added — do NOT repeat the full order again.
-     Do NOT offer another add-on prompt. Proceed to step 7.
+5. **Confirm the item, then add-on prompt**
+   - After confirm_item succeeds, read back what was added.
+   - Then ask ONCE: "Would you like to add anything else?"
+   - If they say **no** → move directly to step 6. Do NOT ask again.
+   - If they say **yes** → go back to step 3 and call get_menus → get_foods → get_food_options → confirm_item for the new item. Never name or suggest items from memory.
+     Do NOT offer another add-on prompt. Proceed to step 6.
    - Ask add-ons exactly ONCE. Never be pushy. Accept "no" immediately.
+
+5b. **Confirm overall order** *(only after all items confirmed and add-on declined)*
+   - Say how many items are in the cart and the estimated total. Ask: "Shall I proceed with this order?"
 
 7. **Collect delivery address**
    - If the CALLER PROFILE lists saved addresses, offer the first one — just say its details and ask "Shall I deliver there?". If yes, use it. If no, collect a new one.
@@ -129,12 +126,12 @@ Acknowledge new information naturally and remember it for the call.
    - For postcodes: customers often spell letters using city names or words (e.g. "S for Southampton, W for Winchester, 1, A, 2, B, C"). Extract only the letters and numbers — the postcode is SW1A 2BC. Never write out the full words.
    - Do not alter any field.
 
-8. **Final confirmation & create the order**
+7. **Final confirmation & create the order**
    - Before placing the order, read back the name and address in a single sentence: "Just to confirm — I'll place the order for [name], delivering to [house number] [street], [city], [postcode]. Shall I go ahead?" Wait for the customer to confirm.
    - Accept any positive response ("yes", "correct", "that's right", "go ahead", "yeah", etc.) as confirmation. Do NOT ask again if they said yes.
    - If the customer corrects something, update only that field and read the corrected detail back once, then call \`create_order\`.
    - If the customer has an existing allergen profile with allergens, call \`check_food_allergens\` with ALL foodIds before creating the order. If warnings are returned, inform the customer and wait for their confirmation before proceeding.
-   - Call \`create_order\` with the confirmed name, phone, address, and complete items list. Do not alter any field.
+   - Call \`create_order\` with the confirmed name, phone, address, and restaurantId only. ⚠️ Do NOT include items — they are automatically taken from the cart (confirmed via confirm_item).
    - After success, confirm naturally: "Your order has been placed. Delivery in about 30 minutes."
 
 ---
@@ -404,6 +401,9 @@ export function voiceService(app: FastifyInstance) {
     let lastAssistantItemId: string | null = null;
     let totalAudioMs = 0;
 
+    // Server-side cart
+    const cart: ValidatedCartItem[] = [];
+
 
     twilioWs.on("message", async (data: WebSocket.Data) => {
       let event: TwilioStreamEvent;
@@ -599,16 +599,42 @@ export function voiceService(app: FastifyInstance) {
             let result: unknown;
             try {
               const handler = handlers[fnName as keyof typeof handlers];
-              if (handler) {
+              if (!handler) {
+                result = { error: `Unknown tool: ${fnName}` };
+              } else if (fnName === "confirm_item") {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const itemResult = await (handler as (args: any) => Promise<any>)(args);
+                cart.push(itemResult.confirmedItem);
+                itemResult.cartSize = cart.length;
+                result = itemResult;
+              } else if (fnName === "create_order") {
+                if (cart.length === 0) {
+                  result = {
+                    error: "Cart is empty.",
+                    _instruction: "No items confirmed yet. Use confirm_item for each food item before calling create_order.",
+                  };
+                } else {
+                  (args as any).items = cart;
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  result = await (handler as (args: any) => Promise<unknown>)(args);
+                  if (!(result as any)?.error) {
+                    cart.length = 0;
+                  }
+                }
+              } else {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 result = await (handler as (args: any) => Promise<unknown>)(args);
-              } else {
-                result = { error: `Unknown tool: ${fnName}` };
               }
             } catch (err: unknown) {
               const message = err instanceof Error ? err.message : "Tool execution failed";
               app.log.error(`❌ Voice tool failed: ${fnName} - ${message}`);
-              result = { error: message };
+              result = {
+                error: message,
+                ...((fnName === "create_order" || fnName === "confirm_item") && {
+                  _instruction:
+                    "Do NOT tell the customer about this error. Fix the invalid ID(s) using the correct values listed in the error above, then immediately retry silently.",
+                }),
+              };
             }
 
             // Send result back to OpenAI
