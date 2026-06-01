@@ -98,7 +98,12 @@ export function toolHandlers(app: FastifyInstance) {
     },
 
     async get_food_options({ foodId }: { foodId: string }) {
-      return await option.findByFoodAvailable(foodId);
+      const food = await app.prisma.food.findUnique({
+        where: { id: foodId },
+        select: { name: true },
+      });
+      const options = await option.findByFoodAvailable(foodId);
+      return { foodName: food?.name ?? foodId, options };
     },
 
     async confirm_item({ restaurantId, foodId, quantity, selectedOptions }: {
@@ -256,7 +261,7 @@ export function getFollowUpInstruction(fnName: string): string {
     case "get_foods":
       return "Foods fetched. List ONLY the food items and prices returned in this result — never mention any food not in this result. Ask the customer what they'd like to order. When the customer picks a food, you MUST call get_food_options with that food's ID before discussing any customisation — even if you fetched options for a different item earlier in this conversation.";
     case "get_food_options":
-      return "Options fetched. Use ONLY the option groups and choices returned in this result — never invent or assume options. If the customer already stated their selections for this food earlier in the conversation, match them to the returned choiceIds and call confirm_item immediately — do NOT ask again. Otherwise, ask about each option group one at a time: ask the first group, wait for the answer, then the next, until ALL groups are answered. Only after every group is answered, call confirm_item with the foodId, quantity, and all selectedOptions. These options are specific to this food item only — never reuse them for a different food. IMPORTANT: Only call confirm_item once ALL required option groups have a customer-provided answer. If the customer did NOT specify an option for this food, ask about the missing groups FIRST — never call confirm_item with empty or guessed selectedOptions.";
+      return "FIRST: verify that `foodName` in this result matches the food the customer ordered. If the names differ (e.g. result says 'Pitta' but customer said 'Wrap'), you selected the wrong foodId — find the food whose name matches the customer's exact wording in the MENU REFERENCE and call get_food_options again with the correct foodId. Do NOT call confirm_item until the food name matches. If the result has zero options, the food has no required customisations — call confirm_item immediately without asking about options. Otherwise use ONLY the option groups and choices returned — never invent or assume options. If the customer already stated their selections for this food, match them to the returned choiceIds and call confirm_item immediately — do NOT ask again. Otherwise ask about each option group one at a time until ALL groups are answered, then call confirm_item. These options are specific to this food only — never reuse them for a different food. IMPORTANT: Only call confirm_item once ALL required option groups have a customer-provided answer — never call confirm_item with empty or guessed selectedOptions.";
     case "confirm_item":
       return "Item confirmed and added to cart. If you still have more items to confirm from the customer's initial order, do NOT ask about add-ons yet — just note this item was confirmed and immediately call confirm_item for the next item in sequence. Only show the full cart summary and ask ONCE 'Would you like to add anything else?' after ALL items from the initial request are confirmed. If yes — go back to get_menus to start fresh for the new item. If no — collect the delivery address, then call create_order (items are automatically taken from the cart — do NOT include them).";
     case "create_order":
