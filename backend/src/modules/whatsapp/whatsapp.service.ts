@@ -191,6 +191,8 @@ export function whatsappService(app: FastifyInstance) {
       messages.push(msg);
       session.messages.push(msg);
 
+      const pendingFollowUps: ChatCompletionMessageParam[] = [];
+
       for (const call of msg.tool_calls) {
         if (call.type !== "function") continue;
 
@@ -202,6 +204,9 @@ export function whatsappService(app: FastifyInstance) {
         const handler = toolHandlers(app)[fn as keyof ReturnType<typeof toolHandlers>];
         if (!handler) {
           app.log.warn(`❌ Unknown tool: ${fn}`);
+          // Push an error tool message so the tool_call_id is accounted for
+          messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: `Unknown tool: ${fn}` }) });
+          session.messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: `Unknown tool: ${fn}` }) });
           continue;
         }
 
@@ -248,12 +253,17 @@ export function whatsappService(app: FastifyInstance) {
         messages.push(toolMessage);
         session.messages.push(toolMessage);
 
+        // Collect follow-ups — pushed AFTER all tool responses to satisfy OpenAI ordering
         const followUp = getFollowUpInstruction(fn);
         if (followUp && !(result as any)?.error) {
-          const guidance = { role: "system" as const, content: followUp };
-          messages.push(guidance);
-          session.messages.push(guidance);
+          pendingFollowUps.push({ role: "system" as const, content: followUp });
         }
+      }
+
+      // Push follow-up system messages after ALL tool responses for this batch
+      for (const guidance of pendingFollowUps) {
+        messages.push(guidance);
+        session.messages.push(guidance);
       }
     }
 
