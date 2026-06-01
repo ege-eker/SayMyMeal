@@ -95,7 +95,7 @@ If the caller already names a food item with its options (e.g. "a large chicken 
 2. Call **get_food_options** for the food.
 3. Match the stated options to the correct choiceIds from the results.
 4. If a REQUIRED option group has no clear match, ask only about that gap.
-5. Call **confirm_item** with the resolved IDs.
+5. Call **confirm_item** for each food **one at a time, in sequence** — never batch multiple confirm_item calls in a single response. Wait for each result before proceeding to the next food.
 6. Confirm the item and continue.
 
 This applies to single items and full order lists alike. Skip the step-by-step option questioning whenever the customer has already provided their selections.
@@ -419,6 +419,9 @@ export function voiceService(app: FastifyInstance) {
     // Server-side cart
     const cart: ValidatedCartItem[] = [];
 
+    // Sequential confirm_item enforcement — reset per response
+    let confirmItemProcessedInCurrentResponse = false;
+
 
     twilioWs.on("message", async (data: WebSocket.Data) => {
       let event: TwilioStreamEvent;
@@ -536,6 +539,7 @@ export function voiceService(app: FastifyInstance) {
           if (msg.type === "response.done" || msg.type === "response.cancelled") {
             lastAssistantItemId = null;
             totalAudioMs = 0;
+            confirmItemProcessedInCurrentResponse = false;
           }
 
           // Barge-in: user started speaking — clear Twilio buffer and truncate AI context
@@ -611,6 +615,28 @@ export function voiceService(app: FastifyInstance) {
 
             app.log.info(`🧰 Voice tool call: ${fnName} with ${JSON.stringify(args)}`);
 
+            // Reject parallel confirm_item calls — must be sequential
+            if (fnName === "confirm_item" && confirmItemProcessedInCurrentResponse) {
+              openaiWs.send(JSON.stringify({
+                type: "conversation.item.create",
+                item: {
+                  type: "function_call_output",
+                  call_id: callId,
+                  output: JSON.stringify({
+                    error: "confirm_item was called alongside another confirm_item in the same response.",
+                    _instruction:
+                      "You must call confirm_item one at a time. This item was not processed. " +
+                      "After receiving the result for the current confirm_item, call confirm_item again for this item.",
+                  }),
+                },
+              }));
+              openaiWs.send(JSON.stringify({ type: "response.create" }));
+              delete pendingArgs[callId];
+              delete pendingCalls[callId];
+              return;
+            }
+            if (fnName === "confirm_item") confirmItemProcessedInCurrentResponse = true;
+
             let result: unknown;
             try {
               const handler = handlers[fnName as keyof typeof handlers];
@@ -646,9 +672,12 @@ export function voiceService(app: FastifyInstance) {
               let _instruction: string | undefined;
               if (fnName === "confirm_item" && message.includes("Missing required selection")) {
                 _instruction =
-                  "The customer has not specified a choice for this required option group. " +
-                  "Ask the customer about this specific option naturally — present only that option group and its choices. " +
-                  "Do NOT guess, auto-select, or retry silently. Do NOT mention an error.";
+                  "First, check whether the food name in this error matches what the customer ordered. " +
+                  "If the name in the error is different (e.g. error says 'Pitta' but customer said 'Wrap'), " +
+                  "you have used the wrong foodId — find the correct one in the MENU REFERENCE and retry confirm_item with the correct ID. " +
+                  "If the food name is correct and the customer simply did not specify this option, " +
+                  "ask the customer now — present only that option group and its choices. " +
+                  "Do NOT proceed to checkout, order summary, or add-on prompts until this item is confirmed.";
               } else if (fnName === "create_order" || fnName === "confirm_item") {
                 _instruction =
                   "Do NOT tell the customer about this error. Fix the invalid ID(s) using the correct values listed in the error above, then immediately retry silently.";

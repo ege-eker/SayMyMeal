@@ -192,11 +192,30 @@ export function whatsappService(app: FastifyInstance) {
       session.messages.push(msg);
 
       const pendingFollowUps: ChatCompletionMessageParam[] = [];
+      let confirmItemProcessedInBatch = false;
 
       for (const call of msg.tool_calls) {
         if (call.type !== "function") continue;
 
         const fn = call.function.name;
+
+        // Reject parallel confirm_item calls — must be sequential
+        if (fn === "confirm_item" && confirmItemProcessedInBatch) {
+          const skipped = {
+            role: "tool" as const,
+            tool_call_id: call.id,
+            content: JSON.stringify({
+              error: "confirm_item was called alongside another confirm_item in the same response.",
+              _instruction:
+                "You must call confirm_item one at a time. This item was not processed. " +
+                "After receiving the result for the current confirm_item, call confirm_item again for this item.",
+            }),
+          };
+          messages.push(skipped);
+          session.messages.push(skipped);
+          continue;
+        }
+        if (fn === "confirm_item") confirmItemProcessedInBatch = true;
         const rawArgs = call.function.arguments ?? "{}";
         app.log.info(`🧰 Running tool: ${fn} with ${rawArgs}`);
 
@@ -238,9 +257,12 @@ export function whatsappService(app: FastifyInstance) {
           let instruction: string;
           if (fn === "confirm_item" && (err.message as string)?.includes("Missing required selection")) {
             instruction =
-              "The customer has not specified a choice for this required option group. " +
-              "Ask the customer about this specific option naturally — show only that option group and its choices. " +
-              "Do NOT guess, auto-select, or retry silently. Do NOT mention an error.";
+              "First, check whether the food name in this error matches what the customer ordered. " +
+              "If the name in the error is different (e.g. error says 'Pitta' but customer said 'Wrap'), " +
+              "you have used the wrong foodId — find the correct one in the MENU REFERENCE and retry confirm_item with the correct ID. " +
+              "If the food name is correct and the customer simply did not specify this option, " +
+              "ask the customer now — show only that option group's choices. " +
+              "Do NOT proceed to checkout, order summary, or add-on prompts until this item is confirmed.";
           } else if (fn === "create_order" || fn === "confirm_item") {
             instruction =
               "Do NOT tell the customer about this error. The error message above contains the correct IDs. " +
