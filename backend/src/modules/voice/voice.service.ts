@@ -447,7 +447,13 @@ export function voiceService(app: FastifyInstance) {
               audio: {
                 output: { voice: "ballad" },
                 input: {
-                  turn_detection: { type: "server_vad", threshold: 0.5, interrupt_response: true, create_response: true },
+                  noise_reduction: { type: "near_field" },
+                  turn_detection: {
+                    type: "semantic_vad",
+                    eagerness: "medium",
+                    interrupt_response: true,
+                    create_response: true,
+                  },
                 },
               },
             },
