@@ -12,6 +12,7 @@ import {
 import { resolveCaller, ResolvedCaller } from "../../shared/identityResolver";
 import { normalizePhone } from "../../shared/phone";
 import { renderCallerProfileBlock } from "../../shared/callerProfilePrompt";
+import { menuSnapshotBlock, MenuSnapshot } from "../../shared/menuSnapshot";
 
 const OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-realtime";
 
@@ -27,9 +28,11 @@ function buildInstructions(params: {
   isBusy: boolean;
   busyExtraMinutes: number;
   caller?: ResolvedCaller;
+  menus?: MenuSnapshot[];
 }): string {
-  const { restaurantName, restaurantId, callerPhone, acceptingOrders, isBusy, busyExtraMinutes, caller } = params;
+  const { restaurantName, restaurantId, callerPhone, acceptingOrders, isBusy, busyExtraMinutes, caller, menus } = params;
   const callerProfileBlock = renderCallerProfileBlock(caller);
+  const menuBlock = menuSnapshotBlock(menus ?? []);
 
   return `
 ### CALLER PROFILE (personalise based on this)
@@ -59,8 +62,18 @@ You represent only **${restaurantName}**.
 
 ---
 
+### MENU REFERENCE (pre-loaded from database — authoritative)
+ONLY reference menus and foods listed here. NEVER invent names, prices, or IDs not in this list.
+When listing menus or foods to the caller, read directly from this section.
+You may still call get_menus or get_foods during the conversation — their results match this data.
+Always call get_food_options when a customer picks a food item (options are not pre-loaded here).
+
+${menuBlock}
+
+---
+
 ### CONTEXT & FUNCTION USE
-You start with absolutely no knowledge of menus, foods, or options. You MUST fetch everything before mentioning it.
+You have the menu and food data pre-loaded in the MENU REFERENCE section above. Use it directly.
 - If the customer asks what's available → call **\`get_menus\`** first. NEVER list or describe any food item before calling get_menus and get_foods.
 - When they choose a menu → call **\`get_foods\`**. Only mention foods returned in the result.
 - When they choose a food → call **\`get_food_options\`**. Only mention options returned in the result.
@@ -410,7 +423,20 @@ export function voiceService(app: FastifyInstance) {
         const isBusy = params.isBusy === "true";
         const busyExtraMinutes = parseInt(params.busyExtraMinutes) || 15;
         const normalizedPhone = normalizePhone(params.callerPhone);
-        const caller = await resolveCaller(app, normalizedPhone);
+        const [caller, menus] = await Promise.all([
+          resolveCaller(app, normalizedPhone),
+          app.prisma.menu.findMany({
+            where: { restaurantId: params.restaurantId },
+            select: {
+              id: true,
+              name: true,
+              foods: {
+                where: { isAvailable: true },
+                select: { id: true, name: true, basePrice: true },
+              },
+            },
+          }),
+        ]);
 
         const callerName =
           caller.type === "user" ? caller.user.name :
@@ -440,6 +466,7 @@ export function voiceService(app: FastifyInstance) {
                 isBusy,
                 busyExtraMinutes,
                 caller,
+                menus,
               }),
               tools: toRealtimeTools(tools),
               tool_choice: "auto",

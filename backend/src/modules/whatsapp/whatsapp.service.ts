@@ -5,6 +5,7 @@ import { toolHandlers } from "./toolHandlers";
 import { instructionsTemplate } from "./instructions";
 import { normalizePhone } from "../blacklist/blacklist.service";
 import { resolveCaller, ResolvedCaller } from "../../shared/identityResolver";
+import { MenuSnapshot } from "../../shared/menuSnapshot";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 interface SessionState {
@@ -16,7 +17,23 @@ interface SessionState {
 async function loadRestaurantById(app: FastifyInstance, restaurantId: string) {
   const restaurant = await app.prisma.restaurant.findUnique({
     where: { id: restaurantId },
-    select: { id: true, name: true, isBusy: true, busyExtraMinutes: true, acceptingOrders: true },
+    select: {
+      id: true,
+      name: true,
+      isBusy: true,
+      busyExtraMinutes: true,
+      acceptingOrders: true,
+      menus: {
+        select: {
+          id: true,
+          name: true,
+          foods: {
+            where: { isAvailable: true },
+            select: { id: true, name: true, basePrice: true },
+          },
+        },
+      },
+    },
   });
   if (!restaurant) throw new Error(`Restaurant not found: ${restaurantId}`);
   return restaurant;
@@ -138,7 +155,7 @@ export function whatsappService(app: FastifyInstance) {
   async function processWithLLM(
     sKey: string,
     session: SessionState,
-    restaurant: { id: string; name: string },
+    restaurant: { id: string; name: string; isBusy?: boolean; busyExtraMinutes?: number; acceptingOrders?: boolean; menus?: MenuSnapshot[] },
     phone: string
   ): Promise<string> {
     let finalText = "";

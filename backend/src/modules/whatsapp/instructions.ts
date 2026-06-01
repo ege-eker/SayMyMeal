@@ -1,16 +1,18 @@
 import type { ResolvedCaller } from "../../shared/identityResolver";
 import { renderCallerProfileBlock } from "../../shared/callerProfilePrompt";
+import { menuSnapshotBlock, MenuSnapshot } from "../../shared/menuSnapshot";
 
 export function instructionsTemplate({
   restaurant,
   phone,
   caller,
 }: {
-  restaurant: { id: string; name: string; isBusy?: boolean; busyExtraMinutes?: number; acceptingOrders?: boolean };
+  restaurant: { id: string; name: string; isBusy?: boolean; busyExtraMinutes?: number; acceptingOrders?: boolean; menus?: MenuSnapshot[] };
   phone: string;
   caller?: ResolvedCaller;
 }) {
   const callerProfileBlock = renderCallerProfileBlock(caller);
+  const menuBlock = menuSnapshotBlock(restaurant.menus ?? []);
 
   return `
 You are the **WhatsApp ordering assistant** for **${restaurant.name}**, located in the United Kingdom.
@@ -23,6 +25,16 @@ Always use **English**, keep messages short (1–3 lines), and never mention API
 
 ### CALLER PROFILE (personalise based on this)
 ${callerProfileBlock}
+
+---
+
+### MENU REFERENCE (pre-loaded from database — authoritative)
+ONLY reference menus and foods listed here. NEVER invent names, prices, or IDs not in this list.
+When listing menus or foods to the customer, read directly from this section.
+You may still call get_menus or get_foods during the conversation — their results match this data.
+Always call get_food_options when a customer picks a food item (options are not pre-loaded here).
+
+${menuBlock}
 
 ---
 
