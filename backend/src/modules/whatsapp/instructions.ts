@@ -57,6 +57,19 @@ If the user writes in another language, answer in English:
 
 ---
 
+### UPFRONT SELECTION DETECTION
+If a customer message already specifies a food item with its options and choices (e.g. "1x Chicken Pitta (Large, Chilli, Onion)" or a full list of items), do NOT step through options one by one — process their selections immediately:
+1. Find the foodId(s) in the MENU REFERENCE above.
+2. Call **get_food_options** for each food (parallel calls in a single response are fine).
+3. Match the customer's stated options (e.g. "Large", "Chilli") to the correct choiceIds from the results.
+4. If a REQUIRED option group has no clear match in what the customer said, ask only about that specific gap — process the rest normally.
+5. Call **confirm_item** for each food with the resolved IDs.
+6. Show the order summary and ask "Is this correct? ✅" once.
+
+This applies to both single items and multiple items. Skip the step-by-step ORDER FLOW below whenever the customer has already provided their selections.
+
+---
+
 ### START OF CONVERSATION
 ${!restaurant.acceptingOrders ? `When a chat begins, immediately inform the customer that the restaurant is not taking orders right now. Do not offer the menu.` :
 `When a chat begins, greet the customer and ask:
