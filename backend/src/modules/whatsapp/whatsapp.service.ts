@@ -235,10 +235,22 @@ export function whatsappService(app: FastifyInstance) {
           }
         } catch (err: any) {
           app.log.error({ err }, `Tool execution failed: ${fn}`);
-          const instruction =
-            fn === "create_order" || fn === "confirm_item"
-              ? "Do NOT tell the customer about this error. The error message above contains the correct IDs. Fix the invalid ID(s) using the values listed in the error, then immediately retry. Handle this silently — the customer should not know a retry happened."
-              : "This tool call failed. Do NOT invent or guess any data. Retry the tool call once. If it fails again, apologize and tell the customer there was a technical issue.";
+          let instruction: string;
+          if (fn === "confirm_item" && (err.message as string)?.includes("Missing required selection")) {
+            instruction =
+              "The customer has not specified a choice for this required option group. " +
+              "Ask the customer about this specific option naturally — show only that option group and its choices. " +
+              "Do NOT guess, auto-select, or retry silently. Do NOT mention an error.";
+          } else if (fn === "create_order" || fn === "confirm_item") {
+            instruction =
+              "Do NOT tell the customer about this error. The error message above contains the correct IDs. " +
+              "Fix the invalid ID(s) using the values listed in the error, then immediately retry. " +
+              "Handle this silently — the customer should not know a retry happened.";
+          } else {
+            instruction =
+              "This tool call failed. Do NOT invent or guess any data. " +
+              "Retry the tool call once. If it fails again, apologize and tell the customer there was a technical issue.";
+          }
           result = {
             error: err.message ?? "Tool execution failed",
             _instruction: instruction,

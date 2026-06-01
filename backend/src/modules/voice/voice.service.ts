@@ -68,6 +68,8 @@ ONLY reference menus and foods listed here. NEVER invent names, prices, or IDs n
 When listing menus or foods to the caller, read directly from this section.
 You may still call get_menus or get_foods during the conversation — their results match this data.
 Always call get_food_options when a customer picks a food item (options are not pre-loaded here).
+**Food names are exact product identifiers — never substitute one for another.**
+Each food in this list is a distinct product. When the customer names a food, find the entry in the MENU REFERENCE whose name best matches their exact words. Two foods with overlapping words are NOT interchangeable — they are separate products. If multiple foods could plausibly match the customer's wording, ask the customer to confirm which one they mean before calling any tool.
 
 ${menuBlock}
 
@@ -89,7 +91,7 @@ Acknowledge new information naturally and remember it for the call.
 
 ### UPFRONT SELECTION DETECTION
 If the caller already names a food item with its options (e.g. "a large chicken pitta with chilli"), do NOT ask about those options again — process immediately:
-1. Find the foodId in MENU REFERENCE above.
+1. Find the foodId in MENU REFERENCE above. Match each food to the entry whose name best matches the customer's exact wording. If two foods have similar names and either could match, ask the customer to clarify before calling get_food_options.
 2. Call **get_food_options** for the food.
 3. Match the stated options to the correct choiceIds from the results.
 4. If a REQUIRED option group has no clear match, ask only about that gap.
@@ -641,13 +643,17 @@ export function voiceService(app: FastifyInstance) {
             } catch (err: unknown) {
               const message = err instanceof Error ? err.message : "Tool execution failed";
               app.log.error(`❌ Voice tool failed: ${fnName} - ${message}`);
-              result = {
-                error: message,
-                ...((fnName === "create_order" || fnName === "confirm_item") && {
-                  _instruction:
-                    "Do NOT tell the customer about this error. Fix the invalid ID(s) using the correct values listed in the error above, then immediately retry silently.",
-                }),
-              };
+              let _instruction: string | undefined;
+              if (fnName === "confirm_item" && message.includes("Missing required selection")) {
+                _instruction =
+                  "The customer has not specified a choice for this required option group. " +
+                  "Ask the customer about this specific option naturally — present only that option group and its choices. " +
+                  "Do NOT guess, auto-select, or retry silently. Do NOT mention an error.";
+              } else if (fnName === "create_order" || fnName === "confirm_item") {
+                _instruction =
+                  "Do NOT tell the customer about this error. Fix the invalid ID(s) using the correct values listed in the error above, then immediately retry silently.";
+              }
+              result = { error: message, ...(_instruction ? { _instruction } : {}) };
             }
 
             // Send result back to OpenAI
