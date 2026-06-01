@@ -192,30 +192,11 @@ export function whatsappService(app: FastifyInstance) {
       session.messages.push(msg);
 
       const pendingFollowUps: ChatCompletionMessageParam[] = [];
-      let confirmItemProcessedInBatch = false;
 
       for (const call of msg.tool_calls) {
         if (call.type !== "function") continue;
 
         const fn = call.function.name;
-
-        // Reject parallel confirm_item calls — must be sequential
-        if (fn === "confirm_item" && confirmItemProcessedInBatch) {
-          const skipped = {
-            role: "tool" as const,
-            tool_call_id: call.id,
-            content: JSON.stringify({
-              error: "confirm_item was called alongside another confirm_item in the same response.",
-              _instruction:
-                "You must call confirm_item one at a time. This item was not processed. " +
-                "After receiving the result for the current confirm_item, call confirm_item again for this item.",
-            }),
-          };
-          messages.push(skipped);
-          session.messages.push(skipped);
-          continue;
-        }
-        if (fn === "confirm_item") confirmItemProcessedInBatch = true;
         const rawArgs = call.function.arguments ?? "{}";
         app.log.info(`🧰 Running tool: ${fn} with ${rawArgs}`);
 
