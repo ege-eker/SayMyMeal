@@ -12,7 +12,7 @@ export async function resolveCaller(app: FastifyInstance, phone: string): Promis
 
   const user = await app.prisma.user.findUnique({
     where: { phone: normalized },
-    include: { addresses: true },
+    include: { addresses: { orderBy: { createdAt: "desc" } } },
   });
   if (user) {
     const recentOrders = await app.prisma.order.findMany({
@@ -25,7 +25,7 @@ export async function resolveCaller(app: FastifyInstance, phone: string): Promis
 
   const profile = await app.prisma.whatsAppProfile.findUnique({
     where: { phone: normalized },
-    include: { addresses: true },
+    include: { addresses: { orderBy: { createdAt: "desc" } } },
   });
   if (profile) {
     const recentOrders = await app.prisma.order.findMany({

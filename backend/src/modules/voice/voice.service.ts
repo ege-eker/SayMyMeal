@@ -73,6 +73,7 @@ You may still call get_menus or get_foods during the conversation — their resu
 Always call get_food_options when a customer picks a food item (options are not pre-loaded here).
 **Food names are exact product identifiers — never substitute one for another.**
 Each food in this list is a distinct product. When the customer names a food, find the entry in the MENU REFERENCE whose name best matches their exact words. Two foods with overlapping words are NOT interchangeable — they are separate products. If multiple foods could plausibly match the customer's wording, ask the customer to confirm which one they mean before calling any tool.
+**Generic/category words are NOT food names.** If the customer uses a word that appears inside multiple food names but is not itself a food name (e.g. "kebab", "wrap", "burger", "pizza", "drink", "side"), it does NOT match any specific product. Never pick the first matching item automatically. Instead, ask which specific item they want: list all matching foods and let the customer choose.
 ⚠️ **The MENU REFERENCE does NOT include food options or customisations.** You have zero knowledge of what sizes, sauces, toppings, or any other options exist for any food item. NEVER confirm, deny, or comment on any option or customisation before calling get_food_options for that food. If the customer mentions an option (e.g. "Large"), do NOT say it doesn't exist — call get_food_options first to check.
 
 ${menuBlock}
@@ -95,12 +96,12 @@ Acknowledge new information naturally and remember it for the call.
 
 ### UPFRONT SELECTION DETECTION
 If the caller already names a food item with its options (e.g. "a large chicken pitta with chilli"), do NOT ask about those options again — process immediately:
-1. Find the foodId in MENU REFERENCE above. Match each food to the entry whose name best matches the customer's exact wording. If two foods have similar names and either could match, ask the customer to clarify before calling get_food_options.
+1. Find the foodId in MENU REFERENCE above. Match each food to the entry whose name best matches the customer's exact wording. A word is a valid match ONLY if it matches one specific food name exactly. If the customer's word is a generic/category term that appears in multiple food names (e.g. "kebab", "wrap", "burger"), list all matching foods and ask which one they mean — never pick one automatically. If two specific food names are similar and either could match, also ask the customer to clarify before calling get_food_options.
 2. Call **get_food_options** for the food.
 3. Match the stated options to the correct choiceIds from the results.
 4. If a REQUIRED option group has no clear match, ask only about that gap.
-5. Call **confirm_item** for each food with the resolved IDs. Parallel calls are fine if all foods have been verified and their options resolved.
-6. Confirm the item and continue.
+5. Call **request_item_confirmation** with a summary for each item, then read it back to the customer and ask "Shall I add this to your order?" — wait for an explicit yes (yes / sure / go ahead / ok / correct / add it).
+6. Call **confirm_item** for each food ONLY after that explicit confirmation. **The server enforces this — confirm_item will be rejected without a prior request_item_confirmation.**
 
 This applies to single items and full order lists alike. Skip the step-by-step option questioning whenever the customer has already provided their selections.
 
@@ -124,8 +125,9 @@ This applies to single items and full order lists alike. Skip the step-by-step o
    - Ask about each option group **one at a time** — ask the first group, wait for the answer, then ask the next. **Never list all option groups at once. Never skip a group.**
      Example: "What size would you like — Small or Large?" → (wait) → "And which salad dressing would you like — Ranch or Caesar?" → (wait) → "And which sauce?" → (wait)
    - You MUST go through ALL option groups returned by get_food_options before moving on. Every group is required.
-   - Only after ALL groups are answered, confirm the item with the customer and ask about quantity.
-   - Then call **confirm_item({ restaurantId, foodId, quantity, selectedOptions })** to save the item to the cart.
+   - Only after ALL groups are answered, call **request_item_confirmation** with the item summary, read it back and ask: "Shall I add this to your order?"
+   - Call **confirm_item({ restaurantId, foodId, quantity, selectedOptions })** ONLY after the customer gives an explicit yes. **The server enforces this — confirm_item will be rejected without a prior request_item_confirmation.**
+   - If the customer asks to remove an item already in the cart, call **remove_item({ foodId })** with the foodId from the MENU REFERENCE, then confirm the removal.
    - These option groups are for this food only — when adding a new item, call get_food_options again for that item's foodId.
 
 5. **Confirm the item, then add-on prompt**
@@ -420,8 +422,9 @@ export function voiceService(app: FastifyInstance) {
     let lastAssistantItemId: string | null = null;
     let totalAudioMs = 0;
 
-    // Server-side cart
+    // Server-side cart and confirmation state
     const cart: ValidatedCartItem[] = [];
+    const pendingConfirmations = new Set<string>();
 
 
     twilioWs.on("message", async (data: WebSocket.Data) => {
@@ -620,14 +623,47 @@ export function voiceService(app: FastifyInstance) {
             let result: unknown;
             try {
               const handler = handlers[fnName as keyof typeof handlers];
-              if (!handler) {
+              if (fnName === "request_item_confirmation") {
+                const { items } = args as { items: { foodId: string; summary: string }[] };
+                items.forEach((i) => pendingConfirmations.add(i.foodId));
+                result = {
+                  summaryLines: items.map((i) => i.summary),
+                  message: "Summary shown to customer. Wait for explicit yes before calling confirm_item.",
+                };
+              } else if (fnName === "remove_item") {
+                const { foodId } = args as { foodId: string };
+                let idx = -1;
+                for (let i = cart.length - 1; i >= 0; i--) {
+                  if (cart[i].foodId === foodId) { idx = i; break; }
+                }
+                if (idx === -1) {
+                  result = {
+                    error: `No item with foodId "${foodId}" in cart.`,
+                    _instruction: "The item was not in the cart. Check the cart contents and inform the customer.",
+                  };
+                } else {
+                  const [removed] = cart.splice(idx, 1);
+                  result = { removed: removed.foodName, cartSize: cart.length };
+                }
+              } else if (!handler) {
                 result = { error: `Unknown tool: ${fnName}` };
               } else if (fnName === "confirm_item") {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const itemResult = await (handler as (args: any) => Promise<any>)(args);
-                cart.push(itemResult.confirmedItem);
-                itemResult.cartSize = cart.length;
-                result = itemResult;
+                const { foodId } = args as { foodId: string };
+                if (!pendingConfirmations.has(foodId)) {
+                  result = {
+                    error: "Customer has not confirmed this item.",
+                    _instruction:
+                      "Call request_item_confirmation with the item summary first. " +
+                      "Present the summary to the customer and wait for an explicit yes before calling confirm_item.",
+                  };
+                } else {
+                  pendingConfirmations.delete(foodId);
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const itemResult = await (handler as (args: any) => Promise<any>)(args);
+                  cart.push(itemResult.confirmedItem);
+                  itemResult.cartSize = cart.length;
+                  result = itemResult;
+                }
               } else if (fnName === "create_order") {
                 if (cart.length === 0) {
                   result = {

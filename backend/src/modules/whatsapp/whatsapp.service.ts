@@ -14,6 +14,7 @@ interface SessionState {
   lastUpdated: number;
   caller?: ResolvedCaller;
   cart: ValidatedCartItem[];
+  pendingConfirmations: Set<string>;
 }
 
 async function loadRestaurantById(app: FastifyInstance, restaurantId: string) {
@@ -126,7 +127,7 @@ export function whatsappService(app: FastifyInstance) {
 
     const key = sessionKey(restaurantId, phone);
     const session =
-      sessions.get(key) ?? { messages: [], lastUpdated: Date.now(), cart: [] };
+      sessions.get(key) ?? { messages: [], lastUpdated: Date.now(), cart: [], pendingConfirmations: new Set<string>() };
     session.lastUpdated = Date.now();
 
     if (!session.caller) {
@@ -193,6 +194,7 @@ export function whatsappService(app: FastifyInstance) {
       session.messages.push(msg);
 
       const pendingFollowUps: ChatCompletionMessageParam[] = [];
+      let confirmationSetThisBatch = false;
 
       for (const call of msg.tool_calls) {
         if (call.type !== "function") continue;
@@ -203,9 +205,53 @@ export function whatsappService(app: FastifyInstance) {
 
         const args = JSON.parse(rawArgs);
         const handler = toolHandlers(app)[fn as keyof ReturnType<typeof toolHandlers>];
+
+        // request_item_confirmation and remove_item are handled inline (no DB call)
+        if (fn === "request_item_confirmation") {
+          const { items } = args as { items: { foodId: string; summary: string }[] };
+          items.forEach((i) => session.pendingConfirmations.add(i.foodId));
+          confirmationSetThisBatch = true;
+          const toolMessage = {
+            role: "tool" as const,
+            tool_call_id: call.id,
+            content: JSON.stringify({
+              summaryLines: items.map((i) => i.summary),
+              message: "Summary shown to customer. Wait for explicit yes before calling confirm_item.",
+            }),
+          };
+          messages.push(toolMessage);
+          session.messages.push(toolMessage);
+          continue;
+        }
+
+        if (fn === "remove_item") {
+          const { foodId } = args as { foodId: string };
+          let idx = -1;
+          for (let i = session.cart.length - 1; i >= 0; i--) {
+            if (session.cart[i].foodId === foodId) { idx = i; break; }
+          }
+          let removeResult: unknown;
+          if (idx === -1) {
+            removeResult = {
+              error: `No item with foodId "${foodId}" in cart.`,
+              _instruction: "The item was not in the cart. Check the cart contents and inform the customer.",
+            };
+          } else {
+            const [removed] = session.cart.splice(idx, 1);
+            removeResult = { removed: removed.foodName, cartSize: session.cart.length };
+          }
+          const toolMessage = {
+            role: "tool" as const,
+            tool_call_id: call.id,
+            content: JSON.stringify(removeResult),
+          };
+          messages.push(toolMessage);
+          session.messages.push(toolMessage);
+          continue;
+        }
+
         if (!handler) {
           app.log.warn(`❌ Unknown tool: ${fn}`);
-          // Push an error tool message so the tool_call_id is accounted for
           messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: `Unknown tool: ${fn}` }) });
           session.messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: `Unknown tool: ${fn}` }) });
           continue;
@@ -214,10 +260,21 @@ export function whatsappService(app: FastifyInstance) {
         let result: unknown;
         try {
           if (fn === "confirm_item") {
-            const itemResult = await handler(args) as Awaited<ReturnType<ReturnType<typeof toolHandlers>["confirm_item"]>>;
-            session.cart.push(itemResult.confirmedItem);
-            itemResult.cartSize = session.cart.length;
-            result = itemResult;
+            const { foodId } = args as { foodId: string };
+            if (!session.pendingConfirmations.has(foodId) || confirmationSetThisBatch) {
+              result = {
+                error: "Customer has not confirmed this item.",
+                _instruction:
+                  "Call request_item_confirmation with the item summary first. " +
+                  "Present the summary to the customer and wait for an explicit yes before calling confirm_item.",
+              };
+            } else {
+              session.pendingConfirmations.delete(foodId);
+              const itemResult = await handler(args) as Awaited<ReturnType<ReturnType<typeof toolHandlers>["confirm_item"]>>;
+              session.cart.push(itemResult.confirmedItem);
+              itemResult.cartSize = session.cart.length;
+              result = itemResult;
+            }
           } else if (fn === "create_order") {
             if (session.cart.length === 0) {
               result = {

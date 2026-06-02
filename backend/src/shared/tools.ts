@@ -71,9 +71,50 @@ export const tools: ChatCompletionTool[] = [
   {
     type: "function",
     function: {
+      name: "request_item_confirmation",
+      description:
+        "Show the customer a summary of one or more items and wait for their explicit confirmation before adding to cart. MUST be called before confirm_item — the server will reject confirm_item if this step was skipped.",
+      parameters: {
+        type: "object",
+        required: ["items"],
+        properties: {
+          items: {
+            type: "array",
+            description: "Items to present for confirmation.",
+            items: {
+              type: "object",
+              required: ["foodId", "summary"],
+              properties: {
+                foodId: { type: "string", description: "foodId of the item." },
+                summary: { type: "string", description: "Human-readable summary, e.g. '1x Chicken Pitta (Large, Chilli) — £9.50'" },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "remove_item",
+      description:
+        "Remove a previously confirmed item from the cart. Use when the customer says they no longer want an item that was already added.",
+      parameters: {
+        type: "object",
+        required: ["foodId"],
+        properties: {
+          foodId: { type: "string", description: "The foodId of the item to remove from the cart." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "confirm_item",
       description:
-        "Confirm and add a food item with its selected options to the order cart. Call this after the customer has answered ALL option groups for a food item and confirmed the selection. Do NOT call create_order until all desired items have been confirmed with this tool.",
+        "Confirm and add a food item with its selected options to the order cart. ONLY call this after request_item_confirmation has been called and the customer has given an explicit yes. The server will reject this call if request_item_confirmation was not called first in a prior round-trip.",
       parameters: {
         type: "object",
         required: ["restaurantId", "foodId", "quantity"],
