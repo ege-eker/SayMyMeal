@@ -42,6 +42,7 @@ export const restaurantService = (app: FastifyInstance) => ({
         rating: data.rating,
         isBusy: data.isBusy,
         busyExtraMinutes: data.busyExtraMinutes,
+        defaultDeliveryMinutes: data.defaultDeliveryMinutes,
         acceptingOrders: data.acceptingOrders,
         whatsappPhone: data.whatsappPhone !== undefined ? data.whatsappPhone : undefined,
         voicePhone: data.voicePhone !== undefined ? data.voicePhone : undefined,
@@ -90,14 +91,14 @@ export const restaurantService = (app: FastifyInstance) => ({
   async findByVoicePhone(phone: string) {
     return app.prisma.restaurant.findUnique({
       where: { voicePhone: phone },
-      select: { id: true, name: true, isBusy: true, busyExtraMinutes: true, acceptingOrders: true },
+      select: { id: true, name: true, isBusy: true, busyExtraMinutes: true, defaultDeliveryMinutes: true, acceptingOrders: true },
     });
   },
 
   async findByWhatsappPhone(phone: string) {
     return app.prisma.restaurant.findUnique({
       where: { whatsappPhone: phone },
-      select: { id: true, name: true, isBusy: true, busyExtraMinutes: true, acceptingOrders: true },
+      select: { id: true, name: true, isBusy: true, busyExtraMinutes: true, defaultDeliveryMinutes: true, acceptingOrders: true },
     });
   },
 

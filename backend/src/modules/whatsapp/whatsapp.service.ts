@@ -24,6 +24,7 @@ async function loadRestaurantById(app: FastifyInstance, restaurantId: string) {
       name: true,
       isBusy: true,
       busyExtraMinutes: true,
+      defaultDeliveryMinutes: true,
       acceptingOrders: true,
       menus: {
         select: {
@@ -157,7 +158,7 @@ export function whatsappService(app: FastifyInstance) {
   async function processWithLLM(
     sKey: string,
     session: SessionState,
-    restaurant: { id: string; name: string; isBusy?: boolean; busyExtraMinutes?: number; acceptingOrders?: boolean; menus?: MenuSnapshot[] },
+    restaurant: { id: string; name: string; isBusy?: boolean; busyExtraMinutes?: number; defaultDeliveryMinutes?: number; acceptingOrders?: boolean; menus?: MenuSnapshot[] },
     phone: string
   ): Promise<string> {
     let finalText = "";

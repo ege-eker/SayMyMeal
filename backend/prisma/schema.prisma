@@ -46,9 +46,10 @@ model Restaurant {
   blacklist     Blacklist[]
   owner         User?    @relation(fields: [ownerId], references: [id])
   ownerId       String?
-  isBusy           Boolean  @default(false)
-  busyExtraMinutes Int      @default(15)
-  acceptingOrders  Boolean  @default(true)
+  isBusy                Boolean  @default(false)
+  busyExtraMinutes      Int      @default(15)
+  defaultDeliveryMinutes Int     @default(30)
+  acceptingOrders       Boolean  @default(true)
   whatsappPhone    String?  @unique
   voicePhone       String?  @unique
   twilioPhoneSid   String?  @unique

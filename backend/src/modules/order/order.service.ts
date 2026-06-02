@@ -74,7 +74,13 @@ export const orderService = (app: FastifyInstance) => ({
 
       for (const item of data.items) {
         if (!validFoodIds.includes(item.foodId)) {
-          throw new BadRequestError(`Invalid foodId: ${item.foodId}, please check the menu and try again.`);
+          const foodList = allFoods
+            .filter((f) => f.isAvailable)
+            .map((f) => `"${f.name}" [foodId: ${f.id}]`)
+            .join(", ");
+          throw new BadRequestError(
+            `Invalid foodId: "${item.foodId}". Use one of the correct foodIds: ${foodList}.`
+          );
         }
 
         const foodOptions = await app.prisma.foodOption.findMany({

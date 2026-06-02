@@ -28,12 +28,15 @@ function buildInstructions(params: {
   acceptingOrders: boolean;
   isBusy: boolean;
   busyExtraMinutes: number;
+  defaultDeliveryMinutes: number;
   caller?: ResolvedCaller;
   menus?: MenuSnapshot[];
 }): string {
-  const { restaurantName, restaurantId, callerPhone, acceptingOrders, isBusy, busyExtraMinutes, caller, menus } = params;
+  const { restaurantName, restaurantId, callerPhone, acceptingOrders, isBusy, busyExtraMinutes, defaultDeliveryMinutes, caller, menus } = params;
   const callerProfileBlock = renderCallerProfileBlock(caller);
   const menuBlock = menuSnapshotBlock(menus ?? []);
+  const baseEta = defaultDeliveryMinutes;
+  const eta = baseEta + (isBusy ? busyExtraMinutes : 0);
 
   return `
 ### CALLER PROFILE (personalise based on this)
@@ -148,7 +151,7 @@ This applies to single items and full order lists alike. Skip the step-by-step o
    - If the customer corrects something, update only that field and read the corrected detail back once, then call \`create_order\`.
    - If the customer has an existing allergen profile with allergens, call \`check_food_allergens\` with ALL foodIds before creating the order. If warnings are returned, inform the customer and wait for their confirmation before proceeding.
    - Call \`create_order\` with the confirmed name, phone, address, and restaurantId only. ⚠️ Do NOT include items — they are automatically taken from the cart (confirmed via confirm_item).
-   - After success, confirm naturally: "Your order has been placed. Delivery in about 30 minutes."
+   - After success, confirm naturally: "Your order has been placed. Delivery in about ${eta} minutes."
 
 ---
 
@@ -172,9 +175,9 @@ If the customer asks to track an order immediately try with their phone number e
 ---
 
 ### BUSY MODE
-${isBusy ? `⚠️ The restaurant is currently BUSY. Estimated delivery times are increased by ${busyExtraMinutes} minutes.
+${isBusy ? `⚠️ The restaurant is currently BUSY. Estimated delivery time is around ${eta} minutes (${baseEta} min normal + ${busyExtraMinutes} min extra).
 Before placing any order, inform the customer:
-"We're currently experiencing high demand. Estimated delivery time will be around [normal ETA + ${busyExtraMinutes}] minutes. Would you like to proceed?"
+"We're currently experiencing high demand. Estimated delivery time will be around ${eta} minutes. Would you like to proceed?"
 Only create the order after the customer confirms.` : "The restaurant is not busy. No extra delivery time warning needed."}
 
 ---
@@ -438,6 +441,7 @@ export function voiceService(app: FastifyInstance) {
         const acceptingOrders = params.acceptingOrders === "true";
         const isBusy = params.isBusy === "true";
         const busyExtraMinutes = parseInt(params.busyExtraMinutes) || 15;
+        const defaultDeliveryMinutes = parseInt(params.defaultDeliveryMinutes) || 30;
         const normalizedPhone = normalizePhone(params.callerPhone);
         const [caller, menus] = await Promise.all([
           resolveCaller(app, normalizedPhone),
@@ -481,6 +485,7 @@ export function voiceService(app: FastifyInstance) {
                 acceptingOrders,
                 isBusy,
                 busyExtraMinutes,
+                defaultDeliveryMinutes,
                 caller,
                 menus,
               }),

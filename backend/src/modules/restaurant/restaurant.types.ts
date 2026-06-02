@@ -16,6 +16,7 @@ export interface Restaurant {
   rating?: number | null;
   isBusy: boolean;
   busyExtraMinutes: number;
+  defaultDeliveryMinutes: number;
   acceptingOrders: boolean;
   whatsappPhone?: string | null;
   voicePhone?: string | null;
@@ -39,6 +40,7 @@ export interface CreateRestaurantInput {
 export interface UpdateRestaurantInput extends Partial<CreateRestaurantInput> {
   isBusy?: boolean;
   busyExtraMinutes?: number;
+  defaultDeliveryMinutes?: number;
   acceptingOrders?: boolean;
   whatsappPhone?: string | null;
   voicePhone?: string | null;

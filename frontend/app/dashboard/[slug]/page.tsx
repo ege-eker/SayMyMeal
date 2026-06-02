@@ -134,6 +134,60 @@ export default function DashboardRestaurantPage() {
         </div>
       </div>
 
+      {/* Delivery Time */}
+      <div className={`border rounded-lg p-4 shadow-sm bg-white transition-colors ${
+        restaurant.acceptingOrders === false ? "opacity-40 pointer-events-none" : ""
+      }`}>
+        <h3 className="font-semibold text-sm mb-4">Delivery Time</h3>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Default delivery time</label>
+            <div className="relative">
+              <Input
+                type="number"
+                min={5}
+                max={180}
+                defaultValue={restaurant.defaultDeliveryMinutes ?? 30}
+                onBlur={async (e) => {
+                  const val = Math.min(180, Math.max(5, Number(e.target.value)));
+                  await updateRestaurant(restaurant.id, { defaultDeliveryMinutes: val });
+                  mutate();
+                }}
+                className="pr-12"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">min</span>
+            </div>
+          </div>
+          {restaurant.isBusy && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Extra time when busy</label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  min={5}
+                  max={120}
+                  defaultValue={restaurant.busyExtraMinutes ?? 15}
+                  onBlur={async (e) => {
+                    const val = Math.min(120, Math.max(5, Number(e.target.value)));
+                    await updateRestaurant(restaurant.id, { busyExtraMinutes: val });
+                    mutate();
+                  }}
+                  className="pr-12"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">min</span>
+              </div>
+            </div>
+          )}
+          <p className="text-xs text-gray-500 pt-2 border-t">
+            Estimated delivery:{" "}
+            <span className="font-medium text-gray-700">~{restaurant.defaultDeliveryMinutes ?? 30} min</span>
+            {restaurant.isBusy && (
+              <> · <span className="font-medium text-amber-600">~{(restaurant.defaultDeliveryMinutes ?? 30) + (restaurant.busyExtraMinutes ?? 15)} min when busy</span></>
+            )}
+          </p>
+        </div>
+      </div>
+
       {/* Busy Mode Toggle */}
       <div className={`border rounded-lg p-4 shadow-sm transition-colors ${
         restaurant.acceptingOrders === false
@@ -152,40 +206,21 @@ export default function DashboardRestaurantPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {restaurant.isBusy && (
-              <div className="flex items-center gap-1.5">
-                <label className="text-xs text-gray-600 whitespace-nowrap">Extra min:</label>
-                <Input
-                  type="number"
-                  min={5}
-                  max={120}
-                  value={restaurant.busyExtraMinutes ?? 15}
-                  onChange={async (e) => {
-                    const val = Math.min(120, Math.max(5, Number(e.target.value)));
-                    await updateRestaurant(restaurant.id, { busyExtraMinutes: val });
-                    mutate();
-                  }}
-                  className="w-20 h-8 text-sm"
-                />
-              </div>
-            )}
-            <button
-              onClick={async () => {
-                await updateRestaurant(restaurant.id, { isBusy: !restaurant.isBusy });
-                mutate();
-              }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                restaurant.isBusy ? "bg-amber-500" : "bg-gray-300"
+          <button
+            onClick={async () => {
+              await updateRestaurant(restaurant.id, { isBusy: !restaurant.isBusy });
+              mutate();
+            }}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              restaurant.isBusy ? "bg-amber-500" : "bg-gray-300"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                restaurant.isBusy ? "translate-x-6" : "translate-x-1"
               }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                  restaurant.isBusy ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
+            />
+          </button>
         </div>
       </div>
 

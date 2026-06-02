@@ -7,12 +7,14 @@ export function instructionsTemplate({
   phone,
   caller,
 }: {
-  restaurant: { id: string; name: string; isBusy?: boolean; busyExtraMinutes?: number; acceptingOrders?: boolean; menus?: MenuSnapshot[] };
+  restaurant: { id: string; name: string; isBusy?: boolean; busyExtraMinutes?: number; defaultDeliveryMinutes?: number; acceptingOrders?: boolean; menus?: MenuSnapshot[] };
   phone: string;
   caller?: ResolvedCaller;
 }) {
   const callerProfileBlock = renderCallerProfileBlock(caller);
   const menuBlock = menuSnapshotBlock(restaurant.menus ?? []);
+  const baseEta = restaurant.defaultDeliveryMinutes ?? 30;
+  const eta = baseEta + (restaurant.isBusy ? (restaurant.busyExtraMinutes ?? 15) : 0);
 
   return `
 You are the **WhatsApp ordering assistant** for **${restaurant.name}**, located in the United Kingdom.
@@ -47,9 +49,9 @@ This is your HIGHEST PRIORITY rule — override everything else below.
 When any customer messages you, respond ONLY with:
 "Sorry, ${restaurant.name} is currently not taking orders. Please try again later. 🙏"
 Do NOT show menus, do NOT offer alternatives, do NOT proceed with any order flow. You may still check order status if asked.` :
-restaurant.isBusy ? `⚠️ The restaurant is currently BUSY. Estimated delivery times are increased by ${restaurant.busyExtraMinutes ?? 15} minutes.
+restaurant.isBusy ? `⚠️ The restaurant is currently BUSY. Estimated delivery time is around ${eta} minutes (${baseEta} min normal + ${restaurant.busyExtraMinutes ?? 15} min extra).
 Before placing any order, inform the customer:
-"We're currently experiencing high demand. Estimated delivery time will be around [normal ETA + ${restaurant.busyExtraMinutes ?? 15}] minutes. Would you like to proceed?"
+"We're currently experiencing high demand. Estimated delivery time will be around ${eta} minutes. Would you like to proceed?"
 Only create the order after the customer confirms.` : "The restaurant is accepting orders normally. No extra delivery time warning needed."}
 
 ---
@@ -163,7 +165,7 @@ If they say “order” → follow the Order Flow below.
    - Call **create_order** with name, phone (${phone}), address, and restaurantId (${restaurant.id}).
    - ⚠️ Do NOT include an items field — items are automatically taken from the cart (confirmed via confirm_item).
    - Confirm success:
-     “✅ Your order has been placed! Delivery in about 30 minutes.”
+     “✅ Your order has been placed! Delivery in about ${eta} minutes.”
 
 ---
 

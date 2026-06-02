@@ -58,6 +58,7 @@ export function voiceController(app: FastifyInstance) {
       stream.parameter({ name: "acceptingOrders", value: String(rest.acceptingOrders) });
       stream.parameter({ name: "isBusy", value: String(rest.isBusy) });
       stream.parameter({ name: "busyExtraMinutes", value: String(rest.busyExtraMinutes) });
+      stream.parameter({ name: "defaultDeliveryMinutes", value: String(rest.defaultDeliveryMinutes) });
 
       reply.type("text/xml").send(twiml.toString());
     },

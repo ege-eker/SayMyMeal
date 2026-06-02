@@ -235,13 +235,20 @@ export default function CheckoutPage() {
           </div>
         )}
 
+        {/* Delivery estimate */}
+        {restaurant?.acceptingOrders !== false && !restaurant?.isBusy && (
+          <p className="text-xs text-gray-500 text-center">
+            Estimated delivery: ~{restaurant?.defaultDeliveryMinutes ?? 30} minutes
+          </p>
+        )}
+
         {/* Busy Mode Warning */}
         {restaurant?.acceptingOrders !== false && restaurant?.isBusy && (
           <div className="bg-orange-50 border border-orange-300 rounded-lg p-4 space-y-3">
             <h3 className="font-semibold text-orange-800">High Demand</h3>
             <p className="text-sm text-orange-700">
-              This restaurant is currently busy. Estimated delivery time will be approximately{" "}
-              <strong>{restaurant.busyExtraMinutes ?? 15} minutes longer</strong> than usual.
+              This restaurant is currently experiencing high demand. Estimated delivery time is approximately{" "}
+              <strong>~{(restaurant.defaultDeliveryMinutes ?? 30) + (restaurant.busyExtraMinutes ?? 15)} minutes</strong>.
               Do you wish to continue?
             </p>
             <label className="flex items-center gap-2 text-sm text-orange-800 cursor-pointer">
