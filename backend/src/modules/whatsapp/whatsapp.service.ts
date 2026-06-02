@@ -164,6 +164,7 @@ export function whatsappService(app: FastifyInstance) {
   ): Promise<string> {
     let finalText = "";
     let running = true;
+    let orderPlacedEta: number | undefined;
 
     const messages: ChatCompletionMessageParam[] = [
       { role: "system", content: instructionsTemplate({ restaurant, phone, caller: session.caller }) },
@@ -286,6 +287,8 @@ export function whatsappService(app: FastifyInstance) {
               result = await handler(args);
               if (!(result as any)?.error) {
                 session.cart = [];
+                const baseEta = restaurant.defaultDeliveryMinutes ?? 30;
+                orderPlacedEta = baseEta + (restaurant.isBusy ? (restaurant.busyExtraMinutes ?? 15) : 0);
               }
             }
           } else {
@@ -342,6 +345,11 @@ export function whatsappService(app: FastifyInstance) {
 
     session.lastUpdated = Date.now();
     sessions.set(sKey, session);
+
+    if (!finalText && orderPlacedEta !== undefined) {
+      finalText = `✅ Your order has been placed! Delivery in about ${orderPlacedEta} minutes.`;
+      session.messages.push({ role: "assistant", content: finalText });
+    }
 
     return finalText;
   }

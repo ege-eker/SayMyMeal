@@ -714,11 +714,16 @@ export function voiceService(app: FastifyInstance) {
             );
 
             // Trigger follow-up response
+            const eta = defaultDeliveryMinutes + (isBusy ? busyExtraMinutes : 0);
+            const followUpInstruction =
+              fnName === "create_order" && !(result as any)?.error
+                ? `The order was placed successfully. You MUST immediately say: "Your order has been placed. Delivery in about ${eta} minutes." Do NOT call any more tools. Do NOT ask about allergens yet — you can do that after confirming the order.`
+                : getFollowUpInstruction(fnName) + "\n\nAlways respond in English only. Never switch to any other language.";
             openaiWs.send(
               JSON.stringify({
                 type: "response.create",
                 response: {
-                  instructions: getFollowUpInstruction(fnName) + "\n\nAlways respond in English only. Never switch to any other language.",
+                  instructions: followUpInstruction,
                 },
               })
             );
