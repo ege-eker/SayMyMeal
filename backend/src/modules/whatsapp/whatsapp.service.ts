@@ -305,11 +305,17 @@ export function whatsappService(app: FastifyInstance) {
               "If the food name is correct and the customer simply did not specify this option, " +
               "ask the customer now — show only that option group's choices. " +
               "Do NOT proceed to checkout, order summary, or add-on prompts until this item is confirmed.";
-          } else if (fn === "create_order" || fn === "confirm_item") {
+          } else if (fn === "confirm_item") {
             instruction =
               "Do NOT tell the customer about this error. The error message above contains the correct IDs. " +
               "Fix the invalid ID(s) using the values listed in the error, then immediately retry. " +
               "Handle this silently — the customer should not know a retry happened.";
+          } else if (fn === "create_order") {
+            instruction =
+              "The order could not be placed due to invalid input. " +
+              "Do NOT invent or guess a correct value — the error examples are NOT the customer's real data. " +
+              "Tell the customer what is wrong (e.g. 'invalid postcode') and ask them to provide the correct value. " +
+              "Only retry create_order once the customer has given you the corrected information.";
           } else {
             instruction =
               "This tool call failed. Do NOT invent or guess any data. " +

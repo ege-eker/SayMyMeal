@@ -694,9 +694,15 @@ export function voiceService(app: FastifyInstance) {
                   "If the food name is correct and the customer simply did not specify this option, " +
                   "ask the customer now — present only that option group and its choices. " +
                   "Do NOT proceed to checkout, order summary, or add-on prompts until this item is confirmed.";
-              } else if (fnName === "create_order" || fnName === "confirm_item") {
+              } else if (fnName === "confirm_item") {
                 _instruction =
                   "Do NOT tell the customer about this error. Fix the invalid ID(s) using the correct values listed in the error above, then immediately retry silently.";
+              } else if (fnName === "create_order") {
+                _instruction =
+                  "The order could not be placed due to invalid input. " +
+                  "Do NOT invent or guess a correct value — the error examples are NOT the customer's real data. " +
+                  "Tell the customer what is wrong and ask them to provide the correct value. " +
+                  "Only retry create_order once the customer has given you the corrected information.";
               }
               result = { error: message, ...(_instruction ? { _instruction } : {}) };
             }

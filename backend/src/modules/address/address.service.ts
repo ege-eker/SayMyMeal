@@ -1,6 +1,17 @@
 import { FastifyInstance } from 'fastify';
 import { CreateAddressInput, UpdateAddressInput } from './address.types';
-import { NotFoundError, ForbiddenError } from '../../utils/errors';
+import { NotFoundError, ForbiddenError, BadRequestError } from '../../utils/errors';
+
+const UK_POSTCODE = /^[A-Z]{1,2}[0-9][0-9A-Z]? [0-9][A-Z]{2}$/;
+
+function normalizePostcode(raw: string): string {
+  const clean = raw.replace(/\s+/g, '').toUpperCase();
+  const normalized = clean.slice(0, -3) + ' ' + clean.slice(-3);
+  if (!UK_POSTCODE.test(normalized)) {
+    throw new BadRequestError('Invalid postcode format (expected e.g. SW1A 2BC or M1 1AE).');
+  }
+  return normalized;
+}
 
 export const addressService = (app: FastifyInstance) => ({
   async findByUser(userId: string) {
@@ -27,7 +38,7 @@ export const addressService = (app: FastifyInstance) => ({
         houseNumber: data.houseNumber,
         street: data.street,
         city: data.city,
-        postcode: data.postcode,
+        postcode: normalizePostcode(data.postcode),
         notes: data.notes ?? null,
         isDefault: data.isDefault ?? isFirst,
       },

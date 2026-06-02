@@ -196,10 +196,12 @@ export default function AddressesPage() {
                 <Label htmlFor="postcode">Postcode</Label>
                 <Input
                   id="postcode"
+                  placeholder="e.g. SW1A 2BC"
                   value={form.postcode}
                   onChange={(e) => setForm({ ...form, postcode: e.target.value })}
                   required
                 />
+                <p className="text-xs text-gray-500">UK format: SW1A 2BC or M1 1AE</p>
               </div>
             </div>
 
