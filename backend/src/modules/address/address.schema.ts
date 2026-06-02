@@ -3,7 +3,11 @@ const addressProperties = {
   houseNumber: { type: 'string', minLength: 1 },
   street: { type: 'string', minLength: 1 },
   city: { type: 'string', minLength: 1 },
-  postcode: { type: 'string', minLength: 1 },
+  postcode: {
+    type: 'string',
+    minLength: 1,
+    pattern: '^[A-Za-z]{1,2}[0-9][0-9A-Za-z]?\\s?[0-9][A-Za-z]{2}$',
+  },
   notes: { type: 'string' },
   isDefault: { type: 'boolean' },
 };

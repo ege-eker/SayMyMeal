@@ -400,7 +400,10 @@ export async function createAddress(data: {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed to save address" }));
-    throw new Error(err.error || "Failed to save address");
+    const msg = err.message?.includes("postcode")
+      ? "Invalid postcode format (e.g. SW1A 2BC or M1 1AE)"
+      : err.error || err.message || "Failed to save address";
+    throw new Error(msg);
   }
   return res.json();
 }
