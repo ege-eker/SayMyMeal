@@ -54,7 +54,7 @@ export const tools: ChatCompletionTool[] = [
     function: {
       name: "get_food_options",
       description:
-        "Retrieve available customization options (e.g., size, extra toppings) for a given food item.",
+        "Retrieve available customization options (e.g., size, extra toppings) for a given food item. PREREQUISITE: Only call this when the customer has unambiguously identified a specific food — either by its full name or by a clear reference in context (e.g. 'the chicken one' after listing options). If their request could still match multiple items, do NOT call this — list all matching foods and ask the customer to choose first.",
       parameters: {
         type: "object",
         properties: {
