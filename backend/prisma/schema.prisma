@@ -102,6 +102,7 @@ model OptionChoice {
   label       String
   extraPrice  Float      @default(0)
   isAvailable Boolean    @default(true)
+  isStandard  Boolean    @default(false)
   option      FoodOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
   optionId    String
 }

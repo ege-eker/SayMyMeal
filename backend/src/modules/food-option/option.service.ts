@@ -18,6 +18,7 @@ export const optionService = (app: FastifyInstance) => ({
       data: {
         label: data.label,
         extraPrice: data.extraPrice ?? 0,
+        isStandard: data.isStandard ?? false,
         optionId: data.optionId,
       },
     });
@@ -48,7 +49,10 @@ export const optionService = (app: FastifyInstance) => ({
   async updateChoice(choiceId: string, data: UpdateChoiceInput) {
     return app.prisma.optionChoice.update({
       where: { id: choiceId },
-      data: { isAvailable: data.isAvailable },
+      data: {
+        ...(data.isAvailable !== undefined && { isAvailable: data.isAvailable }),
+        ...(data.isStandard !== undefined && { isStandard: data.isStandard }),
+      },
     });
   },
 

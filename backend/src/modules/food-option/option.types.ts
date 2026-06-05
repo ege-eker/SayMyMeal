@@ -3,6 +3,7 @@ export interface OptionChoice {
   label: string;
   extraPrice: number;
   isAvailable: boolean;
+  isStandard: boolean;
   optionId: string;
 }
 
@@ -25,6 +26,7 @@ export interface AddChoiceInput {
   optionId: string;
   label: string;
   extraPrice?: number;
+  isStandard?: boolean;
 }
 
 export interface UpdateOptionInput {
@@ -33,4 +35,5 @@ export interface UpdateOptionInput {
 
 export interface UpdateChoiceInput {
   isAvailable?: boolean;
+  isStandard?: boolean;
 }

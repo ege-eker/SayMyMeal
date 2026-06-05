@@ -5,6 +5,7 @@ const choiceProperties = {
   label: { type: "string" },
   extraPrice: { type: "number" },
   isAvailable: { type: "boolean" },
+  isStandard: { type: "boolean" },
   optionId: { type: "string" },
 };
 
@@ -50,6 +51,7 @@ export const addChoiceSchema = {
       optionId: { type: "string" },
       label: { type: "string", minLength: 1 },
       extraPrice: { type: "number", default: 0 },
+      isStandard: { type: "boolean" },
     },
   },
   response: {
@@ -141,6 +143,7 @@ export const updateChoiceSchema = {
     type: "object",
     properties: {
       isAvailable: { type: "boolean" },
+      isStandard: { type: "boolean" },
     },
   },
   response: {

@@ -123,13 +123,13 @@ If they say “order” → follow the Order Flow below.
 
 3. **When a food is chosen**
    - Call **get_food_options({ foodId })**.
-   - For each option group, follow these rules:
-     - **Single-select** (choose 1): show as bullet list, ask which they want.
-     - **Multi-select with 1-2 choices**: show as bullet list, ask which they want.
-     - **Multi-select with 3 or more choices**: list ALL choices in a single message and ask in one question. Phrase naturally based on group type:
-       - Salad/vegetable/topping type → list as included, ask what to remove: “*Comes with:* Lettuce, Tomato, Onion, Cucumber, Red Cabbage 🥗 — anything to leave out?”
-       - Sauce/extra type → list all, ask what to pick: “*Sauces:* Chilli, Garlic Mayo, BBQ, Burger Sauce — which would you like?”
-     - After the customer answers a large multi-select group, acknowledge briefly — do NOT repeat the full list: “No onion ✓” or “Chilli and Garlic Mayo ✓”
+   - For each option group, first check if any choices have **isStandard: true**:
+     - **If standard choices exist**: present them as the default. Example: “*Comes with:* Marul, Domates, Soğan, Salatalık, Kırmızı Lahana 🥗 — anything to leave out?” or “*Standard sauces:* Chilli, Garlic Mayo — shall we keep those, or would you like to change?” — if the customer approves, use those choiceIds directly; if they want to change, show ALL available choices for that group.
+     - **If no standard choices**: ask normally using the rules below.
+   - **Single-select (no standards)**: show as bullet list, ask which they want.
+   - **Multi-select with 1-2 choices (no standards)**: show as bullet list, ask which they want.
+   - **Multi-select with 3+ choices (no standards)**: list ALL choices in a single message. Phrase naturally — removal style for salad/veg groups, selection style for sauce/extra groups.
+   - After the customer answers any group, acknowledge briefly — do NOT repeat the full list: “No onion ✓” or “Chilli and Garlic Mayo ✓”
    - You MUST cover ALL option groups before proceeding. Never skip a group.
 
 4. **Confirm this item, then add to cart**

@@ -14,6 +14,7 @@ interface OptionChoice {
   label: string;
   extraPrice: number;
   isAvailable: boolean;
+  isStandard: boolean;
 }
 
 interface FoodOption {
@@ -150,6 +151,14 @@ export default function FoodOptionForm({
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
+                    onClick={async () => { await updateFoodOptionChoice(ch.id, { isStandard: !ch.isStandard }); fetchOptions(); }}
+                    title={ch.isStandard ? "Remove from standard" : "Mark as standard"}
+                    className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${ch.isStandard ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                  >
+                    {ch.isStandard ? "★ Standard" : "☆ Standard"}
+                  </button>
+                  <button
+                    type="button"
                     onClick={async () => { await updateFoodOptionChoice(ch.id, { isAvailable: !ch.isAvailable }); fetchOptions(); }}
                     className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${ch.isAvailable !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-600 hover:bg-red-200"}`}
                   >
@@ -196,6 +205,7 @@ function AddChoiceForm({
 }) {
   const [label, setLabel] = useState("");
   const [extra, setExtra] = useState<number | string>(0);
+  const [isStandard, setIsStandard] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
@@ -207,10 +217,12 @@ function AddChoiceForm({
         optionId,
         label,
         extraPrice: Number(extra) || 0,
+        isStandard,
       }),
     });
     setLabel("");
     setExtra(0);
+    setIsStandard(false);
     setLoading(false);
     onSuccess();
   };
@@ -230,6 +242,14 @@ function AddChoiceForm({
         className="w-full sm:w-24 text-sm"
         type="number"
       />
+      <label className="flex items-center gap-1 text-xs text-gray-600 whitespace-nowrap cursor-pointer">
+        <input
+          type="checkbox"
+          checked={isStandard}
+          onChange={(e) => setIsStandard(e.target.checked)}
+        />
+        Standard
+      </label>
       <Button
         onClick={submit}
         disabled={loading}

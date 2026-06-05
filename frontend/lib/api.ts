@@ -141,7 +141,7 @@ export async function createOption(data: { title: string; multiple?: boolean; fo
   return res.json();
 }
 
-export async function addChoice(data: { label: string; extraPrice?: number; optionId: string }) {
+export async function addChoice(data: { label: string; extraPrice?: number; optionId: string; isStandard?: boolean }) {
   const res = await authFetch(`${API_URL}/foods/options/choice`, {
     method: "POST",
     body: JSON.stringify(data),
@@ -295,7 +295,7 @@ export async function updateFoodOption(id: string, data: { isAvailable?: boolean
   return res.json();
 }
 
-export async function updateFoodOptionChoice(id: string, data: { isAvailable?: boolean }) {
+export async function updateFoodOptionChoice(id: string, data: { isAvailable?: boolean; isStandard?: boolean }) {
   const res = await authFetch(`${API_URL}/foods/options/choice/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
