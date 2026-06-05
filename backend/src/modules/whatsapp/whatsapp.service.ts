@@ -270,10 +270,12 @@ export function whatsappService(app: FastifyInstance) {
             const { foodId } = args as { foodId: string };
             if (!session.pendingConfirmations.has(foodId) || confirmationSetThisBatch) {
               result = {
-                error: "Customer has not confirmed this item.",
+                error: `foodId "${foodId}" is not in pending confirmations.`,
+                pendingFoodIds: Array.from(session.pendingConfirmations),
                 _instruction:
-                  "Call request_item_confirmation with the item summary first. " +
-                  "Present the summary to the customer and wait for an explicit yes before calling confirm_item.",
+                  "Check pendingFoodIds above. If it contains a foodId for the same food, " +
+                  "retry confirm_item with that correct foodId — do NOT ask the customer again. " +
+                  "Only call request_item_confirmation if this food was genuinely never shown to the customer for confirmation.",
               };
             } else {
               session.pendingConfirmations.delete(foodId);
