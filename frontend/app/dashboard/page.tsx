@@ -169,87 +169,85 @@ export default function DashboardPage() {
       ) : (
         <div className="grid gap-4">
           {restaurants.map((r: any) => (
-            <div key={r.id} className="bg-white rounded-lg shadow-sm p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div key={r.id} className="bg-white rounded-lg shadow-sm p-5 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
               <div>
                 <h3 className="font-semibold text-lg">{r.name}</h3>
                 <p className="text-sm text-gray-500">/{r.slug}</p>
                 <p className="text-sm text-gray-400">
                   {r.houseNumber} {r.street}, {r.city}
                 </p>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-2">
                   <span
-                    className={`text-xs px-2 py-0.5 rounded ${
+                    className={`text-xs px-3 py-1 rounded-full ${
                       r.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
                     }`}
                   >
-                    {r.isActive ? "WhatsApp Demo Active" : "Inactive"}
+                    {r.isActive ? "WhatsApp Active" : "Inactive"}
                   </span>
                   {r.voicePhone && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700 flex items-center gap-1">
+                    <span className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1">
                       <Phone className="w-3 h-3" />
                       {r.voicePhone}
                     </span>
                   )}
                   {r.whatsappPhone && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700 flex items-center gap-1">
+                    <span className="text-xs px-3 py-1 rounded-full bg-green-100 text-green-700 flex items-center gap-1">
                       <MessageCircle className="w-3 h-3" />
                       {r.whatsappPhone}
                     </span>
                   )}
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Link href={`/${r.slug}`}>
-                  <Button size="sm" variant="outline">
-                    View
-                  </Button>
-                </Link>
-                <Link href={`/dashboard/${r.slug}`}>
-                  <Button size="sm">Manage</Button>
-                </Link>
-                <Link href={`/dashboard/${r.slug}/live`}>
-                  <Button size="sm" variant="outline" className="gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                    </span>
-                    Live
-                  </Button>
-                </Link>
-                <Link href={`/dashboard/${r.slug}/orders`}>
-                  <Button size="sm" variant="outline">
-                    Orders
-                  </Button>
-                </Link>
-                <Link href={`/dashboard/${r.slug}/blacklist`}>
-                  <Button size="sm" variant="outline">
-                    Blacklist
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant={r.isActive ? "secondary" : "outline"}
-                  onClick={async () => {
-                    await activateRestaurant(r.id);
-                    mutate();
-                  }}
-                >
-                  {r.isActive ? "Whatsapp Active" : "Activate"}
-                </Button>
-                <ConfirmDelete
-                  title={`Delete "${r.name}"?`}
-                  description="This will permanently delete the restaurant and all its menus, foods, and options. This action cannot be undone."
-                  onConfirm={async () => {
-                    await deleteRestaurant(r.id);
-                    mutate();
-                  }}
-                  trigger={
-                    <Button size="sm" variant="destructive">
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Delete
+              <div className="flex flex-col gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2">
+                  <Link href={`/${r.slug}`}>
+                    <Button size="sm" variant="outline">View</Button>
+                  </Link>
+                  <Link href={`/dashboard/${r.slug}`}>
+                    <Button size="sm">Manage</Button>
+                  </Link>
+                  <Link href={`/dashboard/${r.slug}/orders`}>
+                    <Button size="sm" variant="outline">Orders</Button>
+                  </Link>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link href={`/dashboard/${r.slug}/live`}>
+                    <Button size="sm" variant="outline" className="gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                      </span>
+                      Live
                     </Button>
-                  }
-                />
+                  </Link>
+                  <Link href={`/dashboard/${r.slug}/blacklist`}>
+                    <Button size="sm" variant="outline">Blacklist</Button>
+                  </Link>
+                  <Button
+                    size="sm"
+                    variant={r.isActive ? "secondary" : "outline"}
+                    onClick={async () => {
+                      await activateRestaurant(r.id);
+                      mutate();
+                    }}
+                  >
+                    {r.isActive ? "WA Active" : "Activate"}
+                  </Button>
+                  <ConfirmDelete
+                    title={`Delete "${r.name}"?`}
+                    description="This will permanently delete the restaurant and all its menus, foods, and options. This action cannot be undone."
+                    onConfirm={async () => {
+                      await deleteRestaurant(r.id);
+                      mutate();
+                    }}
+                    trigger={
+                      <Button size="sm" variant="destructive">
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Delete
+                      </Button>
+                    }
+                  />
+                </div>
               </div>
             </div>
           ))}

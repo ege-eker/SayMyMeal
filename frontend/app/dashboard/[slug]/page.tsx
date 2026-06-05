@@ -95,7 +95,7 @@ export default function DashboardRestaurantPage() {
       </div>
 
       {/* Accepting Orders Toggle */}
-      <div className={`border rounded-lg p-4 shadow-sm transition-colors ${
+      <div className={`border rounded-lg p-5 shadow-sm transition-colors ${
         restaurant.acceptingOrders === false
           ? "bg-red-50 border-red-300"
           : "bg-emerald-50/50 border-emerald-200"
@@ -135,7 +135,7 @@ export default function DashboardRestaurantPage() {
       </div>
 
       {/* Delivery Time */}
-      <div className={`border rounded-lg p-4 shadow-sm bg-white transition-colors ${
+      <div className={`border rounded-lg p-5 shadow-sm bg-white transition-colors ${
         restaurant.acceptingOrders === false ? "opacity-40 pointer-events-none" : ""
       }`}>
         <h3 className="font-semibold text-sm mb-4">Delivery Time</h3>
@@ -189,7 +189,7 @@ export default function DashboardRestaurantPage() {
       </div>
 
       {/* Busy Mode Toggle */}
-      <div className={`border rounded-lg p-4 shadow-sm transition-colors ${
+      <div className={`border rounded-lg p-5 shadow-sm transition-colors ${
         restaurant.acceptingOrders === false
           ? "opacity-40 pointer-events-none"
           : restaurant.isBusy ? "bg-amber-50 border-amber-300" : "bg-white"
@@ -251,7 +251,7 @@ function VoicePhoneCard({ restaurant, onUpdate }: { restaurant: any; onUpdate: (
   const hasNumber = Boolean(restaurant.twilioPhoneSid);
 
   return (
-    <div className="border rounded-lg p-4 shadow-sm bg-white">
+    <div className="border rounded-lg p-5 shadow-sm bg-white">
       <div className="flex items-center gap-2 mb-3">
         <Phone className="w-5 h-5 text-blue-600" />
         <h3 className="font-semibold text-sm">Voice Phone</h3>
@@ -438,7 +438,7 @@ function WhatsappPhoneCard({ restaurant, onUpdate }: { restaurant: any; onUpdate
   };
 
   return (
-    <div className="border rounded-lg p-4 shadow-sm bg-white">
+    <div className="border rounded-lg p-5 shadow-sm bg-white">
       <div className="flex items-center gap-2 mb-3">
         <MessageCircle className="w-5 h-5 text-emerald-600" />
         <h3 className="font-semibold text-sm">WhatsApp Phone</h3>
@@ -501,8 +501,8 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
   }
 
   return (
-    <div className="border rounded-lg bg-white p-4 shadow-sm">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+    <div className="border rounded-lg bg-white p-5 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
         <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => setOpen(!open)}>
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
           <ImageUpload
@@ -537,8 +537,8 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
           {menuDetail.foods?.length > 0 ? (
             <ul className="space-y-2 mb-3">
               {menuDetail.foods.map((food: any) => (
-                <li key={food.id} className="border rounded p-3 bg-gray-50">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                <li key={food.id} className="border rounded p-4 bg-gray-50">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                     <div className="flex items-center gap-3">
                       <ImageUpload
                         entity="foods"
@@ -575,7 +575,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
                       />
                     </div>
                   </div>
-                  <div className="ml-4 border-l-2 border-amber-200 pl-3 mt-2 space-y-2">
+                  <div className="ml-6 border-l-2 border-amber-200 pl-4 mt-3 space-y-3">
                     <AllergenTagEditor
                       foodId={food.id}
                       allergens={food.allergens ?? []}
@@ -592,7 +592,7 @@ function MenuCard({ menu, onRefresh }: { menu: any; onRefresh: () => void }) {
           )}
 
           {/* Add Food inline */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
             <Input
               placeholder="Food Name"
               value={foodName}

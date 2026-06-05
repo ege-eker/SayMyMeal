@@ -77,8 +77,8 @@ function OrderCard({
     : "-";
 
   return (
-    <div className="border rounded-lg bg-white shadow-sm p-4 space-y-3">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+    <div className="border rounded-lg bg-white shadow-sm p-5 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
         <div>
           <h3 className="font-semibold">{order.customer} ({order.phone})</h3>
           <p className="text-sm text-gray-500 break-words">{addressStr}</p>
@@ -99,7 +99,7 @@ function OrderCard({
         {order.items?.length > 0 ? (
           <ul className="divide-y divide-gray-100">
             {order.items.map((item: any) => (
-              <li key={item.id} className="py-1 flex justify-between text-sm">
+              <li key={item.id} className="py-2 flex justify-between text-sm">
                 <span>
                   {item.food?.name ?? "Unknown"} x{item.quantity}
                   {item.selected?.length > 0 && (

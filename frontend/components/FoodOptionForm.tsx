@@ -70,7 +70,7 @@ export default function FoodOptionForm({
 
   return (
     <div
-      className={`border rounded mt-3 p-3 ${
+      className={`border rounded mt-3 p-5 ${
         compact ? "bg-gray-50" : "bg-white shadow"
       }`}
     >
@@ -83,7 +83,7 @@ export default function FoodOptionForm({
       </h3>
 
       {/* Add Option */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
         <Input
           placeholder="Option title (e.g. Choose your Side)"
           value={title}
@@ -107,7 +107,7 @@ export default function FoodOptionForm({
 
       {/* Existing options */}
       {options.map((opt) => (
-        <div key={opt.id} className="border-t pt-2 mt-2">
+        <div key={opt.id} className="border-t pt-4 mt-4">
           <div className="flex justify-between items-center">
             <h4 className={`text-sm font-medium ${opt.isAvailable !== false ? "text-amber-700" : "text-gray-400 line-through"}`}>
               {opt.title}{" "}
@@ -137,9 +137,9 @@ export default function FoodOptionForm({
             </div>
           </div>
 
-          <ul className="ml-4 text-sm mt-1">
+          <ul className="ml-6 text-sm mt-2">
             {opt.choices.map((ch) => (
-              <li key={ch.id} className="flex items-center justify-between py-0.5">
+              <li key={ch.id} className="flex items-center justify-between py-2">
                 <span className={ch.isAvailable !== false ? "" : "text-gray-400 line-through"}>
                   {ch.label}{" "}
                   {ch.extraPrice > 0 && (
@@ -148,19 +148,19 @@ export default function FoodOptionForm({
                     </span>
                   )}
                 </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={async () => { await updateFoodOptionChoice(ch.id, { isStandard: !ch.isStandard }); fetchOptions(); }}
                     title={ch.isStandard ? "Remove from standard" : "Mark as standard"}
-                    className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${ch.isStandard ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                    className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${ch.isStandard ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
                   >
                     {ch.isStandard ? "★ Standard" : "☆ Standard"}
                   </button>
                   <button
                     type="button"
                     onClick={async () => { await updateFoodOptionChoice(ch.id, { isAvailable: !ch.isAvailable }); fetchOptions(); }}
-                    className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${ch.isAvailable !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-600 hover:bg-red-200"}`}
+                    className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${ch.isAvailable !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-600 hover:bg-red-200"}`}
                   >
                     {ch.isAvailable !== false ? "✓ Available" : "✗ Out of stock"}
                   </button>
@@ -228,7 +228,7 @@ function AddChoiceForm({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
       <Input
         placeholder="Choice name (e.g. Fries)"
         value={label}
