@@ -14,7 +14,11 @@ import whatsapp from './plugins/whatsapp';
 import { voiceService } from './modules/voice/voice.service';
 
 const buildApp = () => {
-    const app = Fastify({ logger: true });
+    const app = Fastify({
+        logger: {
+            timestamp: () => `,"time":"${new Date().toISOString()}"`,
+        },
+    });
     app.register(formbody);
     app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024 } });
     app.register(fastifyStatic, {

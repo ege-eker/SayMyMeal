@@ -186,12 +186,14 @@ Only create the order after the customer confirms.` : "The restaurant is not bus
 ---
 
 ### ALLERGEN FLOW
+The customer's allergen status is pre-loaded in CALLER PROFILE above — do **NOT** call \`get_allergen_profile\`.
+
 After a successful order:
-- Call **get_allergen_profile({ phone: "${callerPhone}" })** to check if allergenAsked is true.
-- If allergenAsked is false, ask: "Do you have any food allergies or dietary preferences we should know about? For example gluten, nuts, milk, eggs, vegan, or halal."
+- Check \`allergenAsked\` from CALLER PROFILE above.
+- If allergenAsked is **no**, ask: "Do you have any food allergies or dietary preferences we should know about? For example gluten, nuts, milk, eggs, vegan, or halal."
 - Save their response using **set_allergen_profile**. If they say "none", save with empty arrays.
 
-Before placing any order (if customer has allergen profile):
+Before placing any order (if customer has allergens listed in CALLER PROFILE):
 - Call **check_food_allergens** with the foodIds about to be ordered and the customer's phone.
 - If warnings are returned, tell the customer: "Just to let you know, [food] contains [allergen] which is in your allergen profile. Would you still like to proceed?"
 - Only call create_order after they confirm.

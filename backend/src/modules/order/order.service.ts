@@ -35,6 +35,21 @@ export const orderService = (app: FastifyInstance) => ({
         }
       }
 
+      // Allergen check — server-side safety net (AI should call check_food_allergens first,
+      // but this ensures no order with allergen conflicts goes through unacknowledged)
+      if (data.phone && !data.allergenAcknowledged) {
+        const foodIds = data.items.map((i) => i.foodId);
+        const { warnings } = await this.checkAllergensByPhone(normalizePhone(data.phone), foodIds);
+        if (warnings.length > 0) {
+          const detail = warnings
+            .map((w) => `${w.foodName} (${w.matchedAllergens.join(", ")})`)
+            .join("; ");
+          throw new BadRequestError(
+            `Allergen conflict: ${detail}. If the customer acknowledges and still wants to proceed, retry with allergenAcknowledged: true.`
+          );
+        }
+      }
+
       // Postcode normalization + validation
       if (data.address?.postcode) {
         const clean = data.address.postcode.replace(/\s+/g, "").toUpperCase();

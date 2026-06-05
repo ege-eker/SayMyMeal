@@ -12,6 +12,12 @@ export function renderCallerProfileBlock(caller?: ResolvedCaller): string {
   const callerAllergens =
     caller.type === "user" ? caller.user.allergens : caller.profile.allergens;
 
+  const callerDietaryPreferences =
+    caller.type === "user" ? caller.user.dietaryPreferences : caller.profile.dietaryPreferences;
+
+  const allergenAsked =
+    caller.type === "user" ? caller.user.allergenAsked : caller.profile.allergenAsked;
+
   const callerAddresses =
     caller.type === "user" ? caller.user.addresses : caller.profile.addresses;
 
@@ -20,6 +26,8 @@ export function renderCallerProfileBlock(caller?: ResolvedCaller): string {
   return [
     callerName ? `- Name: ${callerName}` : null,
     `- Allergens: ${callerAllergens.join(", ") || "none"}`,
+    `- Dietary preferences: ${callerDietaryPreferences.join(", ") || "none"}`,
+    `- Allergen profile asked before: ${allergenAsked ? "yes" : "no"}`,
     `- Previous orders: ${recentOrderCount}`,
     callerAddresses.length
       ? `- Saved addresses: ${callerAddresses.map((a) => `${a.label ?? "address"}: ${a.houseNumber} ${a.street}, ${a.city}, ${a.postcode}`).join(" | ")}`

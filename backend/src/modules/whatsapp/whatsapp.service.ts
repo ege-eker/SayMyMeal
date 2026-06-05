@@ -9,10 +9,13 @@ import { MenuSnapshot } from "../../shared/menuSnapshot";
 import { ValidatedCartItem } from "../../modules/order/order.types";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
+type LoadedRestaurant = Awaited<ReturnType<typeof loadRestaurantById>>;
+
 interface SessionState {
   messages: ChatCompletionMessageParam[];
   lastUpdated: number;
   caller?: ResolvedCaller;
+  restaurant?: LoadedRestaurant;
   cart: ValidatedCartItem[];
   pendingConfirmations: Set<string>;
 }
@@ -106,7 +109,10 @@ export function whatsappService(app: FastifyInstance) {
   const MAX_RETRIES = 2;
 
   async function handleMessage(phone: string, text: string, restaurantId: string): Promise<string> {
-    const restaurant = await loadRestaurantById(app, restaurantId);
+    const key = sessionKey(restaurantId, phone);
+    const existingSession = sessions.get(key);
+
+    const restaurant = existingSession?.restaurant ?? await loadRestaurantById(app, restaurantId);
 
     // Blacklist check — before any AI processing
     const blacklisted = await app.prisma.blacklist.findUnique({
@@ -125,10 +131,10 @@ export function whatsappService(app: FastifyInstance) {
       return "I am sorry, I can't assist you right now.";
     }
 
-    const key = sessionKey(restaurantId, phone);
-    const session =
-      sessions.get(key) ?? { messages: [], lastUpdated: Date.now(), cart: [], pendingConfirmations: new Set<string>() };
+    const session = existingSession ?? { messages: [], lastUpdated: Date.now(), cart: [], pendingConfirmations: new Set<string>(), restaurant };
+    if (!existingSession) sessions.set(key, session);
     session.lastUpdated = Date.now();
+    if (!session.restaurant) session.restaurant = restaurant;
 
     if (!session.caller) {
       session.caller = await resolveCaller(app, normalizePhone(phone));

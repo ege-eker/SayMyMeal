@@ -18,6 +18,13 @@ async function orderRoutes(app: FastifyInstance) {
     const ctrl = orderController(app);
     const ownerAuth = requireRole('OWNER');
 
+    // Suppress request logs for pollToken polling (hits every few seconds from tablet/kitchen display)
+    app.addHook('onRequest', async (request) => {
+        if ((request.query as Record<string, unknown>)?.pollToken) {
+            (request as any).log = request.log.child({ level: 'silent' });
+        }
+    });
+
     // optionalAuth: if token present, attach userId; otherwise voice/WhatsApp works as before
     app.post("/orders", { schema: createOrderSchema, preHandler: [optionalAuth] }, ctrl.create as any);
 

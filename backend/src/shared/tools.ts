@@ -187,6 +187,10 @@ export const tools: ChatCompletionTool[] = [
               country: { type: "string", default: "UK", description: "Country name, defaults to UK." },
             },
           },
+          allergenAcknowledged: {
+            type: "boolean",
+            description: "Set to true ONLY after the customer has explicitly acknowledged allergen warnings and confirmed they still want to proceed. Omit or set false on first attempt.",
+          },
         },
       },
     },

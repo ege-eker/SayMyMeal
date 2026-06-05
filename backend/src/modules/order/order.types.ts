@@ -53,6 +53,7 @@ export interface CreateOrderInput {
   restaurantId: string;
   items: CreateOrderItemInput[];
   notes?: string;
+  allergenAcknowledged?: boolean;
 }
 
 export interface UpdateOrderStatusInput {
