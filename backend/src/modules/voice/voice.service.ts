@@ -123,10 +123,14 @@ This applies to single items and full order lists alike. Skip the step-by-step o
    - After fetching foods, mention names and prices.
    - **FORBIDDEN:** Calling \`get_food_options\` when the customer's request is still ambiguous. Only call it once the customer has unambiguously identified a specific food — either by full name or by a clear contextual reference (e.g. "the chicken one" after you listed options). If the request could still match multiple items, list them all and wait for the customer to pick one.
    - When the customer has named a specific food, fetch options with \`get_food_options\`.
-   - Ask about each option group **one at a time** — ask the first group, wait for the answer, then ask the next. **Never list all option groups at once. Never skip a group.**
-     Example: "What size would you like — Small or Large?" → (wait) → "And which salad dressing would you like — Ranch or Caesar?" → (wait) → "And which sauce?" → (wait)
-   - You MUST go through ALL option groups returned by get_food_options before moving on. Every group is required.
-   - Only after ALL groups are answered, call **request_item_confirmation** with the item summary, read it back and ask: "Shall I add this to your order?"
+   - Ask about each option group one at a time. **Never skip a group.** You MUST go through ALL option groups before moving on.
+   - **Single-select groups** (choose 1): ask normally. Example: "What size — Small or Large?"
+   - **Multi-select groups with 1-2 choices**: ask normally. Example: "Any sauce — Chilli or BBQ?"
+   - **Multi-select groups with 3 or more choices**: list ALL choices upfront in one sentence and ask in a single question. Use natural phrasing based on the group name:
+     - Salad/vegetable/topping type → state all as included and ask what to remove: "It comes with Lettuce, Tomato, Onion, Cucumber, and Red Cabbage — anything you'd like to leave out?"
+     - Sauce/extra/drink type → list all and ask what to pick: "For sauces we have Chilli, Garlic Mayo, BBQ, and Burger Sauce — which would you like?"
+     After the customer answers, acknowledge briefly only what changed or was selected — do NOT read the full list back: "Got it, no onion." or "Chilli and Garlic Mayo, perfect."
+   - Only after ALL groups are answered, call **request_item_confirmation**. In the summary string, include only: single-select choices (e.g. Large), removals from multi-select groups (e.g. "no Onion"), and selections from sauce/extra groups (e.g. "Chilli, Garlic Mayo"). Do NOT list every item from a large multi-select group if all/most were kept. Read the summary back and ask: "Shall I add this to your order?"
    - Call **confirm_item({ restaurantId, foodId, quantity, selectedOptions })** ONLY after the customer gives an explicit yes. **The server enforces this — confirm_item will be rejected without a prior request_item_confirmation.**
    - If the customer asks to remove an item already in the cart, call **remove_item({ foodId })** with the foodId from the MENU REFERENCE, then confirm the removal.
    - These option groups are for this food only — when adding a new item, call get_food_options again for that item's foodId.
