@@ -18,6 +18,13 @@ const buildApp = () => {
         logger: {
             timestamp: () => `,"time":"${new Date().toISOString()}"`,
         },
+        childLoggerFactory(logger, bindings, opts, rawReq) {
+            const url = (rawReq as any)?.url ?? '';
+            if (url.includes('pollToken')) {
+                return logger.child(bindings, { level: 'warn' });
+            }
+            return logger.child(bindings, opts);
+        },
     });
     app.register(formbody);
     app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024 } });
