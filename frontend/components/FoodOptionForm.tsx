@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { authFetch, deleteChoice as deleteChoiceApi, updateFoodOption, updateFoodOptionChoice } from "@/lib/api";
 import ConfirmDelete from "@/components/ConfirmDelete";
-import { Trash2 } from "lucide-react";
+import { Trash2, Star, Plus } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -40,13 +40,10 @@ export default function FoodOptionForm({
   async function fetchOptions() {
     const res = await fetch(`${API_URL}/foods/${foodId}/options`);
     if (!res.ok) return;
-    const data = await res.json();
-    setOptions(data);
+    setOptions(await res.json());
   }
 
-  useEffect(() => {
-    fetchOptions();
-  }, [foodId]);
+  useEffect(() => { fetchOptions(); }, [foodId]);
 
   const createOption = async () => {
     if (!title) return;
@@ -62,136 +59,153 @@ export default function FoodOptionForm({
   };
 
   const deleteOption = async (optionId: string) => {
-    await authFetch(`${API_URL}/foods/options/${optionId}`, {
-      method: "DELETE",
-    });
+    await authFetch(`${API_URL}/foods/options/${optionId}`, { method: "DELETE" });
     fetchOptions();
   };
 
   return (
-    <div
-      className={`border rounded mt-3 p-5 ${
-        compact ? "bg-gray-50" : "bg-white shadow"
-      }`}
-    >
-      <h3
-        className={`font-semibold ${
-          compact ? "text-sm text-gray-700" : "text-lg"
-        } mb-2`}
-      >
-        Food Options
-      </h3>
+    <div className={`rounded-xl mt-3 overflow-hidden border ${compact ? "bg-gray-50" : "bg-white shadow-sm"}`}>
+      {/* Header */}
+      <div className="px-4 py-3 border-b bg-gray-50">
+        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Options</h3>
+      </div>
 
-      {/* Add Option */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-        <Input
-          placeholder="Option title (e.g. Choose your Side)"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="flex-1"
-        />
-        <div className="flex items-center gap-2">
-          <label className="flex items-center space-x-1 text-sm text-gray-500">
+      {/* Add option group */}
+      <div className="px-4 py-3 border-b">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Group name (e.g. Sauce Choice)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="flex-1 h-9 text-sm"
+          />
+          <label className="flex items-center gap-1.5 text-xs text-gray-500 whitespace-nowrap cursor-pointer select-none">
             <input
               type="checkbox"
               checked={multiple}
               onChange={(e) => setMultiple(e.target.checked)}
+              className="rounded"
             />
-            <span>Multiple</span>
+            Multi
           </label>
-          <Button size="sm" disabled={isLoading} onClick={createOption}>
-            Add
+          <Button size="sm" onClick={createOption} disabled={isLoading} className="h-9 px-3 shrink-0">
+            <Plus className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* Existing options */}
-      {options.map((opt) => (
-        <div key={opt.id} className="border-t pt-4 mt-4">
-          <div className="flex justify-between items-center">
-            <h4 className={`text-sm font-medium ${opt.isAvailable !== false ? "text-amber-700" : "text-gray-400 line-through"}`}>
-              {opt.title}{" "}
-              <span className="text-gray-500 text-xs">
-                ({opt.multiple ? "multiple" : "single"})
-              </span>
-            </h4>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={async () => { await updateFoodOption(opt.id, { isAvailable: !opt.isAvailable }); fetchOptions(); }}
-                className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${opt.isAvailable !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-600 hover:bg-red-200"}`}
-              >
-                {opt.isAvailable !== false ? "✓ Available" : "✗ Out of stock"}
-              </button>
-            <ConfirmDelete
-              title={`Delete option "${opt.title}"?`}
-              description="This will delete the option group and all its choices. This action cannot be undone."
-              onConfirm={() => deleteOption(opt.id)}
-              trigger={
-                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 px-2">
-                  <Trash2 className="w-3.5 h-3.5 mr-1" />
-                  Delete
-                </Button>
-              }
-            />
-            </div>
-          </div>
+      {/* Option groups */}
+      {options.length === 0 && (
+        <div className="px-4 py-6 text-center text-sm text-gray-400 italic">No options yet</div>
+      )}
 
-          <ul className="ml-6 text-sm mt-2">
-            {opt.choices.map((ch) => (
-              <li key={ch.id} className="flex items-center justify-between py-2">
-                <span className={ch.isAvailable !== false ? "" : "text-gray-400 line-through"}>
-                  {ch.label}{" "}
-                  {ch.extraPrice > 0 && (
-                    <span className="text-gray-400">
-                      (+£{ch.extraPrice.toFixed(2)})
-                    </span>
-                  )}
+      <div className="divide-y">
+        {options.map((opt) => (
+          <div key={opt.id} className="px-4 py-4">
+            {/* Group header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`text-sm font-semibold truncate ${opt.isAvailable ? "text-gray-800" : "text-gray-400 line-through"}`}>
+                  {opt.title}
                 </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={async () => { await updateFoodOptionChoice(ch.id, { isStandard: !ch.isStandard }); fetchOptions(); }}
-                    title={ch.isStandard ? "Remove from standard" : "Mark as standard"}
-                    className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${ch.isStandard ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
-                  >
-                    {ch.isStandard ? "★ Standard" : "☆ Standard"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => { await updateFoodOptionChoice(ch.id, { isAvailable: !ch.isAvailable }); fetchOptions(); }}
-                    className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${ch.isAvailable !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-600 hover:bg-red-200"}`}
-                  >
-                    {ch.isAvailable !== false ? "✓ Available" : "✗ Out of stock"}
-                  </button>
+                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
+                  {opt.multiple ? "multi" : "single"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <button
+                  type="button"
+                  onClick={async () => { await updateFoodOption(opt.id, { isAvailable: !opt.isAvailable }); fetchOptions(); }}
+                  className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                    opt.isAvailable ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-600 hover:bg-red-200"
+                  }`}
+                >
+                  {opt.isAvailable ? "On" : "Off"}
+                </button>
                 <ConfirmDelete
-                  title={`Delete choice "${ch.label}"?`}
-                  description="This action cannot be undone."
-                  onConfirm={async () => {
-                    await deleteChoiceApi(ch.id);
-                    fetchOptions();
-                  }}
+                  title={`Delete "${opt.title}"?`}
+                  description="This will delete the option group and all its choices. This action cannot be undone."
+                  onConfirm={() => deleteOption(opt.id)}
                   trigger={
-                    <button className="text-red-400 hover:text-red-600 ml-2">
-                      <Trash2 className="w-3.5 h-3.5" />
+                    <button type="button" className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded">
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   }
                 />
+              </div>
+            </div>
+
+            {/* Choices — card layout */}
+            <div className="space-y-2">
+              {opt.choices.map((ch) => (
+                <div
+                  key={ch.id}
+                  className={`rounded-lg border px-3 py-2.5 transition-opacity ${
+                    ch.isAvailable ? "bg-white" : "bg-gray-50 opacity-60"
+                  }`}
+                >
+                  {/* Row 1: name + price */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-medium ${ch.isAvailable ? "text-gray-800" : "text-gray-400 line-through"}`}>
+                      {ch.label}
+                    </span>
+                    {ch.extraPrice > 0 && (
+                      <span className="text-xs font-semibold text-amber-600 ml-2 shrink-0">
+                        +£{ch.extraPrice.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  {/* Row 2: actions */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={async () => { await updateFoodOptionChoice(ch.id, { isStandard: !ch.isStandard }); fetchOptions(); }}
+                      title={ch.isStandard ? "Remove from standard" : "Mark as standard"}
+                      className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-all ${
+                        ch.isStandard
+                          ? "bg-amber-100 text-amber-700 font-medium"
+                          : "bg-gray-100 text-gray-400 hover:bg-gray-200"
+                      }`}
+                    >
+                      <Star className={`w-3 h-3 shrink-0 ${ch.isStandard ? "fill-amber-500 text-amber-500" : ""}`} />
+                      <span>Std</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => { await updateFoodOptionChoice(ch.id, { isAvailable: !ch.isAvailable }); fetchOptions(); }}
+                      className={`text-xs px-2 py-1 rounded-full transition-all ${
+                        ch.isAvailable
+                          ? "bg-emerald-100 text-emerald-700 font-medium hover:bg-emerald-200"
+                          : "bg-red-100 text-red-500 font-medium hover:bg-red-200"
+                      }`}
+                    >
+                      {ch.isAvailable ? "Available" : "Off"}
+                    </button>
+                    <div className="ml-auto">
+                      <ConfirmDelete
+                        title={`Delete "${ch.label}"?`}
+                        description="This action cannot be undone."
+                        onConfirm={async () => { await deleteChoiceApi(ch.id); fetchOptions(); }}
+                        trigger={
+                          <button type="button" className="p-1 text-gray-300 hover:text-red-400 transition-colors rounded">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
-              </li>
-            ))}
-            {opt.choices.length === 0 && (
-              <li className="text-gray-400 italic">No choices yet</li>
-            )}
-          </ul>
+              ))}
 
-          <AddChoiceForm optionId={opt.id} onSuccess={fetchOptions} />
-        </div>
-      ))}
+              {opt.choices.length === 0 && (
+                <p className="text-xs text-gray-400 italic py-1 pl-1">No choices yet</p>
+              )}
+            </div>
 
-      {options.length === 0 && (
-        <p className="text-gray-500 text-sm">No options created yet.</p>
-      )}
+            <AddChoiceForm optionId={opt.id} onSuccess={fetchOptions} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -213,12 +227,7 @@ function AddChoiceForm({
     setLoading(true);
     await authFetch(`${API_URL}/foods/options/choice`, {
       method: "POST",
-      body: JSON.stringify({
-        optionId,
-        label,
-        extraPrice: Number(extra) || 0,
-        isStandard,
-      }),
+      body: JSON.stringify({ optionId, label, extraPrice: Number(extra) || 0, isStandard }),
     });
     setLabel("");
     setExtra(0);
@@ -228,36 +237,39 @@ function AddChoiceForm({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
-      <Input
-        placeholder="Choice name (e.g. Fries)"
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
-        className="flex-1 text-sm"
-      />
-      <Input
-        placeholder="Extra"
-        value={extra}
-        onChange={(e) => setExtra(e.target.value)}
-        className="w-full sm:w-24 text-sm"
-        type="number"
-      />
-      <label className="flex items-center gap-1 text-xs text-gray-600 whitespace-nowrap cursor-pointer">
-        <input
-          type="checkbox"
-          checked={isStandard}
-          onChange={(e) => setIsStandard(e.target.checked)}
+    <div className="mt-3 flex flex-col gap-2">
+      <div className="flex gap-2">
+        <Input
+          placeholder="Choice name"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          className="flex-1 h-9 text-sm"
         />
-        Standard
-      </label>
-      <Button
-        onClick={submit}
-        disabled={loading}
-        size="sm"
-        className="whitespace-nowrap w-full sm:w-auto"
-      >
-        Add Choice
-      </Button>
+        <Input
+          placeholder="£ extra"
+          value={extra}
+          onChange={(e) => setExtra(e.target.value)}
+          className="w-20 h-9 text-sm shrink-0"
+          type="number"
+          step="0.01"
+        />
+      </div>
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isStandard}
+            onChange={(e) => setIsStandard(e.target.checked)}
+            className="rounded"
+          />
+          <Star className={`w-3 h-3 ${isStandard ? "fill-amber-500 text-amber-500" : "text-gray-400"}`} />
+          Standard
+        </label>
+        <Button onClick={submit} disabled={loading} size="sm" className="h-8 ml-auto">
+          <Plus className="w-3.5 h-3.5 mr-1" />
+          Add
+        </Button>
+      </div>
     </div>
   );
 }
