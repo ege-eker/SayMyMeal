@@ -131,7 +131,7 @@ This applies to single items and full order lists alike. Skip the step-by-step o
    - **Multi-select groups with 1-2 choices (no standards)**: ask normally. Example: "Any sauce — Chilli or BBQ?"
    - **Multi-select groups with 3+ choices (no standards)**: list ALL choices upfront in one sentence and ask in one question. Phrase naturally — removal style for salad/veg, selection style for sauce/extra.
    - After the customer answers any group, acknowledge briefly: "Got it, no onion." or "Chilli and Garlic Mayo, perfect." — do NOT read the full list back.
-   - Only after ALL groups are answered, call **request_item_confirmation**. In the summary string include only: single-select choices, removals (e.g. "no Onion"), sauce/extra selections. Do NOT list every item from a large salad group if most were kept. Read the summary back and ask: "Shall I add this to your order?"
+   - Only after ALL groups are answered, call **request_item_confirmation** with \`{ items: [{ foodId, quantity, selectedOptions: [{ optionId, choiceId }] }] }\` — the server validates the choices and returns the accurate summary. Read the returned summaryLines verbatim to the customer and ask: "Shall I add this to your order?"
    - Call **confirm_item({ restaurantId, foodId, quantity, selectedOptions })** ONLY after the customer gives an explicit yes. **The server enforces this — confirm_item will be rejected without a prior request_item_confirmation.**
    - If the customer asks to remove an item already in the cart, call **remove_item({ foodId })** with the foodId from the MENU REFERENCE, then confirm the removal.
    - These option groups are for this food only — when adding a new item, call get_food_options again for that item's foodId.
@@ -632,12 +632,14 @@ export function voiceService(app: FastifyInstance) {
             try {
               const handler = handlers[fnName as keyof typeof handlers];
               if (fnName === "request_item_confirmation") {
-                const { items } = args as { items: { foodId: string; summary: string }[] };
-                items.forEach((i) => pendingConfirmations.add(i.foodId));
-                result = {
-                  summaryLines: items.map((i) => i.summary),
-                  message: "Summary shown to customer. Wait for explicit yes before calling confirm_item.",
-                };
+                try {
+                  result = await (handler as (args: any) => Promise<any>)(args);
+                  const { items } = args as { items: { foodId: string }[] };
+                  items.forEach((i) => pendingConfirmations.add(i.foodId));
+                } catch (err: unknown) {
+                  const msg = err instanceof Error ? err.message : "request_item_confirmation failed";
+                  result = { error: msg, _instruction: "Fix the invalid IDs using the error above and retry request_item_confirmation." };
+                }
               } else if (fnName === "remove_item") {
                 const { foodId } = args as { foodId: string };
                 let idx = -1;
@@ -667,9 +669,9 @@ export function voiceService(app: FastifyInstance) {
                       "Only call request_item_confirmation if this food was genuinely never shown to the customer for confirmation.",
                   };
                 } else {
-                  pendingConfirmations.delete(foodId);
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const itemResult = await (handler as (args: any) => Promise<any>)(args);
+                  pendingConfirmations.delete(foodId);
                   cart.push(itemResult.confirmedItem);
                   itemResult.cartSize = cart.length;
                   result = itemResult;

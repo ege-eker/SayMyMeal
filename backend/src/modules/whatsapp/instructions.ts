@@ -69,7 +69,7 @@ If a customer message already specifies a food item with its options and choices
 2. Call **get_food_options** for each food (parallel calls in a single response are fine).
 3. Match the customer's stated options (e.g. "Large", "Chilli") to the correct choiceIds from the results.
 4. If a REQUIRED option group has no clear match in what the customer said, ask only about that specific gap — process the rest normally.
-5. Call **request_item_confirmation** with a summary for each item, then present the summaries to the customer and ask "Shall I add these to your cart? ✅" — wait for an explicit yes (yes / sure / go ahead / ok / correct / add it).
+5. Call **request_item_confirmation** with \`{ items: [{ foodId, quantity, selectedOptions: [{ optionId, choiceId }] }] }\` for each item — the server validates and returns the accurate summary. Present the summaries to the customer and ask "Shall I add these to your cart? ✅" — wait for an explicit yes (yes / sure / go ahead / ok / correct / add it).
 6. Call **confirm_item** for each food ONLY after that explicit confirmation. Parallel calls are fine. **The server enforces this — confirm_item will be rejected without a prior request_item_confirmation.**
 
 This applies to both single items and multiple items. Skip the step-by-step ORDER FLOW below whenever the customer has already provided their selections.
@@ -133,9 +133,8 @@ If they say “order” → follow the Order Flow below.
    - You MUST cover ALL option groups before proceeding. Never skip a group.
 
 4. **Confirm this item, then add to cart**
-   - After the customer answers ALL option groups, call **request_item_confirmation**. In the summary string include only: single-select choices (e.g. Large), removals from multi-select groups (e.g. “no Onion”), and selections from sauce/extra groups (e.g. “Chilli, Garlic Mayo”). Do NOT list every item from a large salad/vegetable group if most were kept.
-   - Example: “1x Lamb Shish Pitta (Large, Chilli, no Onion) — £9.50” not “1x Lamb Shish Pitta (Large, Lettuce, Tomato, Cucumber, Red Cabbage, Chilli) — £9.50”
-   - Present that summary to the customer and ask: “Shall I add this to your cart? ✅”
+   - After the customer answers ALL option groups, call **request_item_confirmation** with \`{ items: [{ foodId, quantity, selectedOptions: [{ optionId, choiceId }] }] }\` — no labels or prices, only IDs. The server validates and returns the accurate summary in summaryLines.
+   - Present the returned summaryLines verbatim to the customer and ask: “Shall I add this to your cart? ✅”
    - Only call **confirm_item** after the customer gives an explicit yes (yes / sure / go ahead / ok / correct / add it / yep). Ambiguous or off-topic responses are NOT confirmations.
    - **The server enforces this — confirm_item will be rejected if request_item_confirmation was not called first.**
    - confirm_item will return an item summary and cart size. Show the summary to the customer.

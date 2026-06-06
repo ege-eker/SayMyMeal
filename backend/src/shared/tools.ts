@@ -73,7 +73,7 @@ export const tools: ChatCompletionTool[] = [
     function: {
       name: "request_item_confirmation",
       description:
-        "Show the customer a summary of one or more items and wait for their explicit confirmation before adding to cart. MUST be called before confirm_item — the server will reject confirm_item if this step was skipped.",
+        "Show the customer a DB-accurate summary of items before adding to cart. Provide foodId, quantity, and the selected choiceIds — the server validates and builds the accurate summary. Read the returned summaryLines verbatim to the customer and wait for explicit yes. MUST be called before confirm_item — the server will reject confirm_item if this step was skipped.",
       parameters: {
         type: "object",
         required: ["items"],
@@ -83,10 +83,22 @@ export const tools: ChatCompletionTool[] = [
             description: "Items to present for confirmation.",
             items: {
               type: "object",
-              required: ["foodId", "summary"],
+              required: ["foodId", "quantity", "selectedOptions"],
               properties: {
                 foodId: { type: "string", description: "foodId of the item." },
-                summary: { type: "string", description: "Human-readable summary, e.g. '1x Chicken Pitta (Large, Chilli) — £9.50'" },
+                quantity: { type: "number", description: "Quantity ordered." },
+                selectedOptions: {
+                  type: "array",
+                  description: "Selected option choices. Only provide optionId and choiceId — the server resolves labels and prices.",
+                  items: {
+                    type: "object",
+                    required: ["optionId", "choiceId"],
+                    properties: {
+                      optionId: { type: "string" },
+                      choiceId: { type: "string" },
+                    },
+                  },
+                },
               },
             },
           },

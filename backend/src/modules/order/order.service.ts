@@ -145,6 +145,20 @@ export const orderService = (app: FastifyInstance) => ({
             }
           }
         }
+
+        // Snapshot food name/price; enrich selectedOptions from DB (defense-in-depth)
+        const foodRecord = allFoods.find((f) => f.id === item.foodId);
+        item.foodName = foodRecord?.name;
+        item.basePrice = foodRecord ? Number(foodRecord.basePrice) : undefined;
+        if (item.selectedOptions) {
+          item.selectedOptions = item.selectedOptions.map((sel) => {
+            const group = foodOptions.find((o) => o.id === sel.optionId);
+            const choice = group?.choices.find((c) => c.id === sel.choiceId);
+            return choice
+              ? { ...sel, extraPrice: choice.extraPrice, choiceLabel: choice.label }
+              : sel;
+          });
+        }
       }
 
       return app.prisma.order.create({
@@ -160,6 +174,8 @@ export const orderService = (app: FastifyInstance) => ({
           items: {
             create: data.items.map((item) => ({
               foodId: item.foodId,
+              foodName: item.foodName,
+              basePrice: item.basePrice,
               quantity: item.quantity,
               selected: item.selectedOptions
                 ? (item.selectedOptions as unknown as Prisma.InputJsonValue)

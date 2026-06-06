@@ -106,6 +106,59 @@ export function toolHandlers(app: FastifyInstance) {
       return { foodName: food?.name ?? foodId, options };
     },
 
+    async request_item_confirmation({ items }: {
+      items: Array<{ foodId: string; quantity: number; selectedOptions: Array<{ optionId: string; choiceId: string }> }>;
+    }): Promise<{ summaryLines: string[]; message: string }> {
+      const summaryLines: string[] = [];
+
+      for (const item of items) {
+        const food = await app.prisma.food.findFirst({
+          where: { id: item.foodId, isAvailable: true },
+          select: { name: true, basePrice: true },
+        });
+        if (!food) throw new BadRequestError(`Invalid foodId: "${item.foodId}"`);
+
+        const foodOptions = await app.prisma.foodOption.findMany({
+          where: { foodId: item.foodId, isAvailable: true },
+          include: { choices: { where: { isAvailable: true } } },
+        });
+
+        for (const group of foodOptions) {
+          const hasSelection = item.selectedOptions?.some((s) => s.optionId === group.id);
+          if (!hasSelection) {
+            const choices = group.choices.map((c) => `${c.label} [choiceId: ${c.id}]`).join(", ");
+            throw new BadRequestError(
+              `Missing selection for "${group.title}" on "${food.name}". Available choices: ${choices}`
+            );
+          }
+        }
+
+        let extraTotal = 0;
+        const choiceLabels: string[] = [];
+
+        for (const sel of item.selectedOptions ?? []) {
+          const group = foodOptions.find((o) => o.id === sel.optionId);
+          if (!group) throw new BadRequestError(`Invalid optionId "${sel.optionId}"`);
+          const choice = group.choices.find((c) => c.id === sel.choiceId);
+          if (!choice) {
+            const valid = group.choices.map((c) => `${c.label} [choiceId: ${c.id}]`).join(", ");
+            throw new BadRequestError(`Invalid choiceId "${sel.choiceId}" for "${group.title}". Valid choices: ${valid}`);
+          }
+          extraTotal += choice.extraPrice;
+          choiceLabels.push(choice.label);
+        }
+
+        const total = (Number(food.basePrice) + extraTotal) * item.quantity;
+        const optStr = choiceLabels.length ? ` (${choiceLabels.join(", ")})` : "";
+        summaryLines.push(`${item.quantity}x ${food.name}${optStr} — £${total.toFixed(2)}`);
+      }
+
+      return {
+        summaryLines,
+        message: "Read these summaryLines verbatim to the customer and wait for explicit yes before calling confirm_item.",
+      };
+    },
+
     async confirm_item({ restaurantId, foodId, quantity, selectedOptions }: {
       restaurantId: string;
       foodId: string;
@@ -158,15 +211,27 @@ export function toolHandlers(app: FastifyInstance) {
         }
       }
 
-      const extraPrice = (selectedOptions ?? []).reduce((sum, sel) => sum + (sel.extraPrice ?? 0), 0);
+      const enrichedOptions = (selectedOptions ?? []).map((sel) => {
+        const group = foodOptions.find((o) => o.id === sel.optionId);
+        const choice = group?.choices.find((c) => c.id === sel.choiceId);
+        if (!choice) return sel;
+        if (sel.choiceLabel && sel.choiceLabel !== choice.label) {
+          throw new BadRequestError(
+            `Label mismatch for choiceId "${sel.choiceId}": ` +
+            `you sent "${sel.choiceLabel}" but the actual label is "${choice.label}". ` +
+            `Use exact values from get_food_options.`
+          );
+        }
+        return { ...sel, extraPrice: choice.extraPrice, choiceLabel: choice.label };
+      });
+
+      const extraPrice = enrichedOptions.reduce((sum, sel) => sum + (sel.extraPrice ?? 0), 0);
       const itemTotal = (food.basePrice + extraPrice) * quantity;
-      const optionsSummary = (selectedOptions ?? [])
-        .map((s) => s.choiceLabel ?? s.choiceId)
-        .join(", ");
+      const optionsSummary = enrichedOptions.map((s) => s.choiceLabel ?? s.choiceId).join(", ");
       const itemSummary = `${quantity}x ${food.name}${optionsSummary ? ` (${optionsSummary})` : ""} — £${itemTotal.toFixed(2)}`;
 
       return {
-        confirmedItem: { foodId, foodName: food.name, quantity, selectedOptions: selectedOptions ?? [] },
+        confirmedItem: { foodId, foodName: food.name, quantity, selectedOptions: enrichedOptions },
         itemSummary,
         cartSize: 0, // updated by the caller (WhatsApp/voice service) after adding to cart
       };
@@ -256,6 +321,8 @@ export function toolHandlers(app: FastifyInstance) {
  */
 export function getFollowUpInstruction(fnName: string): string {
   switch (fnName) {
+    case "request_item_confirmation":
+      return "Server has built the accurate summary from the database. Read the summaryLines verbatim to the customer — do NOT paraphrase or change any details. Wait for explicit yes before calling confirm_item.";
     case "get_menus":
       return "Menus fetched. List ONLY the menu names returned in this result — do not add, invent, or describe any items not in the result. Ask the customer which menu they'd like to order from. If the customer has already named specific foods they want, call get_food_options for those foods directly using their foodIds from the MENU REFERENCE — no need to list menus first.";
     case "get_foods":

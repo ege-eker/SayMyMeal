@@ -63,7 +63,7 @@ function OrderCard({
   const total = useMemo(() => {
     if (!order.items) return 0;
     return order.items.reduce((sum: number, item: any) => {
-      const base = item.food?.basePrice ?? 0;
+      const base = item.basePrice ?? item.food?.basePrice ?? 0;
       const extras = item.selected
         ? item.selected.reduce((s: number, sel: any) => s + (sel.extraPrice || 0), 0)
         : 0;
@@ -101,12 +101,13 @@ function OrderCard({
             {order.items.map((item: any) => (
               <li key={item.id} className="py-2 flex justify-between text-sm">
                 <span>
-                  {item.food?.name ?? "Unknown"} x{item.quantity}
-                  {item.selected?.length > 0 && (
-                    <span className="text-gray-400 text-xs ml-1">
-                      ({item.selected.map((s: any) => s.choiceLabel).join(", ")})
-                    </span>
-                  )}
+                  {item.foodName ?? item.food?.name ?? "Unknown"} x{item.quantity}
+                  {(() => {
+                    const labels = ((item.selected as any[]) ?? []).map((s: any) => s.choiceLabel).filter(Boolean);
+                    return labels.length > 0 ? (
+                      <span className="text-gray-400 text-xs ml-1">({labels.join(", ")})</span>
+                    ) : null;
+                  })()}
                 </span>
               </li>
             ))}

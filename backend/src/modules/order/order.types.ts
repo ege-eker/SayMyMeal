@@ -37,6 +37,8 @@ export interface CreateOrderItemInput {
   foodId: string;
   quantity: number;
   selectedOptions?: SelectedOption[];
+  foodName?: string;
+  basePrice?: number;
 }
 
 export interface ValidatedCartItem {

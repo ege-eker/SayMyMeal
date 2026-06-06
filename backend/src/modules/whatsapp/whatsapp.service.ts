@@ -213,18 +213,21 @@ export function whatsappService(app: FastifyInstance) {
         const args = JSON.parse(rawArgs);
         const handler = toolHandlers(app)[fn as keyof ReturnType<typeof toolHandlers>];
 
-        // request_item_confirmation and remove_item are handled inline (no DB call)
+        // remove_item is handled inline (cart mutation, no DB call)
         if (fn === "request_item_confirmation") {
-          const { items } = args as { items: { foodId: string; summary: string }[] };
-          items.forEach((i) => session.pendingConfirmations.add(i.foodId));
-          confirmationSetThisBatch = true;
+          let ricResult: unknown;
+          try {
+            ricResult = await handler(args);
+            const { items } = args as { items: { foodId: string }[] };
+            items.forEach((i) => session.pendingConfirmations.add(i.foodId));
+            confirmationSetThisBatch = true;
+          } catch (err: any) {
+            ricResult = { error: err.message ?? "request_item_confirmation failed", _instruction: "Fix the invalid IDs using the error above and retry request_item_confirmation." };
+          }
           const toolMessage = {
             role: "tool" as const,
             tool_call_id: call.id,
-            content: JSON.stringify({
-              summaryLines: items.map((i) => i.summary),
-              message: "Summary shown to customer. Wait for explicit yes before calling confirm_item.",
-            }),
+            content: JSON.stringify(ricResult),
           };
           messages.push(toolMessage);
           session.messages.push(toolMessage);
@@ -278,8 +281,8 @@ export function whatsappService(app: FastifyInstance) {
                   "Only call request_item_confirmation if this food was genuinely never shown to the customer for confirmation.",
               };
             } else {
-              session.pendingConfirmations.delete(foodId);
               const itemResult = await handler(args) as Awaited<ReturnType<ReturnType<typeof toolHandlers>["confirm_item"]>>;
+              session.pendingConfirmations.delete(foodId);
               session.cart.push(itemResult.confirmedItem);
               itemResult.cartSize = session.cart.length;
               result = itemResult;

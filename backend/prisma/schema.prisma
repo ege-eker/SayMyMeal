@@ -126,13 +126,15 @@ model Order {
 }
 
 model OrderItem {
-  id       String @id @default(uuid())
-  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderId  String
-  food     Food   @relation(fields: [foodId], references: [id], onDelete: Cascade)
-  foodId   String
-  quantity Int
-  selected Json?
+  id        String   @id @default(uuid())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  food      Food?    @relation(fields: [foodId], references: [id], onDelete: SetNull)
+  foodId    String?
+  foodName  String?
+  basePrice Decimal?
+  quantity  Int
+  selected  Json?
 }
 
 model Blacklist {
