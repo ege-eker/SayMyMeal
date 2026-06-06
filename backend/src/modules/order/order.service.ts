@@ -79,7 +79,7 @@ export const orderService = (app: FastifyInstance) => ({
       // }
       // --- End delivery zone validation ---
 
-      let etaMinutes = 30;
+      let etaMinutes = (restaurant as any).defaultDeliveryMinutes ?? 30;
       if (restaurant.isBusy && restaurant.busyExtraMinutes > 0) {
         etaMinutes += restaurant.busyExtraMinutes;
       }
