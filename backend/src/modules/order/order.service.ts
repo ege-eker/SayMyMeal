@@ -170,6 +170,7 @@ export const orderService = (app: FastifyInstance) => ({
           etaMinutes,
           notes: data.notes || null,
           restaurantId: data.restaurantId,
+          restaurantName: restaurant.name,
           userId: userId || null,
           items: {
             create: data.items.map((item) => ({

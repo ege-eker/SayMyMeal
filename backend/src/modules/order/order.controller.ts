@@ -59,7 +59,7 @@ export const orderController = (app: any) => {
     getById: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const order = await service.findById(req.params.id);
       if (!order) return reply.code(404).send({ message: "Order not found" });
-      // Verify ownership of the restaurant
+      if (!order.restaurantId) return reply.code(403).send({ error: 'Restaurant no longer exists' });
       const isOwner = await verifyOwnership(app, req.user!.id, order.restaurantId);
       if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
       return reply.send(order);
@@ -68,6 +68,7 @@ export const orderController = (app: any) => {
     updateStatus: async (req: FastifyRequest<{ Params: { id: string }; Body: UpdateOrderStatusInput; }>, reply: FastifyReply) => {
       const order = await service.findById(req.params.id);
       if (!order) return reply.code(404).send({ message: "Order not found" });
+      if (!order.restaurantId) return reply.code(403).send({ error: 'Restaurant no longer exists' });
       const isOwner = await verifyOwnership(app, req.user!.id, order.restaurantId);
       if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
       const updated = await service.updateStatus(req.params.id, req.body);
@@ -84,12 +85,13 @@ export const orderController = (app: any) => {
           where: { pollToken },
           select: { id: true },
         });
-        if (!restaurant || restaurant.id !== order.restaurantId) {
+        if (!restaurant || (order.restaurantId !== null && restaurant.id !== order.restaurantId)) {
           return reply.code(403).send({ error: 'Invalid poll token for this order' });
         }
       } else {
         if (!req.user) return reply.code(401).send({ error: 'Unauthorized' });
         if (req.user.role !== 'OWNER') return reply.code(403).send({ error: 'Forbidden' });
+        if (!order.restaurantId) return reply.code(403).send({ error: 'Restaurant no longer exists' });
         const isOwner = await verifyOwnership(app, req.user.id, order.restaurantId);
         if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
       }

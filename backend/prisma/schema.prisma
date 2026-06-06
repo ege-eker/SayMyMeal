@@ -108,21 +108,22 @@ model OptionChoice {
 }
 
 model Order {
-  id           String      @id @default(uuid())
-  customer     String
-  phone        String
-  address      Json
-  status       String      @default("pending")
+  id             String      @id @default(uuid())
+  customer       String
+  phone          String
+  address        Json
+  status         String      @default("pending")
   etaMinutes     Int?
   acknowledgedAt DateTime?
   items          OrderItem[]
-  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  restaurantId String
-  user         User?       @relation(fields: [userId], references: [id])
-  notes        String?
-  userId       String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  restaurant     Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  restaurantId   String?
+  restaurantName String?
+  user           User?       @relation(fields: [userId], references: [id])
+  notes          String?
+  userId         String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 model OrderItem {

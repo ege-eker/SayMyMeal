@@ -129,7 +129,8 @@ export const getOrdersSchema = {
               country: { type: "string" },
             },
           },
-          /* ---- NEW: restaurant info ---- */
+          restaurantName: { type: "string", nullable: true },
+          /* ---- restaurant join (may be null if deleted) ---- */
           restaurant: {
             type: "object",
             nullable: true,
@@ -138,7 +139,7 @@ export const getOrdersSchema = {
               name: { type: "string" },
             },
           },
-          /* ---- NEW: items array ---- */
+          /* ---- items array ---- */
           items: {
             type: "array",
             nullable: true,
@@ -148,7 +149,9 @@ export const getOrdersSchema = {
               properties: {
                 id: { type: "string" },
                 quantity: { type: "integer" },
-                /* food info */
+                foodName: { type: "string", nullable: true },
+                basePrice: { type: "number", nullable: true },
+                /* food join (may be null if deleted) */
                 food: {
                   type: "object",
                   nullable: true,
@@ -355,8 +358,22 @@ export const acknowledgeOrderSchema = {
         acknowledgedAt: { type: "string", format: "date-time", nullable: true },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" },
-        items: { type: "array" },
-        restaurant: { type: "object" },
+        restaurantName: { type: "string", nullable: true },
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              foodId: { type: "string", nullable: true },
+              foodName: { type: "string", nullable: true },
+              basePrice: { type: "number", nullable: true },
+              quantity: { type: "integer" },
+              selected: { type: ["array", "null", "object"] },
+            },
+          },
+        },
+        restaurant: { type: "object", nullable: true },
       },
     },
     404: {
