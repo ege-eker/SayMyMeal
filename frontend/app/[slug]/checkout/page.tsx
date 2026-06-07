@@ -163,6 +163,7 @@ export default function CheckoutPage() {
         restaurantId: cart.restaurantId!,
         address: deliveryAddress,
         notes: notes.trim() || undefined,
+        allergenAcknowledged: allergenAcknowledged || undefined,
         items: cart.items.map((item) => ({
           foodId: item.foodId,
           quantity: item.quantity,

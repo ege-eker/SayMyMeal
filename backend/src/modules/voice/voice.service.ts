@@ -433,6 +433,8 @@ export function voiceService(app: FastifyInstance) {
     // Server-side cart and confirmation state
     const cart: ValidatedCartItem[] = [];
     const pendingConfirmations = new Set<string>();
+    let allergenConflictPending = false;
+    let allergenAcknowledged = false;
 
 
     twilioWs.on("message", async (data: WebSocket.Data) => {
@@ -655,6 +657,10 @@ export function voiceService(app: FastifyInstance) {
                   const [removed] = cart.splice(idx, 1);
                   result = { removed: removed.foodName, cartSize: cart.length };
                 }
+              } else if (fnName === "acknowledge_allergen_risk") {
+                allergenAcknowledged = true;
+                allergenConflictPending = false;
+                result = { acknowledged: true };
               } else if (!handler) {
                 result = { error: `Unknown tool: ${fnName}` };
               } else if (fnName === "confirm_item") {
@@ -682,13 +688,28 @@ export function voiceService(app: FastifyInstance) {
                     error: "Cart is empty.",
                     _instruction: "No items confirmed yet. Use confirm_item for each food item before calling create_order.",
                   };
+                } else if (allergenConflictPending && !allergenAcknowledged) {
+                  result = {
+                    error: "Allergen conflict not yet acknowledged.",
+                    _instruction: "Inform the customer of the specific allergen warnings and wait for their explicit confirmation. Only call acknowledge_allergen_risk after they confirm, then retry create_order.",
+                  };
                 } else {
                   (args as any).items = cart;
+                  (args as any).allergenAcknowledged = allergenAcknowledged;
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   result = await (handler as (args: any) => Promise<unknown>)(args);
                   if (!(result as any)?.error) {
                     cart.length = 0;
+                    allergenConflictPending = false;
+                    allergenAcknowledged = false;
                   }
+                }
+              } else if (fnName === "check_food_allergens") {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                result = await (handler as (args: any) => Promise<unknown>)(args);
+                if ((result as any)?.warnings?.length > 0) {
+                  allergenConflictPending = true;
+                  allergenAcknowledged = false;
                 }
               } else {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

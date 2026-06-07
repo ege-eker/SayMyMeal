@@ -18,6 +18,8 @@ interface SessionState {
   restaurant?: LoadedRestaurant;
   cart: ValidatedCartItem[];
   pendingConfirmations: Set<string>;
+  allergenConflictPending: boolean;
+  allergenAcknowledged: boolean;
 }
 
 async function loadRestaurantById(app: FastifyInstance, restaurantId: string) {
@@ -131,7 +133,7 @@ export function whatsappService(app: FastifyInstance) {
       return "I am sorry, I can't assist you right now.";
     }
 
-    const session = existingSession ?? { messages: [], lastUpdated: Date.now(), cart: [], pendingConfirmations: new Set<string>(), restaurant };
+    const session = existingSession ?? { messages: [], lastUpdated: Date.now(), cart: [], pendingConfirmations: new Set<string>(), restaurant, allergenConflictPending: false, allergenAcknowledged: false };
     if (!existingSession) sessions.set(key, session);
     session.lastUpdated = Date.now();
     if (!session.restaurant) session.restaurant = restaurant;
@@ -260,6 +262,15 @@ export function whatsappService(app: FastifyInstance) {
           continue;
         }
 
+        if (fn === "acknowledge_allergen_risk") {
+          session.allergenAcknowledged = true;
+          session.allergenConflictPending = false;
+          const toolMessage = { role: "tool" as const, tool_call_id: call.id, content: JSON.stringify({ acknowledged: true }) };
+          messages.push(toolMessage);
+          session.messages.push(toolMessage);
+          continue;
+        }
+
         if (!handler) {
           app.log.warn(`❌ Unknown tool: ${fn}`);
           messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify({ error: `Unknown tool: ${fn}` }) });
@@ -293,14 +304,28 @@ export function whatsappService(app: FastifyInstance) {
                 error: "Cart is empty.",
                 _instruction: "No items have been confirmed yet. Use confirm_item for each food item before calling create_order.",
               };
+            } else if (session.allergenConflictPending && !session.allergenAcknowledged) {
+              result = {
+                error: "Allergen conflict not yet acknowledged.",
+                _instruction: "Inform the customer of the specific allergen warnings and wait for their explicit confirmation. Only call acknowledge_allergen_risk after they confirm, then retry create_order.",
+              };
             } else {
               (args as any).items = session.cart;
+              (args as any).allergenAcknowledged = session.allergenAcknowledged;
               result = await handler(args);
               if (!(result as any)?.error) {
                 session.cart = [];
+                session.allergenConflictPending = false;
+                session.allergenAcknowledged = false;
                 const baseEta = restaurant.defaultDeliveryMinutes ?? 30;
                 orderPlacedEta = baseEta + (restaurant.isBusy ? (restaurant.busyExtraMinutes ?? 15) : 0);
               }
+            }
+          } else if (fn === "check_food_allergens") {
+            result = await handler(args);
+            if ((result as any)?.warnings?.length > 0) {
+              session.allergenConflictPending = true;
+              session.allergenAcknowledged = false;
             }
           } else {
             result = await handler(args);

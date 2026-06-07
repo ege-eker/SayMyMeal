@@ -35,13 +35,20 @@ export const orderService = (app: FastifyInstance) => ({
         }
       }
 
-      // Allergen check — server-side safety net (AI should call check_food_allergens first,
-      // but this ensures no order with allergen conflicts goes through unacknowledged)
-      if (data.phone && !data.allergenAcknowledged) {
+      // Allergen check — server-side safety net
+      if (!data.allergenAcknowledged) {
         const foodIds = data.items.map((i) => i.foodId);
-        const { warnings } = await this.checkAllergensByPhone(normalizePhone(data.phone), foodIds);
-        if (warnings.length > 0) {
-          const detail = warnings
+        let allergenResult: { warnings: { foodId: string; foodName: string; matchedAllergens: string[] }[] } = { warnings: [] };
+        if (userId) {
+          const user = await app.prisma.user.findUnique({ where: { id: userId }, select: { allergens: true } });
+          if (user && user.allergens.length > 0) {
+            allergenResult = await this.checkAllergens(foodIds, user.allergens);
+          }
+        } else if (data.phone) {
+          allergenResult = await this.checkAllergensByPhone(normalizePhone(data.phone), foodIds);
+        }
+        if (allergenResult.warnings.length > 0) {
+          const detail = allergenResult.warnings
             .map((w) => `${w.foodName} (${w.matchedAllergens.join(", ")})`)
             .join("; ");
           throw new BadRequestError(

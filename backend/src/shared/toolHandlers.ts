@@ -332,15 +332,17 @@ export function getFollowUpInstruction(fnName: string): string {
     case "confirm_item":
       return "Item confirmed and added to cart. If you still have more items to confirm from the customer's initial order, do NOT ask about add-ons yet — just note this item was confirmed and immediately call confirm_item for the next item in sequence. Only show the full cart summary and ask ONCE 'Would you like to add anything else?' after ALL items from the initial request are confirmed. If yes — go back to get_menus to start fresh for the new item. If no — collect the delivery address, then call create_order (items are automatically taken from the cart — do NOT include them).";
     case "create_order":
-      return "Check the tool result. If it contains an 'error' field: (1) If the error contains 'Allergen conflict', tell the customer exactly which foods contain which allergens and ask 'Would you still like to proceed with your order?' — if yes, retry create_order with allergenAcknowledged: true; if no, offer to remove the conflicting item(s). (2) For any other error, explain it naturally in your own words — never read the error verbatim, ask them to correct it. Do NOT say the order was placed if there is an error. If successful (no error field), the result contains an `etaMinutes` field — use that exact number as the delivery time. Do NOT use any other number. Do NOT read out the order items again.";
+      return "Check the tool result. If it contains an 'error' field: (1) If the error contains 'Allergen conflict', tell the customer exactly which foods contain which allergens and ask 'Would you still like to proceed with your order?' — if yes, call acknowledge_allergen_risk first, then retry create_order; if no, offer to remove the conflicting item(s). (2) For any other error, explain it naturally in your own words — never read the error verbatim, ask them to correct it. Do NOT say the order was placed if there is an error. If successful (no error field), the result contains an `etaMinutes` field — use that exact number as the delivery time. Do NOT use any other number. Do NOT read out the order items again.";
     case "get_order_status":
       return "Order status retrieved. Share the status with the customer and close politely.";
     case "get_allergen_profile":
       return "Allergen profile retrieved. If allergenAsked is false, ask the customer about their allergies. If true, continue normally.";
     case "set_allergen_profile":
       return "Allergen profile saved. Thank the customer and close the call politely.";
+    case "acknowledge_allergen_risk":
+      return "Customer has acknowledged the allergen risk. Now call create_order immediately.";
     case "check_food_allergens":
-      return "Allergen check done. If there are warnings, inform the customer and ask if they want to proceed. If no warnings, continue with creating the order.";
+      return "STOP. Do NOT call create_order or any other tool in this response. If there are warnings, send only the allergen warning message and wait for the customer's reply in a new message. Never treat a prior 'yes' about placing the order as allergen acknowledgment — the customer must explicitly confirm AFTER seeing the warning. Only call acknowledge_allergen_risk after they confirm. If there are no warnings, call create_order now.";
     default:
       return `Function ${fnName} completed. Continue the conversation naturally.`;
   }

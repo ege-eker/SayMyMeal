@@ -202,6 +202,7 @@ export async function createOrder(data: {
   restaurantId: string;
   address: any;
   notes?: string;
+  allergenAcknowledged?: boolean;
   items: {
     foodId: string;
     quantity: number;

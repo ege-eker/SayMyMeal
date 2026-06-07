@@ -21,6 +21,7 @@ export const createOrderSchema = {
         },
       },
       notes: { type: "string", nullable: true },
+      allergenAcknowledged: { type: "boolean" },
       /* Order items */
       items: {
         type: "array",

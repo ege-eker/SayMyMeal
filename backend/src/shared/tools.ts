@@ -199,10 +199,6 @@ export const tools: ChatCompletionTool[] = [
               country: { type: "string", default: "UK", description: "Country name, defaults to UK." },
             },
           },
-          allergenAcknowledged: {
-            type: "boolean",
-            description: "Set to true ONLY after the customer has explicitly acknowledged allergen warnings and confirmed they still want to proceed. Omit or set false on first attempt.",
-          },
         },
       },
     },
@@ -280,6 +276,19 @@ export const tools: ChatCompletionTool[] = [
             description: "Customer phone number to look up allergen profile.",
           },
         },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "acknowledge_allergen_risk",
+      description:
+        "Call this ONLY after the customer has explicitly said they accept the allergen risk in a separate message, after you have already informed them of the specific allergen warnings. Never call this in the same response turn as check_food_allergens.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
       },
     },
   },
