@@ -124,6 +124,15 @@ export const tools: ChatCompletionTool[] = [
   {
     type: "function",
     function: {
+      name: "get_cart",
+      description:
+        "Return the customer's current cart with every item and its full option/ingredient breakdown. Call this when the customer asks what's in their cart or the full contents of a confirmed item (e.g. 'what's in the standard salad?').",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "confirm_item",
       description:
         "Confirm and add a food item with its selected options to the order cart. ONLY call this after request_item_confirmation has been called and the customer has given an explicit yes. The server will reject this call if request_item_confirmation was not called first in a prior round-trip.",

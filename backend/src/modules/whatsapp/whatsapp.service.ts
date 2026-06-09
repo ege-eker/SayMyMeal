@@ -262,6 +262,21 @@ export function whatsappService(app: FastifyInstance) {
           continue;
         }
 
+        if (fn === "get_cart") {
+          const cartResult = {
+            items: session.cart.map((item) => ({
+              foodName: item.foodName,
+              quantity: item.quantity,
+              options: (item.selectedOptions ?? []).map((o) => o.choiceLabel ?? o.choiceId).filter(Boolean),
+            })),
+            cartSize: session.cart.length,
+          };
+          const toolMessage = { role: "tool" as const, tool_call_id: call.id, content: JSON.stringify(cartResult) };
+          messages.push(toolMessage);
+          session.messages.push(toolMessage);
+          continue;
+        }
+
         if (fn === "acknowledge_allergen_risk") {
           session.allergenAcknowledged = true;
           session.allergenConflictPending = false;

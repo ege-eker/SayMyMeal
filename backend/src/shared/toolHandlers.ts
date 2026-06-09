@@ -134,7 +134,7 @@ export function toolHandlers(app: FastifyInstance) {
         }
 
         let extraTotal = 0;
-        const choiceLabels: string[] = [];
+        const selByGroup = new Map<string, { group: typeof foodOptions[number]; chosen: typeof foodOptions[number]["choices"] }>();
 
         for (const sel of item.selectedOptions ?? []) {
           const group = foodOptions.find((o) => o.id === sel.optionId);
@@ -145,7 +145,18 @@ export function toolHandlers(app: FastifyInstance) {
             throw new BadRequestError(`Invalid choiceId "${sel.choiceId}" for "${group.title}". Valid choices: ${valid}`);
           }
           extraTotal += choice.extraPrice;
-          choiceLabels.push(choice.label);
+          const existing = selByGroup.get(group.id);
+          if (existing) existing.chosen.push(choice);
+          else selByGroup.set(group.id, { group, chosen: [choice] });
+        }
+
+        // Collapse fully-standard groups to "Standard <title>" for display; data (choiceIds) unchanged
+        const choiceLabels: string[] = [];
+        for (const { group, chosen } of selByGroup.values()) {
+          const standardCount = group.choices.filter((c) => c.isStandard).length;
+          const allStandard = standardCount > 0 && chosen.length === standardCount && chosen.every((c) => c.isStandard);
+          if (allStandard) choiceLabels.push(`Standard ${group.title}`);
+          else choiceLabels.push(...chosen.map((c) => c.label));
         }
 
         const total = (Number(food.basePrice) + extraTotal) * item.quantity;
@@ -227,7 +238,25 @@ export function toolHandlers(app: FastifyInstance) {
 
       const extraPrice = enrichedOptions.reduce((sum, sel) => sum + (sel.extraPrice ?? 0), 0);
       const itemTotal = (food.basePrice + extraPrice) * quantity;
-      const optionsSummary = enrichedOptions.map((s) => s.choiceLabel ?? s.choiceId).join(", ");
+
+      // Collapse fully-standard groups to "Standard <title>" for display; cart data unchanged
+      const groupedLabels: string[] = [];
+      const seenGroups = new Set<string>();
+      for (const sel of enrichedOptions) {
+        if (seenGroups.has(sel.optionId)) continue;
+        seenGroups.add(sel.optionId);
+        const group = foodOptions.find((g) => g.id === sel.optionId);
+        if (!group) { groupedLabels.push(sel.choiceLabel ?? sel.choiceId); continue; }
+        const groupSels = enrichedOptions.filter((s) => s.optionId === sel.optionId);
+        const standardCount = group.choices.filter((c) => c.isStandard).length;
+        const allStandard = standardCount > 0 && groupSels.length === standardCount && groupSels.every((s) => {
+          const ch = group.choices.find((c) => c.id === s.choiceId);
+          return ch?.isStandard ?? false;
+        });
+        if (allStandard) groupedLabels.push(`Standard ${group.title}`);
+        else groupedLabels.push(...groupSels.map((s) => s.choiceLabel ?? s.choiceId));
+      }
+      const optionsSummary = groupedLabels.join(", ");
       const itemSummary = `${quantity}x ${food.name}${optionsSummary ? ` (${optionsSummary})` : ""} — £${itemTotal.toFixed(2)}`;
 
       return {
@@ -333,6 +362,8 @@ export function getFollowUpInstruction(fnName: string): string {
       return "Item confirmed and added to cart. If you still have more items to confirm from the customer's initial order, do NOT ask about add-ons yet — just note this item was confirmed and immediately call confirm_item for the next item in sequence. After ALL items from the initial request are confirmed, acknowledge the completed cart and ask ONCE 'Would you like to add anything else?' — present the cart summary in whatever level of detail is appropriate for this channel (see your system prompt). If yes — go back to get_menus to start fresh for the new item. If no — collect the delivery address, then call create_order (items are automatically taken from the cart — do NOT include them).";
     case "create_order":
       return "Check the tool result. If it contains an 'error' field: (1) If the error contains 'Allergen conflict', tell the customer exactly which foods contain which allergens and ask 'Would you still like to proceed with your order?' — if yes, call acknowledge_allergen_risk first, then retry create_order; if no, offer to remove the conflicting item(s). (2) For any other error, explain it naturally in your own words — never read the error verbatim, ask them to correct it. Do NOT say the order was placed if there is an error. If successful (no error field), the result contains an `etaMinutes` field — use that exact number as the delivery time. Do NOT use any other number. Do NOT read out the order items again.";
+    case "get_cart":
+      return "Read back each item with its full option/ingredient list from this result. This is the authoritative cart — do not rely on memory.";
     case "get_order_status":
       return "Order status retrieved. Share the status with the customer and close politely.";
     case "get_allergen_profile":

@@ -70,6 +70,7 @@ You represent only **${restaurantName}**.
 Once option details for an item have been read to the customer (during option questions or the request_item_confirmation summary), do NOT repeat those details again unless the customer explicitly asks.
 - After confirm_item: say only "Perfect, that's added." or "Got it, [food name] added." — no option details.
 - Cart summary (add-on prompt, pre-order confirm): state the count and offer to review — e.g. "You have 2 items ready — would you like me to go through them, or shall we proceed?" If the customer wants to hear the details, read back the items with their options; if they want to proceed, move on directly. Do NOT list items proactively.
+- If the customer asks what's in their cart, or the full ingredients of a confirmed item (e.g. "what's in the standard salad?"), call **get_cart** and read the full breakdown from its result — do not rely on memory.
 
 ---
 
@@ -132,7 +133,10 @@ This applies to single items and full order lists alike. Skip the step-by-step o
    - When the customer has named a specific food, fetch options with \`get_food_options\`.
    - Ask about each option group one at a time. **Never skip a group.** You MUST go through ALL option groups before moving on.
    - **For each option group, check if any choices have isStandard: true:**
-     - If YES (standard choices exist): present them as the default. Example: "It comes with Lettuce, Tomato, Onion, Cucumber, and Red Cabbage — is that OK?" or "It comes with Chilli and Garlic Mayo — shall we keep those?" — if the customer approves, use those choiceIds directly; if they want to change, list ALL available choices for that group and let them pick.
+     - If YES (standard choices exist): present them as the default, adapting the phrasing to the group type:
+       - **Standard-only group** (no non-standard choices, e.g. a salad): list the standard items and ask removal-style — "It comes with Lettuce, Tomato, Onion, Cucumber, and Red Cabbage — is that OK, or would you like anything removed?"
+       - **Standard + addable extras** (group also has non-standard choices, e.g. sauces): name the standard defaults and invite both — "It comes with Chilli and Garlic Mayo as standard — shall we keep those, or would you like to remove anything or add any extras?" List the addable extras only if the customer asks; do not read them out proactively.
+       - In both cases: if the customer approves the defaults, use those choiceIds directly; if they want to change, list ALL available choices for that group.
      - If NO standard choices: ask normally using the rules below.
    - **Single-select groups (no standards)**: ask normally. Example: "What size — Small or Large?"
    - **Multi-select groups with 1-2 choices (no standards)**: ask normally. Example: "Any sauce — Chilli or BBQ?"
@@ -665,6 +669,15 @@ export function voiceService(app: FastifyInstance) {
                   const [removed] = cart.splice(idx, 1);
                   result = { removed: removed.foodName, cartSize: cart.length };
                 }
+              } else if (fnName === "get_cart") {
+                result = {
+                  items: cart.map((item) => ({
+                    foodName: item.foodName,
+                    quantity: item.quantity,
+                    options: (item.selectedOptions ?? []).map((o) => o.choiceLabel ?? o.choiceId).filter(Boolean),
+                  })),
+                  cartSize: cart.length,
+                };
               } else if (fnName === "acknowledge_allergen_risk") {
                 allergenAcknowledged = true;
                 allergenConflictPending = false;
