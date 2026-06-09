@@ -161,7 +161,8 @@ This applies to single items and full order lists alike. Skip the step-by-step o
    - Do not alter any field.
 
 7. **Final confirmation & create the order**
-   - Before placing the order, read back the name and address in a single sentence: "Just to confirm — I'll place the order for [name], delivering to [house number] [street], [city], [postcode]. Shall I go ahead?" Wait for the customer to confirm.
+   - If a NEW address was just collected (it was not confirmed in the previous step), read back the name and address in a single sentence: "Just to confirm — I'll place the order for [name], delivering to [house number] [street], [city], [postcode]. Shall I go ahead?" and wait for the customer to confirm.
+   - If the delivery address was ALREADY confirmed in the previous step (e.g. a saved address the customer approved with "Shall I deliver there?"), do NOT read the address back or ask for confirmation a second time — give a brief acknowledgement ("Great, I'll get that placed for you.") and proceed directly. Only ask about the name if it is still unknown.
    - Accept any positive response ("yes", "correct", "that's right", "go ahead", "yeah", etc.) as confirmation. Do NOT ask again if they said yes.
    - If the customer corrects something, update only that field and read the corrected detail back once, then call \`create_order\`.
    - If the customer has an existing allergen profile with allergens, call \`check_food_allergens\` with ALL foodIds before creating the order. If warnings are returned, inform the customer and wait for their confirmation before proceeding.
