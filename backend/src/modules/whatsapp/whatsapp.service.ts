@@ -8,6 +8,24 @@ import { resolveCaller, ResolvedCaller } from "../../shared/identityResolver";
 import { MenuSnapshot } from "../../shared/menuSnapshot";
 import { ValidatedCartItem } from "../../modules/order/order.types";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { restaurantService } from "../restaurant/restaurant.service";
+import { waIdToE164 } from "../../shared/phone";
+import {
+  exchangeCodeForToken,
+  subscribeAppToWaba,
+  getPhoneNumberInfo,
+  deregisterPhoneNumber,
+  sendTextMessage,
+  markMessageRead,
+  downloadMedia,
+  GraphApiError,
+} from "../../shared/metaGraph";
+import type { MetaWebhookPayload, ConnectWhatsappInput } from "./whatsapp.types";
+
+/** Thrown when connecting a restaurant that already has a WhatsApp number. */
+export class WhatsappAlreadyConnectedError extends Error {}
+/** Thrown when the WhatsApp number is already linked to another restaurant. */
+export class WhatsappNumberTakenError extends Error {}
 
 type LoadedRestaurant = Awaited<ReturnType<typeof loadRestaurantById>>;
 
@@ -48,38 +66,14 @@ async function loadRestaurantById(app: FastifyInstance, restaurantId: string) {
   return restaurant;
 }
 
-/**
- * Downloads audio from Twilio's MediaUrl with Basic Auth
- */
-async function downloadTwilioAudio(mediaUrl: string): Promise<Buffer> {
-  const accountSid = process.env.TWILIO_WA_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_WA_AUTH_TOKEN;
-
-  if (!accountSid || !authToken) {
-    throw new Error("TWILIO_WA_ACCOUNT_SID and TWILIO_WA_AUTH_TOKEN must be set");
-  }
-
-  const authHeader = "Basic " + Buffer.from(`${accountSid}:${authToken}`).toString("base64");
-
-  // Twilio media URLs require authentication and may redirect
-  const response = await fetch(mediaUrl, {
-    headers: {
-      Authorization: authHeader,
-    },
-    redirect: "follow",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to download audio: ${response.status} ${response.statusText}`);
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
-}
-
 export function whatsappService(app: FastifyInstance) {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const restaurants = restaurantService(app);
   const sessions = new Map<string, SessionState>();
+
+  // Dedupe inbound messages — Meta retries webhook delivery. Maps message.id → ms timestamp.
+  const recentMessageIds = new Map<string, number>();
+  const MESSAGE_DEDUP_TTL = 10 * 60 * 1000;
 
   function sessionKey(restaurantId: string, phone: string): string {
     return `${restaurantId}:${phone}`;
@@ -98,13 +92,16 @@ export function whatsappService(app: FastifyInstance) {
     }
   }
 
-  // Clear old sessions every 15mins
+  // Clear old sessions every 15mins; also prune the webhook dedup map
   setInterval(() => {
     const now = Date.now();
     for (const [phone, session] of sessions) {
       if (now - session.lastUpdated > 15 * 60 * 1000) {
         sessions.delete(phone);
       }
+    }
+    for (const [id, ts] of recentMessageIds) {
+      if (now - ts > MESSAGE_DEDUP_TTL) recentMessageIds.delete(id);
     }
   }, 60_000);
 
@@ -413,18 +410,23 @@ export function whatsappService(app: FastifyInstance) {
 
   /**
    * Handle voice messages by transcribing them with OpenAI Whisper
-   * and then processing as a regular text message
+   * and then processing as a regular text message.
+   * Audio is downloaded from Meta's media endpoint (mediaId + business token).
    */
-  async function handleVoiceMessage(phone: string, mediaUrl: string, restaurantId: string): Promise<string> {
-    app.log.info(`🎤 Downloading voice message from ${mediaUrl}`);
+  async function handleVoiceMessage(
+    phone: string,
+    mediaId: string,
+    restaurantId: string,
+    token: string
+  ): Promise<string> {
+    app.log.info(`🎤 Downloading voice message media ${mediaId}`);
 
-    // Download the audio file from Twilio
-    const audioBuffer = await downloadTwilioAudio(mediaUrl);
+    // Download the audio file from the Meta media endpoint
+    const audioBuffer = await downloadMedia(mediaId, token);
     app.log.info(`📥 Downloaded ${audioBuffer.length} bytes of audio`);
 
     // Create a File object for OpenAI Whisper API
-    // Twilio WhatsApp voice messages are typically in OGG format
-    // Convert Buffer to Uint8Array for File constructor compatibility
+    // WhatsApp voice messages are OGG (opus). Convert Buffer → Uint8Array for File ctor.
     const uint8Array = new Uint8Array(audioBuffer);
     const audioFile = new File([uint8Array], "voice_message.ogg", {
       type: "audio/ogg",
@@ -449,5 +451,156 @@ export function whatsappService(app: FastifyInstance) {
     return handleMessage(phone, transcribedText, restaurantId);
   }
 
-  return { handleMessage, handleVoiceMessage, clearSessions };
+  /**
+   * Process an incoming Meta Cloud API webhook payload (fire-and-forget after
+   * the controller has already replied 200). Routes by phone_number_id, dedupes
+   * retries, runs the LLM, and sends the reply via the Graph API.
+   */
+  async function processIncomingWebhook(payload: MetaWebhookPayload): Promise<void> {
+    for (const entry of payload.entry ?? []) {
+      for (const change of entry.changes ?? []) {
+        if (change.field !== "messages") continue;
+
+        const value = change.value;
+        const messages = value?.messages;
+        if (!messages || messages.length === 0) continue; // statuses-only / no-op
+
+        const phoneNumberId = value.metadata?.phone_number_id;
+        if (!phoneNumberId) {
+          app.log.warn("📭 WhatsApp webhook missing phone_number_id — dropping");
+          continue;
+        }
+
+        // No fallback: unknown numbers are logged and dropped (200 already sent).
+        const restaurant = await restaurants.findByPhoneNumberId(phoneNumberId);
+        if (!restaurant) {
+          app.log.warn(`📭 No restaurant for phone_number_id ${phoneNumberId} — dropping`);
+          continue;
+        }
+        const token = restaurant.whatsappAccessToken;
+        if (!token) {
+          app.log.error(`🔑 Restaurant ${restaurant.id} has no WhatsApp token — dropping`);
+          continue;
+        }
+
+        for (const message of messages) {
+          // Dedupe — Meta retries delivery until it gets a 200 in time.
+          if (recentMessageIds.has(message.id)) {
+            app.log.info(`♻️ Duplicate WhatsApp message ${message.id} — skipping`);
+            continue;
+          }
+          recentMessageIds.set(message.id, Date.now());
+
+          const phone = waIdToE164(message.from);
+          void markMessageRead(phoneNumberId, token, message.id);
+
+          let responseText: string;
+          try {
+            if (message.type === "text" && message.text) {
+              app.log.info(`📩 WhatsApp ${phone}: ${message.text.body}`);
+              responseText = await handleMessage(phone, message.text.body, restaurant.id);
+            } else if (message.type === "audio" && message.audio) {
+              app.log.info(`🎤 WhatsApp voice from ${phone}: ${message.audio.id}`);
+              responseText = await handleVoiceMessage(phone, message.audio.id, restaurant.id, token);
+            } else {
+              responseText = "I can only process text and voice messages.";
+            }
+          } catch (err) {
+            app.log.error({ err }, "WhatsApp message processing failed");
+            responseText = "I'm sorry, something went wrong. Please try again.";
+          }
+
+          try {
+            await sendTextMessage(phoneNumberId, token, message.from, responseText);
+          } catch (err) {
+            if (err instanceof GraphApiError && err.code === 190) {
+              app.log.error(
+                `🔒 WhatsApp token revoked for restaurant ${restaurant.id} (code 190) — owner must reconnect`
+              );
+            } else {
+              app.log.error({ err }, "Failed to send WhatsApp reply");
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Connect a restaurant's WhatsApp number via Embedded Signup (coexistence).
+   * The number is linked through the QR step inside the popup, so registerPhoneNumber/PIN
+   * is NOT called here (kept in metaGraph for a future migration path).
+   */
+  async function connectRestaurant(
+    restaurantId: string,
+    { code, wabaId, phoneNumberId }: ConnectWhatsappInput
+  ): Promise<{ whatsappPhone: string; whatsappPhoneNumberId: string }> {
+    const existing = await app.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { whatsappPhoneNumberId: true },
+    });
+    if (existing?.whatsappPhoneNumberId) {
+      throw new WhatsappAlreadyConnectedError("This restaurant already has a WhatsApp number connected.");
+    }
+
+    const token = await exchangeCodeForToken(code);
+    await subscribeAppToWaba(wabaId, token);
+    const info = await getPhoneNumberInfo(phoneNumberId, token);
+    const displayPhone = normalizePhone(info.display_phone_number);
+
+    try {
+      await app.prisma.restaurant.update({
+        where: { id: restaurantId },
+        data: {
+          wabaId,
+          whatsappPhoneNumberId: phoneNumberId,
+          whatsappAccessToken: token,
+          whatsappPhone: displayPhone,
+        },
+      });
+    } catch (err: any) {
+      if (err?.code === "P2002") {
+        throw new WhatsappNumberTakenError("This WhatsApp number is already connected to another restaurant.");
+      }
+      throw err;
+    }
+
+    clearSessions(restaurantId);
+    return { whatsappPhone: displayPhone, whatsappPhoneNumberId: phoneNumberId };
+  }
+
+  /** Disconnect a restaurant's WhatsApp number; best-effort deregister, then null the fields. */
+  async function disconnectRestaurant(restaurantId: string): Promise<void> {
+    const r = await app.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { whatsappPhoneNumberId: true, whatsappAccessToken: true },
+    });
+    if (r?.whatsappPhoneNumberId && r.whatsappAccessToken) {
+      try {
+        await deregisterPhoneNumber(r.whatsappPhoneNumberId, r.whatsappAccessToken);
+      } catch (err) {
+        app.log.warn({ err }, "WhatsApp deregister failed (best-effort)");
+      }
+    }
+    await app.prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: {
+        wabaId: null,
+        whatsappPhoneNumberId: null,
+        whatsappAccessToken: null,
+        whatsappPin: null,
+        whatsappPhone: null,
+      },
+    });
+    clearSessions(restaurantId);
+  }
+
+  return {
+    handleMessage,
+    handleVoiceMessage,
+    clearSessions,
+    processIncomingWebhook,
+    connectRestaurant,
+    disconnectRestaurant,
+  };
 }
