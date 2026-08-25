@@ -42,3 +42,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /frontend/public
+# local env files (only the .example variants are tracked)
+.env*
+!.env.example
+!**/.env.example
+
+# local scratch artifacts at repo root (screenshots, screen recordings)
+/*.png
+/*.mp4
