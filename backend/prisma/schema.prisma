@@ -53,9 +53,12 @@ model Restaurant {
   whatsappPhone    String?  @unique
   voicePhone       String?  @unique
   twilioPhoneSid   String?  @unique
+  wabaId                String?
+  whatsappPhoneNumberId String?  @unique
+  whatsappAccessToken   String?
+  whatsappPin           String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  isActive      Boolean  @default(false)
 }
 
 model Menu {
