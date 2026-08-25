@@ -8,7 +8,6 @@ import {
     getMyRestaurantsSchema,
     updateRestaurantSchema,
     deleteRestaurantSchema,
-    activateRestaurantSchema,
     uploadRestaurantImageSchema,
     removeRestaurantImageSchema
 } from "./restaurant.schema";
@@ -29,7 +28,6 @@ async function restaurantRoutes(app: FastifyInstance) {
     app.put("/restaurants/:id", { schema: updateRestaurantSchema, preHandler: [ownerAuth] }, ctrl.update as any);
     app.post("/restaurants/:id/image", { schema: uploadRestaurantImageSchema, preHandler: [ownerAuth] }, ctrl.uploadImage as any);
     app.delete("/restaurants/:id/image", { schema: removeRestaurantImageSchema, preHandler: [ownerAuth] }, ctrl.removeImage as any);
-    app.post("/restaurants/:id/activate", { schema: activateRestaurantSchema, preHandler: [ownerAuth] }, ctrl.activate as any);
     app.delete("/restaurants/:id", { schema: deleteRestaurantSchema, preHandler: [ownerAuth] }, ctrl.remove as any);
     app.post("/restaurants/:id/poll-token", { preHandler: [ownerAuth] }, ctrl.regeneratePollToken as any);
 }

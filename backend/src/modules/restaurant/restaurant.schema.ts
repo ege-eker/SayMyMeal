@@ -44,8 +44,8 @@ export const createRestaurantSchema = {
           busyExtraMinutes: { type: "integer" },
           defaultDeliveryMinutes: { type: "integer" },
           acceptingOrders: { type: "boolean" },
-          isActive: { type: "boolean" },
           whatsappPhone: { type: "string", nullable: true },
+          whatsappPhoneNumberId: { type: "string", nullable: true },
           voicePhone: { type: "string", nullable: true },
           twilioPhoneSid: { type: "string", nullable: true },
           ownerId: { type: "string", nullable: true },
@@ -72,8 +72,8 @@ const restaurantResponseProperties = {
   busyExtraMinutes: { type: "integer" },
   defaultDeliveryMinutes: { type: "integer" },
   acceptingOrders: { type: "boolean" },
-  isActive: { type: "boolean" },
   whatsappPhone: { type: "string", nullable: true },
+  whatsappPhoneNumberId: { type: "string", nullable: true },
   voicePhone: { type: "string", nullable: true },
   twilioPhoneSid: { type: "string", nullable: true },
   ownerId: { type: "string", nullable: true },
@@ -180,7 +180,6 @@ export const updateRestaurantSchema = {
       busyExtraMinutes: { type: "integer", minimum: 5, maximum: 120 },
       defaultDeliveryMinutes: { type: "integer", minimum: 5, maximum: 180 },
       acceptingOrders: { type: "boolean" },
-      whatsappPhone: { type: "string", pattern: "^\\+[1-9]\\d{1,14}$", nullable: true },
       voicePhone: { type: "string", pattern: "^\\+[1-9]\\d{1,14}$", nullable: true },
       deliveryZones: {
         type: "array",
@@ -200,16 +199,6 @@ export const updateRestaurantSchema = {
 export const deleteRestaurantSchema = {
   tags: ["restaurants"],
   description: "Delete a restaurant by ID (owner only)",
-  params: {
-    type: "object",
-    required: ["id"],
-    properties: { id: { type: "string" } },
-  },
-};
-
-export const activateRestaurantSchema = {
-  tags: ["restaurants"],
-  description: "Activate a restaurant and deactivate all others (owner only)",
   params: {
     type: "object",
     required: ["id"],

@@ -21,6 +21,10 @@ export interface Restaurant {
   whatsappPhone?: string | null;
   voicePhone?: string | null;
   twilioPhoneSid?: string | null;
+  wabaId?: string | null;
+  whatsappPhoneNumberId?: string | null;
+  whatsappAccessToken?: string | null;
+  whatsappPin?: string | null;
   ownerId?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -42,6 +46,5 @@ export interface UpdateRestaurantInput extends Partial<CreateRestaurantInput> {
   busyExtraMinutes?: number;
   defaultDeliveryMinutes?: number;
   acceptingOrders?: boolean;
-  whatsappPhone?: string | null;
   voicePhone?: string | null;
 }

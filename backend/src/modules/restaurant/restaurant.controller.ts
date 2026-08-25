@@ -58,13 +58,6 @@ export const restaurantController = (app: any) => {
       }
     },
 
-    activate: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-      const isOwner = await verifyOwnership(app, req.user!.id, req.params.id);
-      if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });
-      const restaurant = await service.activate(req.params.id);
-      reply.send({ message: `${restaurant.name} is now active`, restaurant });
-    },
-
     remove: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const isOwner = await verifyOwnership(app, req.user!.id, req.params.id);
       if (!isOwner) return reply.code(403).send({ error: 'Not your restaurant' });

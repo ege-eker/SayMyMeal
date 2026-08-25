@@ -44,7 +44,6 @@ export const restaurantService = (app: FastifyInstance) => ({
         busyExtraMinutes: data.busyExtraMinutes,
         defaultDeliveryMinutes: data.defaultDeliveryMinutes,
         acceptingOrders: data.acceptingOrders,
-        whatsappPhone: data.whatsappPhone !== undefined ? data.whatsappPhone : undefined,
         voicePhone: data.voicePhone !== undefined ? data.voicePhone : undefined,
         deliveryZones: data.deliveryZones
           ? (data.deliveryZones as unknown as Prisma.InputJsonValue)
@@ -84,7 +83,16 @@ export const restaurantService = (app: FastifyInstance) => ({
       },
     });
     if (!restaurant) return null;
-    const { pollToken, twilioPhoneSid, ownerId, ...publicData } = restaurant;
+    const {
+      pollToken,
+      twilioPhoneSid,
+      ownerId,
+      whatsappAccessToken,
+      whatsappPin,
+      wabaId,
+      whatsappPhoneNumberId,
+      ...publicData
+    } = restaurant;
     return publicData;
   },
 
@@ -95,15 +103,26 @@ export const restaurantService = (app: FastifyInstance) => ({
     });
   },
 
-  async findByWhatsappPhone(phone: string) {
+  // Inbound WhatsApp routing key (Meta Cloud API). Includes the token so the
+  // service can send the reply; never exposed in any HTTP response.
+  async findByPhoneNumberId(phoneNumberId: string) {
     return app.prisma.restaurant.findUnique({
-      where: { whatsappPhone: phone },
-      select: { id: true, name: true, isBusy: true, busyExtraMinutes: true, defaultDeliveryMinutes: true, acceptingOrders: true },
+      where: { whatsappPhoneNumberId: phoneNumberId },
+      select: {
+        id: true,
+        name: true,
+        isBusy: true,
+        busyExtraMinutes: true,
+        defaultDeliveryMinutes: true,
+        acceptingOrders: true,
+        whatsappAccessToken: true,
+        whatsappPhoneNumberId: true,
+      },
     });
   },
 
   async findByOwner(ownerId: string) {
-    return app.prisma.restaurant.findMany({
+    const restaurants = await app.prisma.restaurant.findMany({
       where: { ownerId },
       include: {
         menus: {
@@ -121,22 +140,9 @@ export const restaurantService = (app: FastifyInstance) => ({
         },
       },
     });
-  },
-
-  async activate(id: string) {
-    await app.prisma.restaurant.updateMany({
-      data: { isActive: false },
-    });
-
-    const updated = await app.prisma.restaurant.update({
-      where: { id },
-      data: { isActive: true },
-    });
-
-    app.log.info("Resetting WhatsApp sessions (active restaurant changed)");
-    app.whatsappService.clearSessions();
-
-    return updated;
+    // /restaurants/my has no response schema — strip secrets so they never leak.
+    // whatsappPhoneNumberId stays (frontend needs it to show connected state).
+    return restaurants.map(({ whatsappAccessToken, whatsappPin, ...rest }) => rest);
   },
 
   async updateImage(id: string, imageUrl: string) {
