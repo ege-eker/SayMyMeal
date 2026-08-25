@@ -3,7 +3,7 @@
 import useSWR from "swr";
 import { useState } from "react";
 import Link from "next/link";
-import { getMyRestaurants, createRestaurant, deleteRestaurant, activateRestaurant } from "@/lib/api";
+import { getMyRestaurants, createRestaurant, deleteRestaurant } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -177,13 +177,6 @@ export default function DashboardPage() {
                   {r.houseNumber} {r.street}, {r.city}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span
-                    className={`text-xs px-3 py-1 rounded-full ${
-                      r.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    {r.isActive ? "WhatsApp Active" : "Inactive"}
-                  </span>
                   {r.voicePhone && (
                     <span className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1">
                       <Phone className="w-3 h-3" />
@@ -223,16 +216,6 @@ export default function DashboardPage() {
                   <Link href={`/dashboard/${r.slug}/blacklist`}>
                     <Button size="sm" variant="outline">Blacklist</Button>
                   </Link>
-                  <Button
-                    size="sm"
-                    variant={r.isActive ? "secondary" : "outline"}
-                    onClick={async () => {
-                      await activateRestaurant(r.id);
-                      mutate();
-                    }}
-                  >
-                    {r.isActive ? "WA Active" : "Activate"}
-                  </Button>
                   <ConfirmDelete
                     title={`Delete "${r.name}"?`}
                     description="This will permanently delete the restaurant and all its menus, foods, and options. This action cannot be undone."

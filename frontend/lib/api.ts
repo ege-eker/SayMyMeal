@@ -8,6 +8,8 @@ function getToken(): string | null {
 export async function authFetch(url: string, options: RequestInit = {}) {
   const token = getToken();
   const headers: Record<string, string> = {
+    // Skip ngrok's browser-warning interstitial so API calls return JSON, not HTML
+    "ngrok-skip-browser-warning": "true",
     ...(options.headers as Record<string, string> || {}),
   };
   if (options.body) {
@@ -88,8 +90,32 @@ export async function deleteRestaurant(id: string) {
   await authFetch(`${API_URL}/restaurants/${id}`, { method: "DELETE" });
 }
 
-export async function activateRestaurant(id: string) {
-  const res = await authFetch(`${API_URL}/restaurants/${id}/activate`, { method: "POST" });
+// ---- WhatsApp (Meta Embedded Signup) ----
+
+export async function connectWhatsapp(
+  restaurantId: string,
+  data: { code: string; wabaId: string; phoneNumberId: string }
+) {
+  const res = await authFetch(`${API_URL}/whatsapp/connect`, {
+    method: "POST",
+    body: JSON.stringify({ restaurantId, ...data }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed to connect WhatsApp" }));
+    throw new Error(err.error || "Failed to connect WhatsApp");
+  }
+  return res.json();
+}
+
+export async function disconnectWhatsapp(restaurantId: string) {
+  const res = await authFetch(`${API_URL}/whatsapp/disconnect`, {
+    method: "POST",
+    body: JSON.stringify({ restaurantId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed to disconnect WhatsApp" }));
+    throw new Error(err.error || "Failed to disconnect WhatsApp");
+  }
   return res.json();
 }
 

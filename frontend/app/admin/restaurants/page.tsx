@@ -44,7 +44,6 @@ export default function RestaurantsPage() {
             <th className="p-3 whitespace-nowrap hidden md:table-cell">Slug</th>
             <th className="p-3 whitespace-nowrap hidden lg:table-cell">Address</th>
             <th className="p-3 whitespace-nowrap hidden md:table-cell">Rating</th>
-            <th className="p-3 text-center whitespace-nowrap">Active</th>
             <th className="p-3 whitespace-nowrap">Actions</th>
           </tr>
         </thead>
@@ -57,9 +56,6 @@ export default function RestaurantsPage() {
                 {`${r.houseNumber} ${r.street}, ${r.city}, ${r.postcode}`}
               </td>
               <td className="p-3 text-yellow-600 hidden md:table-cell">{r.rating ?? "-"}</td>
-              <td className="p-3 text-center">
-                {r.isActive ? "Active" : ""}
-              </td>
               <td className="p-3 flex flex-wrap gap-2">
                 <Link href={`/admin/restaurants/${r.id}`}>
                   <Button variant="outline">Menus</Button>
@@ -74,17 +70,6 @@ export default function RestaurantsPage() {
                   }}
                 >
                   Delete
-                </Button>
-                <Button
-                    variant={r.isActive ? "secondary" : "outline"}
-                    onClick={async () => {
-                    await authFetch(`${API_URL}/restaurants/${r.id}/activate`, {
-                        method: "POST",
-                    });
-                    mutate();
-                    }}
-                >
-                    {r.isActive ? "Active" : "Activate"}
                 </Button>
               </td>
             </tr>

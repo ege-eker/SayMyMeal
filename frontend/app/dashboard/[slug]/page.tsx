@@ -22,7 +22,8 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import FoodOptionForm from "@/components/FoodOptionForm";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import ImageUpload from "@/components/ImageUpload";
-import { Trash2, ChevronDown, AlertTriangle, Ban, ShieldCheck, Phone, MessageCircle, CheckCircle2, Search, Loader2 } from "lucide-react";
+import WhatsappConnect from "@/components/WhatsappConnect";
+import { Trash2, ChevronDown, AlertTriangle, Ban, ShieldCheck, Phone, CheckCircle2, Search, Loader2 } from "lucide-react";
 import AllergenTagEditor from "@/components/AllergenTagEditor";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -242,7 +243,7 @@ function PhoneNumbersCard({ restaurant, onUpdate }: { restaurant: any; onUpdate:
   return (
     <div className="space-y-4">
       <VoicePhoneCard restaurant={restaurant} onUpdate={onUpdate} />
-      <WhatsappPhoneCard restaurant={restaurant} onUpdate={onUpdate} />
+      <WhatsappConnect restaurant={restaurant} onUpdate={onUpdate} />
     </div>
   );
 }
@@ -409,66 +410,6 @@ function ProvisionVoiceFlow({ restaurantId, onProvisioned }: { restaurantId: str
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function WhatsappPhoneCard({ restaurant, onUpdate }: { restaurant: any; onUpdate: () => void }) {
-  const [whatsappPhone, setWhatsappPhone] = useState<string>(restaurant.whatsappPhone ?? "");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const e164Pattern = /^\+[1-9]\d{1,14}$/;
-
-  const handleSave = async () => {
-    setError(null);
-    const wp = whatsappPhone.trim() || null;
-    if (wp && !e164Pattern.test(wp)) {
-      setError("WhatsApp phone must be E.164 format (e.g. +447700900000)");
-      return;
-    }
-    setSaving(true);
-    try {
-      await updateRestaurant(restaurant.id, { whatsappPhone: wp });
-      onUpdate();
-    } catch (err: any) {
-      setError(err.message || "Failed to save WhatsApp phone");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="border rounded-lg p-5 shadow-sm bg-white">
-      <div className="flex items-center gap-2 mb-3">
-        <MessageCircle className="w-5 h-5 text-emerald-600" />
-        <h3 className="font-semibold text-sm">WhatsApp Phone</h3>
-      </div>
-      <p className="text-xs text-gray-500 mb-3">
-        WhatsApp number for this restaurant. Enter the E.164 number registered with your Twilio WhatsApp sender.
-      </p>
-
-      <div className="space-y-1.5">
-        <Input
-          placeholder="+447700900000"
-          value={whatsappPhone}
-          onChange={(e) => setWhatsappPhone(e.target.value)}
-          className="font-mono text-sm"
-        />
-        <div className="flex items-center gap-1.5">
-          <div className={`w-2 h-2 rounded-full ${restaurant.whatsappPhone ? "bg-green-500" : "bg-gray-300"}`} />
-          <span className="text-xs text-gray-400">
-            {restaurant.whatsappPhone ? "Active" : "Not configured"}
-          </span>
-        </div>
-      </div>
-
-      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
-
-      <div className="flex gap-2 mt-3">
-        <Button size="sm" onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : "Save"}
-        </Button>
-      </div>
     </div>
   );
 }
