@@ -6,6 +6,11 @@ const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
 // WhatsApp text messages are capped at 4096 characters per message.
 const WA_TEXT_LIMIT = 4096;
 
+// Bound every outbound call so a hung connection can't tie up a worker
+// indefinitely. Media downloads pull real bytes, so they get a longer budget.
+const GRAPH_TIMEOUT_MS = 15_000;
+const MEDIA_TIMEOUT_MS = 60_000;
+
 export class GraphApiError extends Error {
   code?: number;
   subcode?: number;
@@ -50,7 +55,19 @@ async function graphFetch<T = any>(path: string, opts: GraphFetchOptions = {}): 
     payload = JSON.stringify(body);
   }
 
-  const res = await fetch(url.toString(), { method, headers, body: payload });
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      method,
+      headers,
+      body: payload,
+      signal: AbortSignal.timeout(GRAPH_TIMEOUT_MS),
+    });
+  } catch (err) {
+    // Timeouts and network failures surface as GraphApiError so callers that
+    // already branch on it (controller -> 502) keep working unchanged.
+    throw new GraphApiError(`Graph API request failed: ${(err as Error).message}`);
+  }
   const text = await res.text();
 
   let json: any;
@@ -186,7 +203,15 @@ export async function downloadMedia(mediaId: string, token: string): Promise<Buf
   const meta = await graphFetch<{ url?: string; mime_type?: string }>(`/${mediaId}`, { token });
   if (!meta.url) throw new GraphApiError(`No media URL returned for media ${mediaId}`);
 
-  const res = await fetch(meta.url, { headers: { Authorization: `Bearer ${token}` } });
+  let res: Response;
+  try {
+    res = await fetch(meta.url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(MEDIA_TIMEOUT_MS),
+    });
+  } catch (err) {
+    throw new GraphApiError(`Failed to download media ${mediaId}: ${(err as Error).message}`);
+  }
   if (!res.ok) {
     throw new GraphApiError(`Failed to download media ${mediaId}: ${res.status} ${res.statusText}`);
   }

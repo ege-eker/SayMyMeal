@@ -67,7 +67,9 @@ async function loadRestaurantById(app: FastifyInstance, restaurantId: string) {
 }
 
 export function whatsappService(app: FastifyInstance) {
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  // Default SDK timeout is 10 minutes, which is far longer than any turn should
+  // take and lets a stalled call hold the conversation open.
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 60_000 });
   const restaurants = restaurantService(app);
   const sessions = new Map<string, SessionState>();
 
@@ -171,12 +173,25 @@ export function whatsappService(app: FastifyInstance) {
     let running = true;
     let orderPlacedEta: number | undefined;
 
+    // One round is one LLM call — every tool call in a response is handled in the
+    // inner loop below, so a normal order takes a handful. This only bounds a
+    // model that never stops asking for tools.
+    const MAX_LLM_ROUNDS = 15;
+    let rounds = 0;
+    let hitRoundLimit = false;
+
     const messages: ChatCompletionMessageParam[] = [
       { role: "system", content: instructionsTemplate({ restaurant, phone, caller: session.caller }) },
       ...session.messages,
     ];
 
     while (running) {
+      if (++rounds > MAX_LLM_ROUNDS) {
+        app.log.error(`❌ Tool loop hit ${MAX_LLM_ROUNDS} LLM rounds — aborting turn`);
+        hitRoundLimit = true;
+        break;
+      }
+
       const response = await client.chat.completions.create({
         model: "gpt-4o",
         messages,
@@ -402,6 +417,13 @@ export function whatsappService(app: FastifyInstance) {
 
     if (!finalText && orderPlacedEta !== undefined) {
       finalText = `✅ Your order has been placed! Delivery in about ${orderPlacedEta} minutes.`;
+      session.messages.push({ role: "assistant", content: finalText });
+    }
+
+    // Answer here rather than returning "" — an empty result makes handleMessage
+    // retry the whole turn, which would multiply the rounds we just capped.
+    if (!finalText && hitRoundLimit) {
+      finalText = "Sorry, I got stuck on that. Could you tell me again what you'd like to order?";
       session.messages.push({ role: "assistant", content: finalText });
     }
 
