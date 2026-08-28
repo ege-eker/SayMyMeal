@@ -41,6 +41,9 @@ services:
       context: frontend
       args:
         API_URL: ${API_URL}
+        COMPANY_NAME: ${NEXT_PUBLIC_COMPANY_NAME}
+        COMPANY_ADDRESS: ${NEXT_PUBLIC_COMPANY_ADDRESS}
+        PRIVACY_CONTACT: ${NEXT_PUBLIC_PRIVACY_CONTACT}
     container_name: frontend
     ports:
       - "${FRONTEND_PORT}:3000"
