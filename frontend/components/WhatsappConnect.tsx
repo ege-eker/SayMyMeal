@@ -7,7 +7,7 @@ import { MessageCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { connectWhatsapp, disconnectWhatsapp } from "@/lib/api";
 import { META_APP_ID, META_CONFIG_ID } from "@/lib/config";
 
-const GRAPH_VERSION = "v25.0";
+const GRAPH_VERSION = "v26.0";
 
 declare global {
   interface Window {
