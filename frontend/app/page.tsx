@@ -687,6 +687,8 @@ export default function LandingPage() {
               <button onClick={() => scrollTo("benefits")} className="hover:text-teal-600 transition-colors">Benefits</button>
               <button onClick={() => scrollTo("how-it-works")} className="hover:text-teal-600 transition-colors">How It Works</button>
               <Link href="/privacy" className="hover:text-teal-600 transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-teal-600 transition-colors">Terms</Link>
+              <Link href="/data-deletion" className="hover:text-teal-600 transition-colors">Data Deletion</Link>
             </div>
             <p className="text-sm text-slate-400">
               &copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.
