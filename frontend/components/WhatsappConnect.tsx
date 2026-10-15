@@ -46,7 +46,18 @@ export default function WhatsappConnect({
     const { waba_id, phone_number_id } = signupRef.current;
     const code = codeRef.current;
     // Coexistence signups carry only a waba_id; the backend resolves the number.
-    if (!waba_id || !code) return;
+    // finalize runs twice (once per arriving half), so a missing piece is normal
+    // on the first pass — log it rather than failing, otherwise a signup that
+    // never completes leaves no trace of which half went missing.
+    if (!waba_id || !code) {
+      console.info(
+        `[wa-connect] waiting — waba_id=${waba_id ?? "missing"} code=${code ? "present" : "missing"}`
+      );
+      return;
+    }
+    console.info(
+      `[wa-connect] submitting — waba_id=${waba_id} phone_number_id=${phone_number_id ?? "(none, backend resolves)"}`
+    );
 
     setSubmitting(true);
     setError(null);
@@ -77,11 +88,19 @@ export default function WhatsappConnect({
       }
       if (data?.type !== "WA_EMBEDDED_SIGNUP") return;
 
+      // Meta sends a step event for every screen in the popup. Logging all of
+      // them means an abandoned or failing signup still tells us how far it got.
+      console.info(`[wa-connect] ${data.event}`, data.data ?? {});
+
       if (typeof data.event === "string" && data.event.startsWith("FINISH")) {
         signupRef.current = {
           waba_id: data.data?.waba_id,
           phone_number_id: data.data?.phone_number_id,
         };
+        if (!data.data?.waba_id) {
+          setError("Signup finished without a WhatsApp Business Account id — nothing to connect.");
+          return;
+        }
         finalizeRef.current();
       } else if (data.event === "CANCEL") {
         signupRef.current = {};
@@ -124,6 +143,15 @@ export default function WhatsappConnect({
         if (response?.authResponse?.code) {
           codeRef.current = response.authResponse.code;
           finalizeRef.current();
+        } else {
+          // No code means the owner closed the popup or Facebook refused the
+          // login. The status is the only clue, so surface it.
+          console.info(`[wa-connect] login returned no code — status=${response?.status ?? "unknown"}`);
+          setError(
+            response?.status === "unknown"
+              ? "The WhatsApp signup window closed before finishing."
+              : "WhatsApp signup did not return an authorization code."
+          );
         }
       },
       {
