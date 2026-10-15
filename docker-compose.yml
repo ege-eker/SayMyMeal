@@ -26,7 +26,9 @@ services:
       -  ./backend/.env
       - ./backend/proxy.env
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-restaurant}:${POSTGRES_PASSWORD:-restaurant123}@postgres:5432/${POSTGRES_DB:-restaurant_db}
+      # DB_HOST defaults to the compose service name, which is ambiguous when
+      # several stacks share one external network: set it to the container name.
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-restaurant}:${POSTGRES_PASSWORD:-restaurant123}@${DB_HOST:-postgres}:5432/${POSTGRES_DB:-restaurant_db}
     depends_on:
       postgres:
         condition: service_healthy
