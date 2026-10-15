@@ -482,7 +482,13 @@ export function whatsappService(app: FastifyInstance) {
   async function processIncomingWebhook(payload: MetaWebhookPayload): Promise<void> {
     for (const entry of payload.entry ?? []) {
       for (const change of entry.changes ?? []) {
-        if (change.field !== "messages") continue;
+        if (change.field !== "messages") {
+          // Coexistence subscriptions (history, smb_app_state_sync,
+          // smb_message_echoes) are not acted on yet. Log them so webhook
+          // delivery stays visible instead of being silently dropped.
+          app.log.info(`📬 WhatsApp webhook field "${change.field}" received — not handled`);
+          continue;
+        }
 
         const value = change.value;
         const messages = value?.messages;
@@ -566,8 +572,19 @@ export function whatsappService(app: FastifyInstance) {
       throw new WhatsappAlreadyConnectedError("This restaurant already has a WhatsApp number connected.");
     }
 
+    // Each Graph step is logged on its own line: the signup `code` is single-use,
+    // so when a connect fails the last line printed is the only way to tell which
+    // call to blame without asking the owner to run the popup again.
+    app.log.info(
+      `🔗 connect step 1/5 start — restaurant=${restaurantId} waba=${wabaId} ` +
+        `phoneNumberId=${phoneNumberId ?? "(absent — coexistence, resolving from WABA)"}`
+    );
+
     const token = await exchangeCodeForToken(code);
+    app.log.info("🔗 connect step 2/5 — code exchanged for access token");
+
     await subscribeAppToWaba(wabaId, token);
+    app.log.info(`🔗 connect step 3/5 — app subscribed to WABA ${wabaId}`);
 
     // Coexistence signups return only a waba_id, so look the number up on the
     // account. A freshly connected WABA holds exactly one.
@@ -589,6 +606,9 @@ export function whatsappService(app: FastifyInstance) {
       resolvedPhoneNumberId = numbers[0].id;
       displayPhone = normalizePhone(numbers[0].display_phone_number);
     }
+    app.log.info(
+      `🔗 connect step 4/5 — number resolved: id=${resolvedPhoneNumberId} display=${displayPhone}`
+    );
 
     try {
       await app.prisma.restaurant.update({
@@ -606,6 +626,10 @@ export function whatsappService(app: FastifyInstance) {
       }
       throw err;
     }
+
+    app.log.info(
+      `✅ connect step 5/5 — WhatsApp connected: restaurant=${restaurantId} phone=${displayPhone}`
+    );
 
     clearSessions(restaurantId);
     return { whatsappPhone: displayPhone, whatsappPhoneNumberId: resolvedPhoneNumberId };
