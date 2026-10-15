@@ -53,9 +53,11 @@ export function whatsappController(app: FastifyInstance) {
       reply.send({ ok: true });
 
       const body = req.body as MetaWebhookPayload;
+      // The payload goes in the log line: we answer 200 before processing, so
+      // Meta never retries and a failed event is otherwise gone for good.
       void service
         .processIncomingWebhook(body)
-        .catch((err) => app.log.error({ err }, "processIncomingWebhook failed"));
+        .catch((err) => app.log.error({ err, payload: body }, "processIncomingWebhook failed"));
     },
 
     // POST /whatsapp/connect — owner connects a number via Embedded Signup

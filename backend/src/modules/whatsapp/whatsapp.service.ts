@@ -513,6 +513,15 @@ export function whatsappService(app: FastifyInstance) {
         }
 
         for (const message of messages) {
+          // A "messages" change can carry shapes that are not an inbound chat
+          // message (system notices, account events). Without `from` there is
+          // nobody to reply to, and reading it unguarded used to throw and
+          // abandon every remaining message in the batch.
+          if (!message?.from || !message?.id) {
+            app.log.warn({ message }, "📭 WhatsApp message without from/id — skipping");
+            continue;
+          }
+
           // Dedupe — Meta retries delivery until it gets a 200 in time.
           if (recentMessageIds.has(message.id)) {
             app.log.info(`♻️ Duplicate WhatsApp message ${message.id} — skipping`);
