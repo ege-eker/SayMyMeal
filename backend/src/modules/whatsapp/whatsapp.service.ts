@@ -14,6 +14,7 @@ import {
   exchangeCodeForToken,
   subscribeAppToWaba,
   getPhoneNumberInfo,
+  listWabaPhoneNumbers,
   deregisterPhoneNumber,
   sendTextMessage,
   markMessageRead,
@@ -567,15 +568,34 @@ export function whatsappService(app: FastifyInstance) {
 
     const token = await exchangeCodeForToken(code);
     await subscribeAppToWaba(wabaId, token);
-    const info = await getPhoneNumberInfo(phoneNumberId, token);
-    const displayPhone = normalizePhone(info.display_phone_number);
+
+    // Coexistence signups return only a waba_id, so look the number up on the
+    // account. A freshly connected WABA holds exactly one.
+    let resolvedPhoneNumberId = phoneNumberId;
+    let displayPhone: string;
+    if (resolvedPhoneNumberId) {
+      const info = await getPhoneNumberInfo(resolvedPhoneNumberId, token);
+      displayPhone = normalizePhone(info.display_phone_number);
+    } else {
+      const numbers = await listWabaPhoneNumbers(wabaId, token);
+      if (numbers.length === 0) {
+        throw new GraphApiError(`No phone number found on WhatsApp Business Account ${wabaId}`);
+      }
+      if (numbers.length > 1) {
+        app.log.warn(
+          `WABA ${wabaId} has ${numbers.length} numbers; connecting the first (${numbers[0].id})`
+        );
+      }
+      resolvedPhoneNumberId = numbers[0].id;
+      displayPhone = normalizePhone(numbers[0].display_phone_number);
+    }
 
     try {
       await app.prisma.restaurant.update({
         where: { id: restaurantId },
         data: {
           wabaId,
-          whatsappPhoneNumberId: phoneNumberId,
+          whatsappPhoneNumberId: resolvedPhoneNumberId,
           whatsappAccessToken: token,
           whatsappPhone: displayPhone,
         },
@@ -588,7 +608,7 @@ export function whatsappService(app: FastifyInstance) {
     }
 
     clearSessions(restaurantId);
-    return { whatsappPhone: displayPhone, whatsappPhoneNumberId: phoneNumberId };
+    return { whatsappPhone: displayPhone, whatsappPhoneNumberId: resolvedPhoneNumberId };
   }
 
   /** Disconnect a restaurant's WhatsApp number; best-effort deregister, then null the fields. */

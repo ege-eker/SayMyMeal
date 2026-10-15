@@ -34,7 +34,9 @@ export const connectWhatsappSchema = {
   description: "Connect a WhatsApp number to a restaurant (owner only)",
   body: {
     type: "object",
-    required: ["restaurantId", "code", "wabaId", "phoneNumberId"],
+    // Coexistence signups return only a waba_id, so the number is resolved
+    // server-side when the popup does not supply one.
+    required: ["restaurantId", "code", "wabaId"],
     additionalProperties: false,
     properties: {
       restaurantId: { type: "string" },

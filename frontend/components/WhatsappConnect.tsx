@@ -45,7 +45,8 @@ export default function WhatsappConnect({
   finalizeRef.current = async () => {
     const { waba_id, phone_number_id } = signupRef.current;
     const code = codeRef.current;
-    if (!waba_id || !phone_number_id || !code) return; // wait for both parts
+    // Coexistence signups carry only a waba_id; the backend resolves the number.
+    if (!waba_id || !code) return;
 
     setSubmitting(true);
     setError(null);
@@ -130,9 +131,9 @@ export default function WhatsappConnect({
         response_type: "code",
         override_default_response_type: true,
         extras: {
-          setup: {},
           featureType: "whatsapp_business_app_onboarding",
           sessionInfoVersion: "3",
+          version: "v4",
         },
       }
     );

@@ -81,7 +81,8 @@ export interface WebhookVerifyQuery {
 export interface ConnectWhatsappInput {
   code: string;
   wabaId: string;
-  phoneNumberId: string;
+  /** Absent on coexistence signups — resolved from the WABA instead. */
+  phoneNumberId?: string;
 }
 
 export interface ConnectWhatsappBody extends ConnectWhatsappInput {

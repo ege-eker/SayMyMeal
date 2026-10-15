@@ -94,7 +94,7 @@ export async function deleteRestaurant(id: string) {
 
 export async function connectWhatsapp(
   restaurantId: string,
-  data: { code: string; wabaId: string; phoneNumberId: string }
+  data: { code: string; wabaId: string; phoneNumberId?: string }
 ) {
   const res = await authFetch(`${API_URL}/whatsapp/connect`, {
     method: "POST",

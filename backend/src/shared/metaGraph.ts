@@ -136,6 +136,25 @@ export interface PhoneNumberInfo {
   verified_name?: string;
 }
 
+export interface WabaPhoneNumber extends PhoneNumberInfo {
+  id: string;
+}
+
+/**
+ * List the numbers on a WABA. Coexistence signups hand back only a waba_id,
+ * so this is how the connected number is discovered.
+ */
+export async function listWabaPhoneNumbers(
+  wabaId: string,
+  token: string
+): Promise<WabaPhoneNumber[]> {
+  const json = await graphFetch<{ data?: WabaPhoneNumber[] }>(`/${wabaId}/phone_numbers`, {
+    token,
+    query: { fields: "id,display_phone_number,verified_name" },
+  });
+  return json.data ?? [];
+}
+
 export async function getPhoneNumberInfo(
   phoneNumberId: string,
   token: string
