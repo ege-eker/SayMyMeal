@@ -1,5 +1,5 @@
 # ---------- Stage 1 – Build/Generate ----------
-FROM oven/bun:1.3.6 AS base
+FROM oven/bun:1.4.4 AS base
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN bun prisma generate
 
 
 # ---------- Stage 2 – Runtime ----------
-FROM oven/bun:1.3.6 AS runner
+FROM oven/bun:1.4.4 AS runner
 
 WORKDIR /app
 

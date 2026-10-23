@@ -1,5 +1,5 @@
 # ---------- Stage 1 – Build ----------
-FROM oven/bun:1.3.6-alpine AS builder
+FROM oven/bun:1.4.4-alpine AS builder
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ RUN bun run build
 
 
 # ---------- Stage 2 – Runtime ----------
-FROM oven/bun:1.3.6-alpine AS runner
+FROM oven/bun:1.4.4-alpine AS runner
 
 WORKDIR /app
 
